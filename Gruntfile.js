@@ -71,8 +71,11 @@ module.exports = function(grunt) {
                     ],
                     '<%= production %>/skylink.complete.js': [
                         'node_modules/socket.io-client/socket.io.js',
-                        'node_modules/adapterjs/publish/adapter.screenshare.js',
+                        'tobii/adapter.screenshare.tobii.js',
                         '<%= production %>/skylink.debug.js'
+                    ],
+                    '<%= production %>/detectRTC.tobii.html': [
+                        'tobii/detectRTC.tobii.html'
                     ]
                 }
             },
@@ -214,7 +217,7 @@ module.exports = function(grunt) {
 
         try {
             var version = grunt.config('pkg.version')
-                            .match(/^([0-9]+)\.([0-9]+)\.([0-9]+)$/);
+                            .match(/^([0-9]+)\.([0-9]+)\.([0-9]+)[\.\-a-z0-9]*$/);
             grunt.config('pkg.version_major', version[1]);
             grunt.config('pkg.version_minor', version[2]);
             grunt.config('pkg.version_release', version[3]);

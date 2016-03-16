@@ -1,22 +1,22 @@
 {
-  "name": "skylinkjs",
-  "description": "SkylinkJS is an open-source client-side library for your web-browser that enables any website to easily leverage the capabilities of WebRTC and its direct data streaming powers between peers for audio/video conferencing or file transfer.",
-  "version": "0.6.10",
+  "name": "@tobiipro/skylinkjs",
+  "description": "SkylinkJS is an open-source client-side library for your web-browser that enables any website to easily leverage the capabilities of WebRTC and its direct data streaming powers between peers for audio/video conferencing or file transfer. This version has been slightly modified bo Tobii to brand the plugins.",
+  "version": "0.6.10-tobii.5",
   "homepage": "https://temasys.github.io/",
   "author": {
     "name": "Temasys Communications Pte. Ltd.",
     "email": "info@temasys.com.sg"
   },
   "main": "publish/skylink.complete.min.js",
-  "repository": "Temasys/SkylinkJS",
+  "repository": "TobiiTechnology/SkylinkJS",
   "licenses": [
     {
-      "type": "Apache",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
+      "type": "Apache"
     }
   ],
   "scripts": {
-    "prestart": "./start.sh &"
+    "prestart": "./start.sh &",
+    "prepublish": "grunt publish"
   },
   "dependencies": {
     "socket.io-client": "1.4.4",
