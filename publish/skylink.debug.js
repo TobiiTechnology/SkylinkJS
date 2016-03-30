@@ -1,4 +1,4 @@
-/*! @tobiipro/skylinkjs - v0.6.10-tobii.6 - Mon Mar 21 2016 16:29:35 GMT+0100 (W. Europe Standard Time) */
+/*! @tobiipro/skylinkjs - v0.6.10-tobii.7 - Mon Mar 21 2016 16:41:58 GMT+0100 (W. Europe Standard Time) */
 
 (function() {
 
@@ -188,7 +188,7 @@ function Skylink() {
    * @for Skylink
    * @since 0.1.0
    */
-  this.VERSION = '0.6.10-tobii.6';
+  this.VERSION = '0.6.10-tobii.7';
 
   /**
    * Helper function that generates an Unique ID (UUID) string.
