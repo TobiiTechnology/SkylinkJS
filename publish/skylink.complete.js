@@ -1,4 +1,4 @@
-/*! @tobiipro/skylinkjs - v0.6.10-tobii.7 - Mon Mar 21 2016 16:41:58 GMT+0100 (W. Europe Standard Time) */
+/*! @tobiipro/skylinkjs - v0.6.11-tobii.1 - Wed Mar 30 2016 16:37:58 GMT+0200 (W. Europe Daylight Time) */
 
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.io = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 
@@ -9203,7 +9203,7 @@ if ( navigator.mozGetUserMedia
     console.warn('Opera does not support screensharing feature in getUserMedia');
   }
 })();
-/*! @tobiipro/skylinkjs - v0.6.10-tobii.7 - Mon Mar 21 2016 16:41:58 GMT+0100 (W. Europe Standard Time) */
+/*! @tobiipro/skylinkjs - v0.6.11-tobii.1 - Wed Mar 30 2016 16:37:58 GMT+0200 (W. Europe Daylight Time) */
 
 (function() {
 
@@ -9393,7 +9393,7 @@ function Skylink() {
    * @for Skylink
    * @since 0.1.0
    */
-  this.VERSION = '0.6.10-tobii.7';
+  this.VERSION = '0.6.11-tobii.1';
 
   /**
    * Helper function that generates an Unique ID (UUID) string.
@@ -13478,6 +13478,8 @@ Skylink.prototype._createPeerConnection = function(targetMid, isScreenSharing) {
   pc.hasScreen = !!isScreenSharing;
   pc.hasMainChannel = false;
   pc.firefoxStreamId = '';
+  pc.processingLocalSDP = false;
+  pc.processingRemoteSDP = false;
 
   // datachannels
   self._dataChannels[targetMid] = {};
@@ -14198,87 +14200,77 @@ Skylink.prototype._peerPriorityWeight = 0;
 Skylink.prototype._doOffer = function(targetMid, peerBrowser) {
   var self = this;
   var pc = self._peerConnections[targetMid] || self._addPeer(targetMid, peerBrowser);
+
   log.log([targetMid, null, null, 'Checking caller status'], peerBrowser);
-  // NOTE ALEX: handle the pc = 0 case, just to be sure
-  var inputConstraints = self._room.connection.offerConstraints;
-  var sc = self._room.connection.sdpConstraints;
-  for (var name in sc.mandatory) {
-    if (sc.mandatory.hasOwnProperty(name)) {
-      inputConstraints.mandatory[name] = sc.mandatory[name];
-    }
+
+  // Added checks to ensure that connection object is defined first
+  if (!pc) {
+    log.warn([targetMid, 'RTCSessionDescription', 'offer', 'Dropping of creating of offer ' +
+      'as connection does not exists']);
+    return;
   }
-  inputConstraints.optional.concat(sc.optional);
-  checkMediaDataChannelSettings(peerBrowser.agent, peerBrowser.version,
-    function(beOfferer, unifiedOfferConstraints) {
-    // attempt to force make firefox not to offer datachannel.
-    // we will not be using datachannel in MCU
+
+  // Added checks to ensure that state is "stable" if setting local "offer"
+  if (pc.signalingState !== self.PEER_CONNECTION_STATE.STABLE) {
+    log.warn([targetMid, 'RTCSessionDescription', 'offer',
+      'Dropping of creating of offer as signalingState is not "' +
+      self.PEER_CONNECTION_STATE.STABLE + '" ->'], pc.signalingState);
+    return;
+  }
+
+  var offerConstraints = {
+    offerToReceiveAudio: true,
+    offerToReceiveVideo: true
+  };
+
+  // NOTE: Removing ICE restart functionality as of now since Firefox does not support it yet
+  // Check if ICE connection failed or disconnected, and if so, do an ICE restart
+  /*if ([self.ICE_CONNECTION_STATE.DISCONNECTED, self.ICE_CONNECTION_STATE.FAILED].indexOf(pc.iceConnectionState) > -1) {
+    offerConstraints.iceRestart = true;
+  }*/
+
+  // Prevent undefined OS errors
+  peerBrowser.os = peerBrowser.os || '';
+
+  /*
+    Ignoring these old codes as Firefox 39 and below is no longer supported
     if (window.webrtcDetectedType === 'moz' && peerBrowser.agent === 'MCU') {
       unifiedOfferConstraints.mandatory = unifiedOfferConstraints.mandatory || {};
       unifiedOfferConstraints.mandatory.MozDontOfferDataChannel = true;
       beOfferer = true;
     }
 
-    unifiedOfferConstraints.mandatory.iceRestart = true;
-    peerBrowser.os = peerBrowser.os || '';
-
-    if (!(peerBrowser.agent === 'MCU' || self._hasMCU)) {
-      /*
-       // for windows firefox to mac chrome interopability
-      if (window.webrtcDetectedBrowser === 'firefox' &&
-        window.navigator.platform.indexOf('Win') === 0 &&
-        peerBrowser.agent !== 'firefox' &&
-        peerBrowser.agent !== 'MCU' &&
-        peerBrowser.os.indexOf('Mac') === 0) {
-        beOfferer = false;
-      }*/
-      if (window.webrtcDetectedBrowser === 'firefox' && peerBrowser.agent !== 'firefox') {
-        beOfferer = false;
-      }
-    } else {
-      beOfferer = true;
+    if (window.webrtcDetectedBrowser === 'firefox' && window.webrtcDetectedVersion >= 32) {
+      unifiedOfferConstraints = {
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      };
     }
+  */
 
-    if (beOfferer) {
-      if (window.webrtcDetectedBrowser === 'firefox' && window.webrtcDetectedVersion >= 32) {
-        unifiedOfferConstraints = {
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true
-        };
-
-        /*if (window.webrtcDetectedVersion > 37) {
-          unifiedOfferConstraints = {};
-        }*/
+  // Fallback to use mandatory constraints for plugin based browsers
+  if (['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1) {
+    offerConstraints = {
+      mandatory: {
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
       }
+    };
+  }
 
-      log.debug([targetMid, null, null, 'Creating offer with config:'], unifiedOfferConstraints);
+  log.debug([targetMid, null, null, 'Creating offer with config:'], offerConstraints);
 
-      pc.createOffer(function(offer) {
-        log.debug([targetMid, null, null, 'Created offer'], offer);
-        self._setLocalAndSendMessage(targetMid, offer);
-      }, function(error) {
-        self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR,
-          targetMid, error);
-        log.error([targetMid, null, null, 'Failed creating an offer:'], error);
-      }, unifiedOfferConstraints);
-    } else {
-      log.debug([targetMid, null, null, 'User\'s browser is not eligible to create ' +
-        'the offer to the other peer. Requesting other peer to create the offer instead'
-        ], peerBrowser);
+  pc.createOffer(function(offer) {
+    log.debug([targetMid, null, null, 'Created offer'], offer);
 
-      self._sendChannelMessage({
-        type: self._SIG_MESSAGE_TYPE.WELCOME,
-        mid: self._user.sid,
-        rid: self._room.id,
-        agent: window.webrtcDetectedBrowser,
-        version: window.webrtcDetectedVersion,
-        os: window.navigator.platform,
-        userInfo: self.getPeerInfo(),
-        target: targetMid,
-        weight: -1,
-        sessionType: !!self._mediaScreen ? 'screensharing' : 'stream'
-      });
-    }
-  }, inputConstraints);
+    self._setLocalAndSendMessage(targetMid, offer);
+
+  }, function(error) {
+    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
+
+    log.error([targetMid, null, null, 'Failed creating an offer:'], error);
+
+  }, offerConstraints);
 };
 
 /**
@@ -14297,22 +14289,31 @@ Skylink.prototype._doAnswer = function(targetMid) {
   log.log([targetMid, null, null, 'Creating answer with config:'],
     self._room.connection.sdpConstraints);
   var pc = self._peerConnections[targetMid];
-  if (pc) {
-    // No ICE restart constraints for createAnswer as it fails in chrome 48
-    // { iceRestart: true }
-    pc.createAnswer(function(answer) {
-      log.debug([targetMid, null, null, 'Created answer'], answer);
-      self._setLocalAndSendMessage(targetMid, answer);
-    }, function(error) {
-      log.error([targetMid, null, null, 'Failed creating an answer:'], error);
-      self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
-    });//, self._room.connection.sdpConstraints);
-  } else {
-    /* Houston ..*/
-    log.error([targetMid, null, null, 'Requested to create an answer but user ' +
-      'does not have any existing connection to peer']);
+
+  // Added checks to ensure that connection object is defined first
+  if (!pc) {
+    log.warn([targetMid, 'RTCSessionDescription', 'answer', 'Dropping of creating of answer ' +
+      'as connection does not exists']);
     return;
   }
+
+  // Added checks to ensure that state is "have-remote-offer" if setting local "answer"
+  if (pc.signalingState !== self.PEER_CONNECTION_STATE.HAVE_REMOTE_OFFER) {
+    log.warn([targetMid, 'RTCSessionDescription', 'answer',
+      'Dropping of creating of answer as signalingState is not "' +
+      self.PEER_CONNECTION_STATE.HAVE_REMOTE_OFFER + '" ->'], pc.signalingState);
+    return;
+  }
+
+  // No ICE restart constraints for createAnswer as it fails in chrome 48
+  // { iceRestart: true }
+  pc.createAnswer(function(answer) {
+    log.debug([targetMid, null, null, 'Created answer'], answer);
+    self._setLocalAndSendMessage(targetMid, answer);
+  }, function(error) {
+    log.error([targetMid, null, null, 'Failed creating an answer:'], error);
+    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
+  });//, self._room.connection.sdpConstraints);
 };
 
 /**
@@ -14467,6 +14468,38 @@ Skylink.prototype._setLocalAndSendMessage = function(targetMid, sessionDescripti
     return;
   }*/
 
+  // Added checks to ensure that sessionDescription is defined first
+  if (!(!!sessionDescription && !!sessionDescription.sdp)) {
+    log.warn([targetMid, 'RTCSessionDescription', null, 'Dropping of setting local unknown sessionDescription ' +
+      'as received sessionDescription is empty ->'], sessionDescription);
+    return;
+  }
+
+  // Added checks to ensure that connection object is defined first
+  if (!pc) {
+    log.warn([targetMid, 'RTCSessionDescription', sessionDescription.type, 'Dropping of setting local "' +
+      sessionDescription.type + '" as connection does not exists']);
+    return;
+  }
+
+  // Added checks to ensure that state is "stable" if setting local "offer"
+  if (sessionDescription.type === self.HANDSHAKE_PROGRESS.OFFER &&
+    pc.signalingState !== self.PEER_CONNECTION_STATE.STABLE) {
+    log.warn([targetMid, 'RTCSessionDescription', sessionDescription.type,
+      'Dropping of setting local "offer" as signalingState is not "' +
+      self.PEER_CONNECTION_STATE.STABLE + '" ->'], pc.signalingState);
+    return;
+
+  // Added checks to ensure that state is "have-remote-offer" if setting local "answer"
+  } else if (sessionDescription.type === self.HANDSHAKE_PROGRESS.ANSWER &&
+    pc.signalingState !== self.PEER_CONNECTION_STATE.HAVE_REMOTE_OFFER) {
+    log.warn([targetMid, 'RTCSessionDescription', sessionDescription.type,
+      'Dropping of setting local "answer" as signalingState is not "' +
+      self.PEER_CONNECTION_STATE.HAVE_REMOTE_OFFER + '" ->'], pc.signalingState);
+    return;
+  }
+
+
   // NOTE ALEX: handle the pc = 0 case, just to be sure
   var sdpLines = sessionDescription.sdp.split('\r\n');
 
@@ -14499,20 +14532,20 @@ Skylink.prototype._setLocalAndSendMessage = function(targetMid, sessionDescripti
 
   self._streamSettings.video = self._streamSettings.video || false;
 
-  log.info([targetMid, null, null, 'Custom bandwidth settings:'], {
+  /*log.info([targetMid, null, null, 'Custom bandwidth settings:'], {
     audio: (self._streamSettings.bandwidth.audio || 'Not set') + ' kB/s',
     video: (self._streamSettings.bandwidth.video || 'Not set') + ' kB/s',
     data: (self._streamSettings.bandwidth.data || 'Not set') + ' kB/s'
-  });
+  });*/
 
-  if (self._streamSettings.video.hasOwnProperty('frameRate') &&
+  /*if (self._streamSettings.video.hasOwnProperty('frameRate') &&
     self._streamSettings.video.hasOwnProperty('resolution')){
     log.info([targetMid, null, null, 'Custom resolution settings:'], {
       frameRate: (self._streamSettings.video.frameRate || 'Not set') + ' fps',
       width: (self._streamSettings.video.resolution.width || 'Not set') + ' px',
       height: (self._streamSettings.video.resolution.height || 'Not set') + ' px'
     });
-  }
+  }*/
 
   // set video codec
   if (self._selectedVideoCodec !== self.VIDEO_CODEC.AUTO) {
@@ -14538,8 +14571,21 @@ Skylink.prototype._setLocalAndSendMessage = function(targetMid, sessionDescripti
   log.log([targetMid, 'RTCSessionDescription', sessionDescription.type,
     'Updated session description:'], sessionDescription);
 
+  // Added checks if there is a current local sessionDescription being processing before processing this one
+  if (pc.processingLocalSDP) {
+    log.warn([targetMid, 'RTCSessionDescription', sessionDescription.type,
+      'Dropping of setting local ' + sessionDescription.type + ' as there is another ' +
+      'sessionDescription being processed ->'], sessionDescription);
+    return;
+  }
+
+  pc.processingLocalSDP = true;
+
   pc.setLocalDescription(sessionDescription, function() {
     log.debug([targetMid, sessionDescription.type, 'Local description set']);
+
+    pc.processingLocalSDP = false;
+
     self._trigger('handshakeProgress', sessionDescription.type, targetMid);
     if (sessionDescription.type === self.HANDSHAKE_PROGRESS.ANSWER) {
       pc.setAnswer = 'local';
@@ -14574,6 +14620,9 @@ Skylink.prototype._setLocalAndSendMessage = function(targetMid, sessionDescripti
     }
   }, function(error) {
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
+
+    pc.processingLocalSDP = false;
+
     log.error([targetMid, 'RTCSessionDescription', sessionDescription.type,
       'Failed setting local description: '], error);
   });
@@ -14627,19 +14676,6 @@ Skylink.prototype._autoIntroduce = true;
  * @since 0.6.1
  */
 Skylink.prototype._isPrivileged = false;
-
-/**
- * Parent key in case the current key is alias.
- * If the current key is not alias, this is the same as _appKey
- * @attribute _parentKey
- * @type String
- * @default null
- * @private
- * @component Peer
- * @for Skylink
- * @since 0.6.1
- */
-Skylink.prototype._parentKey = null;
 
 /**
  * List of peers retrieved from signaling
@@ -14713,10 +14749,6 @@ Skylink.prototype.getPeers = function(showAll, callback){
 		log.warn('App key is not defined. Please authenticate again.');
 		return;
 	}
-	if (!self._parentKey){
-		log.warn('Parent key is not defined. Please authenticate again.');
-		return;
-	}
 
 	// Only callback is provided
 	if (typeof showAll === 'function'){
@@ -14726,10 +14758,9 @@ Skylink.prototype.getPeers = function(showAll, callback){
 
 	self._sendChannelMessage({
 		type: self._SIG_MESSAGE_TYPE.GET_PEERS,
-		privilegedKey: self._appKey,
-		parentKey: self._parentKey,
 		showAll: showAll || false
 	});
+	
 	self._trigger('getPeersStateChange',self.GET_PEERS_STATE.ENQUIRED, self._user.sid, null);
 
 	log.log('Enquired server for peers within the realm');
@@ -14928,20 +14959,18 @@ Skylink.prototype._inRoom = false;
  *   Stream streaming video resolution height.
  * @param {Number} [options.video.frameRate=50] The self
  *   Stream streaming video maximum frameRate.
- * @param {String} [options.bandwidth] The self
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in <var>kb/s</var>.
- * @param {String} [options.bandwidth.audio=50] The configured
- *   audio stream channel for the self Stream object bandwidth
- *   that audio streaming should use in <var>kb/s</var>.
- * @param {String} [options.bandwidth.video=256] The configured
- *   video stream channel for the self Stream object bandwidth
- *   that video streaming should use in <var>kb/s</var>.
- * @param {String} [options.bandwidth.data=1638400] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+ * @param {String} [options.bandwidth] The configuration for
+ *   the maximum sending bandwidth. Setting the flags may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [options.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @param {Boolean} [options.manualGetUserMedia] The flag that indicates if
  *   <code>joinRoom()</code> should not invoke
  *   {{#crossLink "Skylink/getUserMedia:method"}}getUserMedia(){{/crossLink}}
@@ -15007,20 +15036,18 @@ Skylink.prototype._inRoom = false;
  * @param {Boolean} [callback.success.peerInfo.video.screenshare=false] The flag
  *   that indicates if the self connection Stream object sent
  *   is a screensharing stream or not.
- * @param {String} [callback.success.peerInfo.bandwidth] The self
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in <var>kb/s</var>.
- * @param {String} [callback.success.peerInfo.bandwidth.audio=50] The configured
- *   audio stream channel for the self Stream object bandwidth
- *   that audio streaming should use in <var>kb/s</var>.
- * @param {String} [callback.success.peerInfo.bandwidth.video=256] The configured
- *   video stream channel for the self Stream object bandwidth
- *   that video streaming should use in <var>kb/s</var>.
- * @param {String} [callback.success.peerInfo.bandwidth.data=1638400] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+ * @param {String} [callback.success.peerInfo.bandwidth] The configuration for
+ *   the maximum sending bandwidth. Setting the flags may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [callback.success.peerInfo.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [callback.success.peerInfo.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [callback.success.peerInfo.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @param {JSON} callback.success.peerInfo.mediaStatus The self Stream mute
  *   settings for both audio and video streamings.
  * @param {Boolean} [callback.success.peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -15249,7 +15276,8 @@ Skylink.prototype.joinRoom = function(room, mediaOptions, callback) {
         start: self._room.startDateTime,
         len: self._room.duration,
         isPrivileged: self._isPrivileged === true, // Default to false if undefined
-        autoIntroduce: self._autoIntroduce!== false // Default to true if undefined
+        autoIntroduce: self._autoIntroduce!== false, // Default to true if undefined
+        key: self._appKey
       });
     }
   };
@@ -15356,20 +15384,18 @@ Skylink.prototype.joinRoom = function(room, mediaOptions, callback) {
  *   Stream streaming video resolution height.
  * @param {Number} [options.video.frameRate=50] The self
  *   Stream streaming video maximum frameRate.
- * @param {String} [options.bandwidth] The self
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in <var>kb/s</var>.
- * @param {String} [options.bandwidth.audio=50] The configured
- *   audio stream channel for the self Stream object bandwidth
- *   that audio streaming should use in <var>kb/s</var>.
- * @param {String} [options.bandwidth.video=256] The configured
- *   video stream channel for the self Stream object bandwidth
- *   that video streaming should use in <var>kb/s</var>.
- * @param {String} [options.bandwidth.data=1638400] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+ * @param {String} [options.bandwidth] The configuration for
+ *   the maximum sending bandwidth. Setting the flags may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [options.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @param {Boolean} [options.manualGetUserMedia] The flag that indicates if
  *   <code>joinRoom()</code> should not invoke
  *   {{#crossLink "Skylink/getUserMedia:method"}}getUserMedia(){{/crossLink}}
@@ -16213,7 +16239,6 @@ Skylink.prototype._parseInfo = function(info) {
 
   this._isPrivileged = info.isPrivileged;
   this._autoIntroduce = info.autoIntroduce;
-  this._parentKey = info.room_key.substring(0,36);
 
   this._user = {
     uid: info.username,
@@ -17772,20 +17797,18 @@ Skylink.prototype._EVENTS = {
    * @param {Boolean} [peerInfo.settings.video.screenshare=false] The flag
    *   that indicates if the Peer connection Stream object sent
    *   is a screensharing stream or not.
-   * @param {String} [peerInfo.settings.bandwidth] The Peer
-   *   streaming bandwidth settings. Setting the bandwidth flags may not
-   *   force set the bandwidth for each connection stream channels as it depends
-   *   on how the browser handles the bandwidth bitrate. Values are configured
-   *   in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.audio] The configured
-   *   audio stream channel for the remote Stream object bandwidth
-   *   that audio streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.video] The configured
-   *   video stream channel for the remote Stream object bandwidth
-   *   that video streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.data] The configured
-   *   datachannel channel for the DataChannel connection bandwidth
-   *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations and how it handles it.
+   * @param {String} [peerInfo.settings.bandwidth.audio] The maximum
+   *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the audio bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.video] The maximum
+   *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the video bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.data] The maximum
+   *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the data bitrate to the browser defaults.
    * @param {JSON} peerInfo.mediaStatus The Peer Stream mute
    *   settings for both audio and video streamings.
    * @param {Boolean} [peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -17850,20 +17873,18 @@ Skylink.prototype._EVENTS = {
    * @param {Boolean} [peerInfo.settings.video.screenshare=false] The flag
    *   that indicates if the Peer connection Stream object sent
    *   is a screensharing stream or not.
-   * @param {String} [peerInfo.settings.bandwidth] The Peer
-   *   streaming bandwidth settings. Setting the bandwidth flags may not
-   *   force set the bandwidth for each connection stream channels as it depends
-   *   on how the browser handles the bandwidth bitrate. Values are configured
-   *   in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.audio] The configured
-   *   audio stream channel for the remote Stream object bandwidth
-   *   that audio streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.video] The configured
-   *   video stream channel for the remote Stream object bandwidth
-   *   that video streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.data] The configured
-   *   datachannel channel for the DataChannel connection bandwidth
-   *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations and how it handles it.
+   * @param {String} [peerInfo.settings.bandwidth.audio] The maximum
+   *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the audio bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.video] The maximum
+   *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the video bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.data] The maximum
+   *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the data bitrate to the browser defaults.
    * @param {JSON} peerInfo.mediaStatus The Peer Stream mute
    *   settings for both audio and video streamings.
    * @param {Boolean} [peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -17932,20 +17953,21 @@ Skylink.prototype._EVENTS = {
    * @param {Boolean} [peerInfo.settings.video.screenshare=false] The flag
    *   that indicates if the Peer connection Stream object sent
    *   is a screensharing stream or not.
-   * @param {String} [peerInfo.settings.bandwidth] The Peer
-   *   streaming bandwidth settings. Setting the bandwidth flags may not
-   *   force set the bandwidth for each connection stream channels as it depends
-   *   on how the browser handles the bandwidth bitrate. Values are configured
-   *   in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.audio] The configured
-   *   audio stream channel for the remote Stream object bandwidth
-   *   that audio streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.video] The configured
-   *   video stream channel for the remote Stream object bandwidth
-   *   that video streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.data] The configured
-   *   datachannel channel for the DataChannel connection bandwidth
-   *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations and how it handles it.
+   * @param {String} [peerInfo.settings.bandwidth.audio] The maximum
+   *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the audio bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.video] The maximum
+   *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the video bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.data] The maximum
+   *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the data bitrate to the browser defaults.
    * @param {JSON} peerInfo.mediaStatus The Peer Stream mute
    *   settings for both audio and video streamings.
    * @param {Boolean} [peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -18009,20 +18031,18 @@ Skylink.prototype._EVENTS = {
    * @param {Boolean} [peerInfo.settings.video.screenshare=false] The flag
    *   that indicates if the Peer connection Stream object sent
    *   is a screensharing stream or not.
-   * @param {String} [peerInfo.settings.bandwidth] The Peer
-   *   streaming bandwidth settings. Setting the bandwidth flags may not
-   *   force set the bandwidth for each connection stream channels as it depends
-   *   on how the browser handles the bandwidth bitrate. Values are configured
-   *   in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.audio] The configured
-   *   audio stream channel for the remote Stream object bandwidth
-   *   that audio streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.video] The configured
-   *   video stream channel for the remote Stream object bandwidth
-   *   that video streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.data] The configured
-   *   datachannel channel for the DataChannel connection bandwidth
-   *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations and how it handles it.
+   * @param {String} [peerInfo.settings.bandwidth.audio] The maximum
+   *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the audio bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.video] The maximum
+   *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the video bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.data] The maximum
+   *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the data bitrate to the browser defaults.
    * @param {JSON} peerInfo.mediaStatus The Peer Stream mute
    *   settings for both audio and video streamings.
    * @param {Boolean} [peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -18046,16 +18066,10 @@ Skylink.prototype._EVENTS = {
   peerLeft: [],
 
   /**
-   * Event triggered when a Stream is sent by Peer.
-   * - This event may trigger for self, which indicates that self has joined the room
-   *   and is sending this Stream object to other Peers connected in the room.
-   * @event incomingStream
-   * @param {String} peerId The Peer ID associated to the Stream object.
-   * @param {Object} stream The Peer
-   *   [MediaStream](https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_API)
-   *   object that is sent in this connection.
-   *   To display the MediaStream object to a <code>video</code> or <code>audio</code>, simply invoke:<br>
-   *   <code>attachMediaStream(domElement, stream);</code>.
+   * Event triggered when self is disconnected from room.
+   * @event sessionDisconnect
+   * @param {String} peerId The Peer ID of the peer
+   *   that had left the room.
    * @param {Object} peerInfo The peer information associated
    *   with the Peer Connection.
    * @param {String|JSON} peerInfo.userData The custom user data
@@ -18092,20 +18106,18 @@ Skylink.prototype._EVENTS = {
    * @param {Boolean} [peerInfo.settings.video.screenshare=false] The flag
    *   that indicates if the Peer connection Stream object sent
    *   is a screensharing stream or not.
-   * @param {String} [peerInfo.settings.bandwidth] The Peer
-   *   streaming bandwidth settings. Setting the bandwidth flags may not
-   *   force set the bandwidth for each connection stream channels as it depends
-   *   on how the browser handles the bandwidth bitrate. Values are configured
-   *   in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.audio] The configured
-   *   audio stream channel for the remote Stream object bandwidth
-   *   that audio streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.video] The configured
-   *   video stream channel for the remote Stream object bandwidth
-   *   that video streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.data] The configured
-   *   datachannel channel for the DataChannel connection bandwidth
-   *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations and how it handles it.
+   * @param {String} [peerInfo.settings.bandwidth.audio] The maximum
+   *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the audio bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.video] The maximum
+   *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the video bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.data] The maximum
+   *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the data bitrate to the browser defaults.
    * @param {JSON} peerInfo.mediaStatus The Peer Stream mute
    *   settings for both audio and video streamings.
    * @param {Boolean} [peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -18121,7 +18133,87 @@ Skylink.prototype._EVENTS = {
    * @param {Number} peerInfo.agent.version The Peer platform browser or agent version.
    * @param {Number} peerInfo.agent.os The Peer platform name.
    * @param {String} peerInfo.room The current room that the Peer is in.
+   * @component Events
+   * @for Skylink
+   * @since 0.6.10
+   */
+  sessionDisconnect: [],
+
+  /**
+   * Event triggered when a Stream is sent by Peer.
+   * - This event may trigger for self, which indicates that self has joined the room
+   *   and is sending this Stream object to other Peers connected in the room.
+   * @event incomingStream
+   * @param {String} peerId The Peer ID associated to the Stream object.
+   * @param {Object} stream The Peer
+   *   [MediaStream](https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_API)
+   *   object that is sent in this connection.
+   *   To display the MediaStream object to a <code>video</code> or <code>audio</code>, simply invoke:<br>
+   *   <code>attachMediaStream(domElement, stream);</code>.
    * @param {Boolean} isSelf The flag that indicates if self is the Peer.
+   * @param {Object} peerInfo The peer information associated
+   *   with the Peer Connection.
+   * @param {String|JSON} peerInfo.userData The custom user data
+   *   information set by developer. This custom user data can also
+   *   be set in <a href="#method_setUserData">setUserData()</a>.
+   * @param {JSON} peerInfo.settings The Peer Stream
+   *   streaming settings information. If both audio and video
+   *   option is <code>false</code>, there should be no
+   *   receiving remote Stream object from this associated Peer.
+   * @param {Boolean|JSON} [peerInfo.settings.audio=false] The
+   *   Peer Stream streaming audio settings. If
+   *   <code>false</code>, it means that audio streaming is disabled in
+   *   the remote Stream of the Peer.
+   * @param {Boolean} [peerInfo.settings.audio.stereo] The flag that indicates if
+   *   stereo option should be explictly enabled to an OPUS enabled audio stream.
+   *   Check the <code>audioCodec</code> configuration settings in
+   *   <a href="#method_init">init()</a>
+   *   to enable OPUS as the audio codec. Note that stereo is already enabled
+   *   for OPUS codecs, this only adds a stereo flag to the SDP to explictly
+   *   enable stereo in the audio streaming.
+   * @param {Boolean|JSON} [peerInfo.settings.video=false] The Peer
+   *   Stream streaming video settings. If <code>false</code>, it means that
+   *   video streaming is disabled in the remote Stream of the Peer.
+   * @param {JSON} [peerInfo.settings.video.resolution] The Peer
+   *   Stream streaming video resolution settings. Setting the resolution may
+   *   not force set the resolution provided as it depends on the how the
+   *   browser handles the resolution. [Rel: Skylink.VIDEO_RESOLUTION]
+   * @param {Number} [peerInfo.settings.video.resolution.width] The Peer
+   *   Stream streaming video resolution width.
+   * @param {Number} [peerInfo.settings.video.resolution.height] The Peer
+   *   Stream streaming video resolution height.
+   * @param {Number} [peerInfo.settings.video.frameRate] The Peer
+   *   Stream streaming video maximum frameRate.
+   * @param {Boolean} [peerInfo.settings.video.screenshare=false] The flag
+   *   that indicates if the Peer connection Stream object sent
+   *   is a screensharing stream or not.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations and how it handles it.
+   * @param {String} [peerInfo.settings.bandwidth.audio] The maximum
+   *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the audio bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.video] The maximum
+   *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the video bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.data] The maximum
+   *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the data bitrate to the browser defaults.
+   * @param {JSON} peerInfo.mediaStatus The Peer Stream mute
+   *   settings for both audio and video streamings.
+   * @param {Boolean} [peerInfo.mediaStatus.audioMuted=true] The flag that
+   *   indicates if the remote Stream object audio streaming is muted. If
+   *   there is no audio streaming enabled for the Peer, by default,
+   *   it is set to <code>true</code>.
+   * @param {Boolean} [peerInfo.mediaStatus.videoMuted=true] The flag that
+   *   indicates if the remote Stream object video streaming is muted. If
+   *   there is no video streaming enabled for the Peer, by default,
+   *   it is set to <code>true</code>.
+   * @param {JSON} peerInfo.agent The Peer platform agent information.
+   * @param {String} peerInfo.agent.name The Peer platform browser or agent name.
+   * @param {Number} peerInfo.agent.version The Peer platform browser or agent version.
+   * @param {Number} peerInfo.agent.os The Peer platform name.
+   * @param {String} peerInfo.room The current room that the Peer is in.
    * @component Events
    * @for Skylink
    * @since 0.5.5
@@ -18185,20 +18277,18 @@ Skylink.prototype._EVENTS = {
    * @param {Boolean} [peerInfo.settings.video.screenshare=false] The flag
    *   that indicates if the Peer connection Stream object sent
    *   is a screensharing stream or not.
-   * @param {String} [peerInfo.settings.bandwidth] The Peer
-   *   streaming bandwidth settings. Setting the bandwidth flags may not
-   *   force set the bandwidth for each connection stream channels as it depends
-   *   on how the browser handles the bandwidth bitrate. Values are configured
-   *   in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.audio] The configured
-   *   audio stream channel for the remote Stream object bandwidth
-   *   that audio streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.video] The configured
-   *   video stream channel for the remote Stream object bandwidth
-   *   that video streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.data] The configured
-   *   datachannel channel for the DataChannel connection bandwidth
-   *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations and how it handles it.
+   * @param {String} [peerInfo.settings.bandwidth.audio] The maximum
+   *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the audio bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.video] The maximum
+   *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the video bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.data] The maximum
+   *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the data bitrate to the browser defaults.
    * @param {JSON} peerInfo.mediaStatus The Peer Stream mute
    *   settings for both audio and video streamings.
    * @param {Boolean} [peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -18336,20 +18426,18 @@ Skylink.prototype._EVENTS = {
    * @param {Boolean} [peerInfo.settings.video.screenshare=false] The flag
    *   that indicates if the Peer connection Stream object sent
    *   is a screensharing stream or not.
-   * @param {String} [peerInfo.settings.bandwidth] The Peer
-   *   streaming bandwidth settings. Setting the bandwidth flags may not
-   *   force set the bandwidth for each connection stream channels as it depends
-   *   on how the browser handles the bandwidth bitrate. Values are configured
-   *   in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.audio] The configured
-   *   audio stream channel for the remote Stream object bandwidth
-   *   that audio streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.video] The configured
-   *   video stream channel for the remote Stream object bandwidth
-   *   that video streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.data] The configured
-   *   datachannel channel for the DataChannel connection bandwidth
-   *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations and how it handles it.
+   * @param {String} [peerInfo.settings.bandwidth.audio] The maximum
+   *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the audio bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.video] The maximum
+   *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the video bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.data] The maximum
+   *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the data bitrate to the browser defaults.
    * @param {JSON} peerInfo.mediaStatus The Peer Stream mute
    *   settings for both audio and video streamings.
    * @param {Boolean} [peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -18538,20 +18626,18 @@ Skylink.prototype._EVENTS = {
    * @param {Boolean} [peerInfo.settings.video.screenshare=false] The flag
    *   that indicates if the Peer connection Stream object sent
    *   is a screensharing stream or not.
-   * @param {String} [peerInfo.settings.bandwidth] The Peer
-   *   streaming bandwidth settings. Setting the bandwidth flags may not
-   *   force set the bandwidth for each connection stream channels as it depends
-   *   on how the browser handles the bandwidth bitrate. Values are configured
-   *   in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.audio] The configured
-   *   audio stream channel for the remote Stream object bandwidth
-   *   that audio streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.video] The configured
-   *   video stream channel for the remote Stream object bandwidth
-   *   that video streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.data] The configured
-   *   datachannel channel for the DataChannel connection bandwidth
-   *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations and how it handles it.
+   * @param {String} [peerInfo.settings.bandwidth.audio] The maximum
+   *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the audio bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.video] The maximum
+   *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the video bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.data] The maximum
+   *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the data bitrate to the browser defaults.
    * @param {JSON} peerInfo.mediaStatus The Peer Stream mute
    *   settings for both audio and video streamings.
    * @param {Boolean} [peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -18618,20 +18704,18 @@ Skylink.prototype._EVENTS = {
    * @param {Boolean} [peerInfo.settings.video.screenshare=false] The flag
    *   that indicates if the Peer connection Stream object sent
    *   is a screensharing stream or not.
-   * @param {String} [peerInfo.settings.bandwidth] The Peer
-   *   streaming bandwidth settings. Setting the bandwidth flags may not
-   *   force set the bandwidth for each connection stream channels as it depends
-   *   on how the browser handles the bandwidth bitrate. Values are configured
-   *   in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.audio] The configured
-   *   audio stream channel for the remote Stream object bandwidth
-   *   that audio streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.video] The configured
-   *   video stream channel for the remote Stream object bandwidth
-   *   that video streaming should use in <var>kb/s</var>.
-   * @param {String} [peerInfo.settings.bandwidth.data] The configured
-   *   datachannel channel for the DataChannel connection bandwidth
-   *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+   * @param {String} [peerInfo.settings.bandwidth] The Peer configuration for
+   *   the maximum sending bandwidth. The flags set may or may not work depending
+   *   on the browser implementations and how it handles it.
+   * @param {String} [peerInfo.settings.bandwidth.audio] The maximum
+   *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the audio bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.video] The maximum
+   *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the video bitrate to the browser defaults.
+   * @param {String} [peerInfo.settings.bandwidth.data] The maximum
+   *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+   *   it will leave the data bitrate to the browser defaults.
    * @param {JSON} peerInfo.mediaStatus The Peer Stream mute
    *   settings for both audio and video streamings.
    * @param {Boolean} [peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -19521,6 +19605,11 @@ Skylink.prototype._createSocket = function (type) {
     self._channelOpen = false;
     self._trigger('channelClose');
     log.log([null, 'Socket', null, 'Channel closed']);
+
+    if (self._inRoom) {
+      self.leaveRoom(false);
+      self._trigger('sessionDisconnect', self._user.sid, self.getPeerInfo());
+    }
   });
 
   self._socket.on('message', function(message) {
@@ -20327,20 +20416,18 @@ Skylink.prototype._inRoomHandler = function(message) {
  * @param {Boolean} [message.userInfo.settings.video.screenshare=false] The flag
  *   that indicates if the Peer connection Stream object sent
  *   is a screensharing stream or not.
- * @param {String} [message.userInfo.settings.bandwidth] The Peer
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in <var>kb/s</var>.
- * @param {String} [message.userInfo.settings.bandwidth.audio] The configured
- *   audio stream channel for the remote Stream object bandwidth
- *   that audio streaming should use in <var>kb/s</var>.
- * @param {String} [message.userInfo.settings.bandwidth.video] The configured
- *   video stream channel for the remote Stream object bandwidth
- *   that video streaming should use in <var>kb/s</var>.
- * @param {String} [message.userInfo.settings.bandwidth.data] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+ * @param {String} [message.userInfo.settings.bandwidth] The Peer configuration for
+ *   the maximum sending bandwidth. The flags set may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [message.userInfo.settings.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [message.userInfo.settings.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [message.userInfo.settings.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @param {JSON} message.userInfo.mediaStatus The Peer Stream mute
  *   settings for both audio and video streamings.
  * @param {Boolean} [message.userInfo.mediaStatus.audioMuted=true] The flag that
@@ -20469,20 +20556,18 @@ Skylink.prototype._enterHandler = function(message) {
  * @param {Boolean} [message.userInfo.settings.video.screenshare=false] The flag
  *   that indicates if the Peer connection Stream object sent
  *   is a screensharing stream or not.
- * @param {String} [message.userInfo.settings.bandwidth] The Peer
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in <var>kb/s</var>.
- * @param {String} [message.userInfo.settings.bandwidth.audio] The configured
- *   audio stream channel for the remote Stream object bandwidth
- *   that audio streaming should use in <var>kb/s</var>.
- * @param {String} [message.userInfo.settings.bandwidth.video] The configured
- *   video stream channel for the remote Stream object bandwidth
- *   that video streaming should use in <var>kb/s</var>.
- * @param {String} [message.userInfo.settings.bandwidth.data] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+ * @param {String} [message.userInfo.settings.bandwidth] The Peer configuration for
+ *   the maximum sending bandwidth. The flags set may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [message.userInfo.settings.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [message.userInfo.settings.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [message.userInfo.settings.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @param {JSON} message.userInfo.mediaStatus The Peer Stream mute
  *   settings for both audio and video streamings.
  * @param {Boolean} [message.userInfo.mediaStatus.audioMuted=true] The flag that
@@ -20671,20 +20756,18 @@ Skylink.prototype._restartHandler = function(message){
  * @param {Boolean} [message.userInfo.settings.video.screenshare=false] The flag
  *   that indicates if the Peer connection Stream object sent
  *   is a screensharing stream or not.
- * @param {String} [message.userInfo.settings.bandwidth] The Peer
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in <var>kb/s</var>.
- * @param {String} [message.userInfo.settings.bandwidth.audio] The configured
- *   audio stream channel for the remote Stream object bandwidth
- *   that audio streaming should use in <var>kb/s</var>.
- * @param {String} [message.userInfo.settings.bandwidth.video] The configured
- *   video stream channel for the remote Stream object bandwidth
- *   that video streaming should use in <var>kb/s</var>.
- * @param {String} [message.userInfo.settings.bandwidth.data] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+ * @param {String} [message.userInfo.settings.bandwidth] The Peer configuration for
+ *   the maximum sending bandwidth. The flags set may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [message.userInfo.settings.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [message.userInfo.settings.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [message.userInfo.settings.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @param {JSON} message.userInfo.mediaStatus The Peer Stream mute
  *   settings for both audio and video streamings.
  * @param {Boolean} [message.userInfo.mediaStatus.audioMuted=true] The flag that
@@ -20880,14 +20963,28 @@ Skylink.prototype._offerHandler = function(message) {
     return;
   }
 
+  // Added checks if there is a current remote sessionDescription being processing before processing this one
+  if (pc.processingRemoteSDP) {
+    log.warn([targetMid, 'RTCSessionDescription', 'offer',
+      'Dropping of setting local offer as there is another ' +
+      'sessionDescription being processed ->'], offer);
+    return;
+  }
+
+  pc.processingRemoteSDP = true;
+
   pc.setRemoteDescription(offer, function() {
     log.debug([targetMid, 'RTCSessionDescription', message.type, 'Remote description set']);
     pc.setOffer = 'remote';
+    pc.processingRemoteSDP = false;
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.OFFER, targetMid);
     self._addIceCandidateFromQueue(targetMid);
     self._doAnswer(targetMid);
   }, function(error) {
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
+
+    pc.processingRemoteSDP = false;
+
     log.error([targetMid, null, message.type, 'Failed setting remote description:'], error);
   });
 };
@@ -21057,14 +21154,28 @@ Skylink.prototype._answerHandler = function(message) {
     return;
   }
 
+  // Added checks if there is a current remote sessionDescription being processing before processing this one
+  if (pc.processingRemoteSDP) {
+    log.warn([targetMid, 'RTCSessionDescription', 'answer',
+      'Dropping of setting local answer as there is another ' +
+      'sessionDescription being processed ->'], answer);
+    return;
+  }
+
+  pc.processingRemoteSDP = true;
+
   pc.setRemoteDescription(answer, function() {
     log.debug([targetMid, null, message.type, 'Remote description set']);
     pc.setAnswer = 'remote';
+    pc.processingRemoteSDP = false;
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ANSWER, targetMid);
     self._addIceCandidateFromQueue(targetMid);
 
   }, function(error) {
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
+
+    pc.processingRemoteSDP = false;
+
     log.error([targetMid, null, message.type, 'Failed setting remote description:'], {
       error: error,
       state: pc.signalingState
@@ -21360,20 +21471,9 @@ Skylink.prototype._mediaScreenClone = null;
  *   streaming video resolution height.
  * @param {Number} [video.frameRate] The default
  *   streaming video maximum frameRate.
- * @param {String} [bandwidth] The default
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in <var>kb/s</var>.
- * @param {String} [bandwidth.audio] The default
- *   audio stream channel for self Stream object bandwidth
- *   that audio streaming should use in <var>kb/s</var>.
- * @param {String} [bandwidth.video] The default
- *   video stream channel for self Stream object bandwidth
- *   that video streaming should use in <var>kb/s</var>.
- * @param {String} [bandwidth.data] The default
- *   datachannel channel for self DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+ * @param {String} [bandwidth] The configuration for
+ *   the maximum sending bandwidth. Setting the flags may or may not work depending
+ *   on the browser implementations and how it handles it. By default, this is empty.
  * @private
  * @component Stream
  * @for Skylink
@@ -21391,9 +21491,9 @@ Skylink.prototype._defaultStreamSettings = {
     frameRate: 50
   },
   bandwidth: {
-    audio: 50,
-    video: 256,
-    data: 1638400
+    //audio: 50,
+    //video: 256,
+    //data: 1638400
   }
 };
 
@@ -21435,20 +21535,18 @@ Skylink.prototype._defaultStreamSettings = {
  *   in self user media Stream object. Some of the values are
  *   set by the <code>video.optional</code> setting in
  *   {{#crossLink "Skylink/getUserMedia:method"}}getUserMedia(){{/crossLink}}.
- * @param {String} [bandwidth] The self
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in <var>kb/s</var>.
- * @param {String} [bandwidth.audio] The configured
- *   audio stream channel for self connection Stream object bandwidth
- *   that audio streaming should use in <var>kb/s</var>.
- * @param {String} [bandwidth.video] The configured
- *   video stream channel for the self connection Stream object bandwidth
- *   that video streaming should use in <var>kb/s</var>.
- * @param {String} [bandwidth.data] The configured
- *   datachannel channel for self DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+ * @param {String} [bandwidth] The configuration for
+ *   the maximum sending bandwidth. The flags set may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @private
  * @component Stream
  * @for Skylink
@@ -21963,21 +22061,25 @@ Skylink.prototype._parseVideoStreamSettings = function (videoOptions) {
  * @since 0.5.5
  */
 Skylink.prototype._parseBandwidthSettings = function (bwOptions) {
+  this._streamSettings.bandwidth = {};
+
   bwOptions = (typeof bwOptions === 'object') ?
     bwOptions : {};
 
-  // set audio bandwidth
-  bwOptions.audio = (typeof bwOptions.audio === 'number') ?
-    bwOptions.audio : 50;
-  // set video bandwidth
-  bwOptions.video = (typeof bwOptions.video === 'number') ?
-    bwOptions.video : 256;
-  // set data bandwidth
-  bwOptions.data = (typeof bwOptions.data === 'number') ?
-    bwOptions.data : 1638400;
+  // Configure the audio bandwidth. Recommended = 50
+  if (typeof bwOptions.audio === 'number') {
+    this._streamSettings.bandwidth.audio = bwOptions.audio;
+  }
 
-  // set the settings
-  this._streamSettings.bandwidth = bwOptions;
+  // Configure the video bandwidth. Recommended = 256
+  if (typeof bwOptions.video === 'number') {
+    this._streamSettings.bandwidth.video = bwOptions.video;
+  }
+
+  // Configure the data bandwidth. Recommended = 1638400
+  if (typeof bwOptions.data === 'number') {
+    this._streamSettings.bandwidth.data = bwOptions.data;
+  }
 };
 
 /**
@@ -22117,20 +22219,18 @@ Skylink.prototype._parseDefaultMediaStreamSettings = function(options) {
  *   Stream streaming video resolution height.
  * @param {Number} [options.video.frameRate=50] The self
  *   Stream streaming video maximum frameRate.
- * @param {JSON} [options.bandwidth] The self
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in <var>kb/s</var>.
- * @param {Number} [options.bandwidth.audio] The configured
- *   audio stream channel for the self Stream object bandwidth
- *   that audio streaming should use in <var>kb/s</var>.
- * @param {Number} [options.bandwidth.video] The configured
- *   video stream channel for the self Stream object bandwidth
- *   that video streaming should use in <var>kb/s</var>.
- * @param {Number} [options.bandwidth.data] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+ * @param {String} [options.bandwidth] The configuration for
+ *   the maximum sending bandwidth. Setting the flags may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [options.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @private
  * @component Stream
  * @for Skylink
@@ -22192,37 +22292,45 @@ Skylink.prototype._addLocalMediaStreams = function(peerId) {
 
     if (pc) {
       if (pc.signalingState !== this.PEER_CONNECTION_STATE.CLOSED) {
-        var hasStream = false;
-        var hasScreen = false;
+        // Updates the streams accordingly
+        var updateStreamFn = function (updatedStream) {
+          var hasStream = false;
 
-        // remove streams
-        var streams = pc.getLocalStreams();
-        for (var i = 0; i < streams.length; i++) {
-          // try removeStream
-          pc.removeStream(streams[i]);
-        }
+          // remove streams
+          var streams = pc.getLocalStreams();
+          for (var i = 0; i < streams.length; i++) {
+            if (updatedStream !== null && streams[i].id === updatedStream.id) {
+              hasStream = true;
+              continue;
+            }
+            // try removeStream
+            pc.removeStream(streams[i]);
+          }
 
-        if (this._mediaStream && this._mediaStream !== null) {
-          hasStream = true;
-        }
+          if (updatedStream !== null && !hasStream) {
+            pc.addStream(updatedStream);
+          }
+        };
 
         if (this._mediaScreen && this._mediaScreen !== null) {
-          hasScreen = true;
-        }
-
-        if (hasScreen) {
           log.debug([peerId, 'MediaStream', null, 'Sending screen'], this._mediaScreen);
-          pc.addStream(this._mediaScreen);
-        } else if (hasStream) {
+
+          updateStreamFn(this._mediaScreen);
+
+        } else if (this._mediaStream && this._mediaStream !== null) {
           log.debug([peerId, 'MediaStream', null, 'Sending stream'], this._mediaStream);
-          pc.addStream(this._mediaStream);
+
+          updateStreamFn(this._mediaStream);
+
         } else {
           log.warn([peerId, 'MediaStream', null, 'No media to send. Will be only receiving']);
+
+          updateStreamFn(null);
         }
 
       } else {
-        log.warn([peerId, 'MediaStream', this._mediaStream,
-          'Not adding stream as signalingState is closed']);
+        log.warn([peerId, 'MediaStream', null,
+          'Not adding any stream as signalingState is closed']);
       }
     } else {
       log.warn([peerId, 'MediaStream', this._mediaStream,
@@ -22513,20 +22621,18 @@ Skylink.prototype._stopLocalMediaStreams = function (options) {
  *   Stream streaming video resolution height.
  * @param {Number} [options.video.frameRate=50] The self
  *   Stream streaming video maximum frameRate.
- * @param {String} [options.bandwidth] The self
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in <var>kb/s</var>.
- * @param {String} [options.bandwidth.audio] The configured
- *   audio stream channel for the self Stream object bandwidth
- *   that audio streaming should use in <var>kb/s</var>.
- * @param {String} [options.bandwidth.video] The configured
- *   video stream channel for the self Stream object bandwidth
- *   that video streaming should use in <var>kb/s</var>.
- * @param {String} [options.bandwidth.data] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in <var>kb/s</var>.
+ * @param {String} [options.bandwidth] The configuration for
+ *   the maximum sending bandwidth. Setting the flags may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [options.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @trigger mediaAccessSuccess, mediaAccessError, mediaAccessRequired
  * @private
  * @component Stream
@@ -23658,52 +23764,76 @@ Skylink.prototype._setSDPVideoResolution = function(sdpLines){
 Skylink.prototype._setSDPBitrate = function(sdpLines, settings) {
   // Find if user has audioStream
   var bandwidth = this._streamSettings.bandwidth;
-  var hasAudio = !!(settings || {}).audio;
-  var hasVideo = !!(settings || {}).video;
 
-  var i, j, k;
+  // Prevent setting of bandwidth audio if not configured
+  if (typeof bandwidth.audio === 'number' && bandwidth.audio > 0) {
+    var hasSetAudio = false;
 
-  var audioIndex = 0;
-  var videoIndex = 0;
-  var dataIndex = 0;
+    for (var i = 0; i < sdpLines.length; i += 1) {
+      // set the audio bandwidth
+      if (sdpLines[i].indexOf('m=audio') === 0) {
+      //if (sdpLines[i].indexOf('a=audio') === 0 || sdpLines[i].indexOf('m=audio') === 0) {
+        sdpLines.splice(i + 1, 0, 'b=AS:' + bandwidth.audio);
 
-  var audioLineFound = false;
-  var videoLineFound = false;
-  var dataLineFound = false;
-
-  for (i = 0; i < sdpLines.length; i += 1) {
-    // set the audio bandwidth
-    if (sdpLines[i].indexOf('a=audio') === 0 || sdpLines[i].indexOf('m=audio') === 0) {
-
-      sdpLines.splice(i + 1, 0, 'b=AS:' + bandwidth.audio);
-
-      log.debug([null, 'SDP', null, 'Setting audio bitrate (' +
-        bandwidth.audio + ')'], i);
-      break;
+        log.info([null, 'SDP', null, 'Setting maximum sending audio bandwidth bitrate @(index:' + i + ') -> '], bandwidth.audio);
+        hasSetAudio = true;
+        break;
+      }
     }
+
+    if (!hasSetAudio) {
+      log.warn([null, 'SDP', null, 'Not setting maximum sending audio bandwidth bitrate as m=audio line is not found']);
+    }
+  } else {
+    log.warn([null, 'SDP', null, 'Not setting maximum sending audio bandwidth bitrate and leaving to browser\'s defaults']);
   }
 
-  for (j = 0; j < sdpLines.length; j += 1) {
-    // set the video bandwidth
-    if (sdpLines[j].indexOf('a=video') === 0 || sdpLines[j].indexOf('m=video') === 0) {
-      sdpLines.splice(j + 1, 0, 'b=AS:' + bandwidth.video);
+  // Prevent setting of bandwidth video if not configured
+  if (typeof bandwidth.video === 'number' && bandwidth.video > 0) {
+    var hasSetVideo = false;
 
-      log.debug([null, 'SDP', null, 'Setting video bitrate (' +
-        bandwidth.video + ')'], j);
-      break;
+    for (var j = 0; j < sdpLines.length; j += 1) {
+      // set the video bandwidth
+      if (sdpLines[j].indexOf('m=video') === 0) {
+      //if (sdpLines[j].indexOf('a=video') === 0 || sdpLines[j].indexOf('m=video') === 0) {
+        sdpLines.splice(j + 1, 0, 'b=AS:' + bandwidth.video);
+
+        log.info([null, 'SDP', null, 'Setting maximum sending video bandwidth bitrate @(index:' + j + ') -> '], bandwidth.video);
+        hasSetVideo = true;
+        break;
+      }
     }
+
+    if (!hasSetVideo) {
+      log.warn([null, 'SDP', null, 'Not setting maximum sending video bandwidth bitrate as m=video line is not found']);
+    }
+  } else {
+    log.warn([null, 'SDP', null, 'Not setting maximum sending video bandwidth bitrate and leaving to browser\'s defaults']);
   }
 
-  for (k = 0; k < sdpLines.length; k += 1) {
-    // set the data bandwidth
-    if (sdpLines[k].indexOf('a=application') === 0 || sdpLines[k].indexOf('m=application') === 0) {
-      sdpLines.splice(k + 1, 0, 'b=AS:' + bandwidth.data);
+  // Prevent setting of bandwidth data if not configured
+  if (typeof bandwidth.data === 'number' && bandwidth.data > 0) {
+    var hasSetData = false;
 
-      log.debug([null, 'SDP', null, 'Setting data bitrate (' +
-        bandwidth.data + ')'], k);
-      break;
+    for (var k = 0; k < sdpLines.length; k += 1) {
+      // set the data bandwidth
+      if (sdpLines[k].indexOf('m=application') === 0) {
+      //if (sdpLines[k].indexOf('a=application') === 0 || sdpLines[k].indexOf('m=application') === 0) {
+        sdpLines.splice(k + 1, 0, 'b=AS:' + bandwidth.data);
+
+        log.info([null, 'SDP', null, 'Setting maximum sending data bandwidth bitrate @(index:' + k + ') -> '], bandwidth.data);
+        hasSetData = true;
+        break;
+      }
     }
+
+    if (!hasSetData) {
+      log.warn([null, 'SDP', null, 'Not setting maximum sending data bandwidth bitrate as m=application line is not found']);
+    }
+  } else {
+    log.warn([null, 'SDP', null, 'Not setting maximum sending data bandwidth bitrate and leaving to browser\'s defaults']);
   }
+
   return sdpLines;
 };
 

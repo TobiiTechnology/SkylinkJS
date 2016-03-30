@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>SkylinkJS 0.6.10-tobii.7</title>
+    <title>SkylinkJS 0.6.11-tobii.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- font and icon -->
     <link rel="shortcut icon" type="image/ico" href="../assets/favicon.ico">
     <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
@@ -32,12 +33,19 @@
           <span class="icon-bar"></span>
         </button>
         <a href="" class="navbar-brand">
-          <img src="../assets/img/logo.svg" />JS<small>Version: 0.6.10-tobii.7</small>
+          <img src="../assets/img/logo.svg" />JS<small>Version: 0.6.11-tobii.1</small>
         </a>
       </div>
       <div id="navbar" class="navbar-collapse collapse">
         <ul id="api-list" class="nav navbar-nav navbar-right">
-  <li><a href="https://temasys.github.io">Getting Started</a></li>
+  <li class="dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Getting Started Examples <span class="caret"></span></a>
+    <ul class="dropdown-menu" role="menu">
+      <li><a href="https://temasys.com.sg/getting-started-with-webrtc-and-skylinkjs/">Setting up a Video Call</a></li>
+      <li><a href="https://temasys.com.sg/screensharing-with-skylinkjs/">Setting up Screensharing</a></li>
+      <li><a href="https://temasys.com.sg/building-a-simple-peer-to-peer-webrtc-chat/">Setting up a Chatroom</a></li>
+    </ul>
+  </li>
   
     <li><a href="../classes/Skylink.html">Documentation</a></li>
   
@@ -255,20 +263,18 @@ Skylink.prototype._inRoom = false;
  *   Stream streaming video resolution height.
  * @param {Number} [options.video.frameRate=50] The self
  *   Stream streaming video maximum frameRate.
- * @param {String} [options.bandwidth] The self
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in &lt;var&gt;kb/s&lt;/var&gt;.
- * @param {String} [options.bandwidth.audio=50] The configured
- *   audio stream channel for the self Stream object bandwidth
- *   that audio streaming should use in &lt;var&gt;kb/s&lt;/var&gt;.
- * @param {String} [options.bandwidth.video=256] The configured
- *   video stream channel for the self Stream object bandwidth
- *   that video streaming should use in &lt;var&gt;kb/s&lt;/var&gt;.
- * @param {String} [options.bandwidth.data=1638400] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in &lt;var&gt;kb/s&lt;/var&gt;.
+ * @param {String} [options.bandwidth] The configuration for
+ *   the maximum sending bandwidth. Setting the flags may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [options.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in &lt;var&gt;kb/s&lt;/var&gt;. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in &lt;var&gt;kb/s&lt;/var&gt;. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in &lt;var&gt;kb/s&lt;/var&gt;. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @param {Boolean} [options.manualGetUserMedia] The flag that indicates if
  *   &lt;code&gt;joinRoom()&lt;/code&gt; should not invoke
  *   {{#crossLink &quot;Skylink/getUserMedia:method&quot;}}getUserMedia(){{/crossLink}}
@@ -334,20 +340,18 @@ Skylink.prototype._inRoom = false;
  * @param {Boolean} [callback.success.peerInfo.video.screenshare=false] The flag
  *   that indicates if the self connection Stream object sent
  *   is a screensharing stream or not.
- * @param {String} [callback.success.peerInfo.bandwidth] The self
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in &lt;var&gt;kb/s&lt;/var&gt;.
- * @param {String} [callback.success.peerInfo.bandwidth.audio=50] The configured
- *   audio stream channel for the self Stream object bandwidth
- *   that audio streaming should use in &lt;var&gt;kb/s&lt;/var&gt;.
- * @param {String} [callback.success.peerInfo.bandwidth.video=256] The configured
- *   video stream channel for the self Stream object bandwidth
- *   that video streaming should use in &lt;var&gt;kb/s&lt;/var&gt;.
- * @param {String} [callback.success.peerInfo.bandwidth.data=1638400] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in &lt;var&gt;kb/s&lt;/var&gt;.
+ * @param {String} [callback.success.peerInfo.bandwidth] The configuration for
+ *   the maximum sending bandwidth. Setting the flags may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [callback.success.peerInfo.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in &lt;var&gt;kb/s&lt;/var&gt;. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [callback.success.peerInfo.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in &lt;var&gt;kb/s&lt;/var&gt;. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [callback.success.peerInfo.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in &lt;var&gt;kb/s&lt;/var&gt;. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @param {JSON} callback.success.peerInfo.mediaStatus The self Stream mute
  *   settings for both audio and video streamings.
  * @param {Boolean} [callback.success.peerInfo.mediaStatus.audioMuted=true] The flag that
@@ -576,7 +580,8 @@ Skylink.prototype.joinRoom = function(room, mediaOptions, callback) {
         start: self._room.startDateTime,
         len: self._room.duration,
         isPrivileged: self._isPrivileged === true, // Default to false if undefined
-        autoIntroduce: self._autoIntroduce!== false // Default to true if undefined
+        autoIntroduce: self._autoIntroduce!== false, // Default to true if undefined
+        key: self._appKey
       });
     }
   };
@@ -683,20 +688,18 @@ Skylink.prototype.joinRoom = function(room, mediaOptions, callback) {
  *   Stream streaming video resolution height.
  * @param {Number} [options.video.frameRate=50] The self
  *   Stream streaming video maximum frameRate.
- * @param {String} [options.bandwidth] The self
- *   streaming bandwidth settings. Setting the bandwidth flags may not
- *   force set the bandwidth for each connection stream channels as it depends
- *   on how the browser handles the bandwidth bitrate. Values are configured
- *   in &lt;var&gt;kb/s&lt;/var&gt;.
- * @param {String} [options.bandwidth.audio=50] The configured
- *   audio stream channel for the self Stream object bandwidth
- *   that audio streaming should use in &lt;var&gt;kb/s&lt;/var&gt;.
- * @param {String} [options.bandwidth.video=256] The configured
- *   video stream channel for the self Stream object bandwidth
- *   that video streaming should use in &lt;var&gt;kb/s&lt;/var&gt;.
- * @param {String} [options.bandwidth.data=1638400] The configured
- *   datachannel channel for the DataChannel connection bandwidth
- *   that datachannel connection per packet should be able use in &lt;var&gt;kb/s&lt;/var&gt;.
+ * @param {String} [options.bandwidth] The configuration for
+ *   the maximum sending bandwidth. Setting the flags may or may not work depending
+ *   on the browser implementations and how it handles it.
+ * @param {String} [options.bandwidth.audio] The maximum
+ *   sending audio bandwidth bitrate in &lt;var&gt;kb/s&lt;/var&gt;. If this is not provided,
+ *   it will leave the audio bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.video] The maximum
+ *   sending video bandwidth bitrate in &lt;var&gt;kb/s&lt;/var&gt;. If this is not provided,
+ *   it will leave the video bitrate to the browser defaults.
+ * @param {String} [options.bandwidth.data] The maximum
+ *   sending data bandwidth bitrate in &lt;var&gt;kb/s&lt;/var&gt;. If this is not provided,
+ *   it will leave the data bitrate to the browser defaults.
  * @param {Boolean} [options.manualGetUserMedia] The flag that indicates if
  *   &lt;code&gt;joinRoom()&lt;/code&gt; should not invoke
  *   {{#crossLink &quot;Skylink/getUserMedia:method&quot;}}getUserMedia(){{/crossLink}}

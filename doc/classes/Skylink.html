@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>SkylinkJS 0.6.10-tobii.7</title>
+    <title>SkylinkJS 0.6.11-tobii.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- font and icon -->
     <link rel="shortcut icon" type="image/ico" href="../assets/favicon.ico">
     <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
@@ -32,12 +33,19 @@
           <span class="icon-bar"></span>
         </button>
         <a href="" class="navbar-brand">
-          <img src="../assets/img/logo.svg" />JS<small>Version: 0.6.10-tobii.7</small>
+          <img src="../assets/img/logo.svg" />JS<small>Version: 0.6.11-tobii.1</small>
         </a>
       </div>
       <div id="navbar" class="navbar-collapse collapse">
         <ul id="api-list" class="nav navbar-nav navbar-right">
-  <li><a href="https://temasys.github.io">Getting Started</a></li>
+  <li class="dropdown">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Getting Started Examples <span class="caret"></span></a>
+    <ul class="dropdown-menu" role="menu">
+      <li><a href="https://temasys.com.sg/getting-started-with-webrtc-and-skylinkjs/">Setting up a Video Call</a></li>
+      <li><a href="https://temasys.com.sg/screensharing-with-skylinkjs/">Setting up Screensharing</a></li>
+      <li><a href="https://temasys.com.sg/building-a-simple-peer-to-peer-webrtc-chat/">Setting up a Chatroom</a></li>
+    </ul>
+  </li>
   
     <li><a href="../classes/Skylink.html">Documentation</a></li>
   
@@ -1631,14 +1639,6 @@ that uses Skylink Web SDK at <a href="http://getaroom.io/">getaroom.io</a>.</p>
                     </span>
                   </a>
                 
-                  <a href="#attr__parentKey" class="list-group-item code-menu-item  private-attr-item ">
-                    &nbsp;&nbsp;_parentKey
-                    <span class="settings">
-                      
-                      
-                    </span>
-                  </a>
-                
                   <a href="#attr__path" class="list-group-item code-menu-item  private-attr-item ">
                     &nbsp;&nbsp;_path
                     <span class="settings">
@@ -2476,6 +2476,14 @@ that uses Skylink Web SDK at <a href="http://getaroom.io/">getaroom.io</a>.</p>
                     </span>
                   </a>
                 
+                  <a href="#event_sessionDisconnect" class="list-group-item code-menu-item event-item ">
+                    &nbsp;&nbsp;sessionDisconnect
+                    <span class="settings">
+                      
+                      
+                    </span>
+                  </a>
+                
                   <a href="#event_socketError" class="list-group-item code-menu-item event-item ">
                     &nbsp;&nbsp;socketError
                     <span class="settings">
@@ -3161,7 +3169,7 @@ that uses Skylink Web SDK at <a href="http://getaroom.io/">getaroom.io</a>.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1029"><code>source\stream-media.js:1029</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1018"><code>source\stream-media.js:1018</code></a>
       </small>
     
 
@@ -3550,7 +3558,7 @@ If self does not have any Stream object to send, it will a connection without
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-sdp.js.html#l355"><code>source\stream-sdp.js:355</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-sdp.js.html#l379"><code>source\stream-sdp.js:379</code></a>
       </small>
     
 
@@ -3812,7 +3820,7 @@ If self does not have any Stream object to send, it will a connection without
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l1400"><code>source\socket-message.js:1400</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l1408"><code>source\socket-message.js:1408</code></a>
       </small>
     
 
@@ -4946,7 +4954,7 @@ If self does not have any Stream object to send, it will a connection without
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l1303"><code>source\socket-message.js:1303</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l1311"><code>source\socket-message.js:1311</code></a>
       </small>
     
 
@@ -5728,7 +5736,7 @@ If provided dataURL binary string (base64)
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-channel.js.html#l566"><code>source\socket-channel.js:566</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-channel.js.html#l571"><code>source\socket-channel.js:571</code></a>
       </small>
     
 
@@ -5970,7 +5978,7 @@ If provided dataURL binary string (base64)
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1480"><code>source\skylink-events.js:1480</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1539"><code>source\skylink-events.js:1539</code></a>
       </small>
     
 
@@ -6970,7 +6978,7 @@ In this handler, it actually handles and manipulates the received data transfer 
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-handshake.js.html#l257"><code>source\peer-handshake.js:257</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-handshake.js.html#l247"><code>source\peer-handshake.js:247</code></a>
       </small>
     
 
@@ -7561,11 +7569,9 @@ The offerer status may be shifted to the other peer depending on
 
                             <div class="param-description">
                               
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -7578,9 +7584,9 @@ The offerer status may be shifted to the other peer depending on
 
                             <div class="param-description">
                               
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -7593,9 +7599,9 @@ The offerer status may be shifted to the other peer depending on
 
                             <div class="param-description">
                               
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -7608,9 +7614,9 @@ The offerer status may be shifted to the other peer depending on
 
                             <div class="param-description">
                               
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -8190,7 +8196,7 @@ The offerer status may be shifted to the other peer depending on
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-init.js.html#l789"><code>source\room-init.js:789</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-init.js.html#l788"><code>source\room-init.js:788</code></a>
       </small>
     
 
@@ -8718,7 +8724,7 @@ The offerer status may be shifted to the other peer depending on
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-init.js.html#l694"><code>source\room-init.js:694</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-init.js.html#l693"><code>source\room-init.js:693</code></a>
       </small>
     
 
@@ -9436,7 +9442,7 @@ The offerer status may be shifted to the other peer depending on
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1118"><code>source\stream-media.js:1118</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1115"><code>source\stream-media.js:1115</code></a>
       </small>
     
 
@@ -9727,7 +9733,7 @@ The offerer status may be shifted to the other peer depending on
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l1238"><code>source\socket-message.js:1238</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l1232"><code>source\socket-message.js:1232</code></a>
       </small>
     
 
@@ -10260,7 +10266,7 @@ This is mainly to prevent JShint errors.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l597"><code>source\stream-media.js:597</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l584"><code>source\stream-media.js:584</code></a>
       </small>
     
 
@@ -10417,7 +10423,7 @@ This is mainly to prevent JShint errors.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l541"><code>source\stream-media.js:541</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l528"><code>source\stream-media.js:528</code></a>
       </small>
     
 
@@ -10569,7 +10575,7 @@ This is mainly to prevent JShint errors.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l431"><code>source\stream-media.js:431</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l418"><code>source\stream-media.js:418</code></a>
       </small>
     
 
@@ -10690,7 +10696,7 @@ This is mainly to prevent JShint errors.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-channel.js.html#l519"><code>source\socket-channel.js:519</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-channel.js.html#l524"><code>source\socket-channel.js:524</code></a>
       </small>
     
 
@@ -10785,7 +10791,7 @@ Once URI is formed, it will start a new socket.io connection with
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l644"><code>source\stream-media.js:644</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l631"><code>source\stream-media.js:631</code></a>
       </small>
     
 
@@ -10954,7 +10960,7 @@ Once URI is formed, it will start a new socket.io connection with
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l804"><code>source\stream-media.js:804</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l791"><code>source\stream-media.js:791</code></a>
       </small>
     
 
@@ -11124,7 +11130,7 @@ Once URI is formed, it will start a new socket.io connection with
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l912"><code>source\stream-media.js:912</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l903"><code>source\stream-media.js:903</code></a>
       </small>
     
 
@@ -11737,7 +11743,7 @@ Once URI is formed, it will start a new socket.io connection with
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l946"><code>source\stream-media.js:946</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l937"><code>source\stream-media.js:937</code></a>
       </small>
     
 
@@ -11934,18 +11940,16 @@ Once URI is formed, it will start a new socket.io connection with
                 
                   <li class="param">
                     <code class="param-name">bandwidth</code>
-                    <span class="type"><b>{</b>JSON<b>}</b></span>
+                    <span class="type"><b>{</b>String<b>}</b></span>
 
                     <span class="label">Optional</span>
                     
 
                     <div class="param-description">
                       
-                      <p>The self
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.</p>
+                      <p>The configuration for
+  the maximum sending bandwidth. Setting the flags may or may not work depending
+  on the browser implementations and how it handles it.</p>
 
                     </div>
 
@@ -11954,46 +11958,46 @@ Once URI is formed, it will start a new socket.io connection with
                         
                           <li class="param">
                             <code class="param-name">audio</code>
-                            <span class="type"><b>{</b>Number<b>}</b></span>
+                            <span class="type"><b>{</b>String<b>}</b></span>
 
                             <span class="label">Optional</span>
                             
 
                             <div class="param-description">
                               
-                              The configured
-  audio stream channel for the self Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
                           <li class="param">
                             <code class="param-name">video</code>
-                            <span class="type"><b>{</b>Number<b>}</b></span>
+                            <span class="type"><b>{</b>String<b>}</b></span>
 
                             <span class="label">Optional</span>
                             
 
                             <div class="param-description">
                               
-                              The configured
-  video stream channel for the self Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
                           <li class="param">
                             <code class="param-name">data</code>
-                            <span class="type"><b>{</b>Number<b>}</b></span>
+                            <span class="type"><b>{</b>String<b>}</b></span>
 
                             <span class="label">Optional</span>
                             
 
                             <div class="param-description">
                               
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -12076,7 +12080,7 @@ Once URI is formed, it will start a new socket.io connection with
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l844"><code>source\stream-media.js:844</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l835"><code>source\stream-media.js:835</code></a>
       </small>
     
 
@@ -12384,7 +12388,7 @@ Once URI is formed, it will start a new socket.io connection with
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l183"><code>source\peer-data.js:183</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l181"><code>source\peer-data.js:181</code></a>
       </small>
     
 
@@ -12493,7 +12497,7 @@ Once URI is formed, it will start a new socket.io connection with
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l703"><code>source\stream-media.js:703</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l690"><code>source\stream-media.js:690</code></a>
       </small>
     
 
@@ -13922,7 +13926,7 @@ If the message is not <code>GROUP</code> type of message received, it will send
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-sdp.js.html#l333"><code>source\stream-sdp.js:333</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-sdp.js.html#l357"><code>source\stream-sdp.js:357</code></a>
       </small>
     
 
@@ -14617,7 +14621,7 @@ If the message is not <code>GROUP</code> type of message received, it will send
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l834"><code>source\socket-message.js:834</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l832"><code>source\socket-message.js:832</code></a>
       </small>
     
 
@@ -14924,11 +14928,9 @@ If the message is not <code>GROUP</code> type of message received, it will send
 
                             <div class="param-description">
                               
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -14941,9 +14943,9 @@ If the message is not <code>GROUP</code> type of message received, it will send
 
                             <div class="param-description">
                               
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -14956,9 +14958,9 @@ If the message is not <code>GROUP</code> type of message received, it will send
 
                             <div class="param-description">
                               
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -14971,9 +14973,9 @@ If the message is not <code>GROUP</code> type of message received, it will send
 
                             <div class="param-description">
                               
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -15269,7 +15271,7 @@ If the message is not <code>GROUP</code> type of message received, it will send
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-connection.js.html#l797"><code>source\peer-connection.js:797</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-connection.js.html#l799"><code>source\peer-connection.js:799</code></a>
       </small>
     
 
@@ -16846,7 +16848,7 @@ The current supported data type is <code>string</code>. <code>Blob</code>,
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-handshake.js.html#l411"><code>source\peer-handshake.js:411</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-handshake.js.html#l410"><code>source\peer-handshake.js:410</code></a>
       </small>
     
 
@@ -16981,7 +16983,7 @@ The current supported data type is <code>string</code>. <code>Blob</code>,
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-sdp.js.html#l276"><code>source\stream-sdp.js:276</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-sdp.js.html#l300"><code>source\stream-sdp.js:300</code></a>
       </small>
     
 
@@ -17232,7 +17234,7 @@ Setting the bandwidth flags may not
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-sdp.js.html#l218"><code>source\stream-sdp.js:218</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-sdp.js.html#l242"><code>source\stream-sdp.js:242</code></a>
       </small>
     
 
@@ -18182,7 +18184,7 @@ Setting the bandwidth flags may not
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-handshake.js.html#l291"><code>source\peer-handshake.js:291</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-handshake.js.html#l290"><code>source\peer-handshake.js:290</code></a>
       </small>
     
 
@@ -18315,7 +18317,7 @@ This sets the timeout object associated with the Peer into
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1230"><code>source\stream-media.js:1230</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1227"><code>source\stream-media.js:1227</code></a>
       </small>
     
 
@@ -18464,7 +18466,7 @@ This sets the timeout object associated with the Peer into
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-handshake.js.html#l384"><code>source\peer-handshake.js:384</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-handshake.js.html#l383"><code>source\peer-handshake.js:383</code></a>
       </small>
     
 
@@ -18798,7 +18800,7 @@ This sets the timeout object associated with the Peer into
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1581"><code>source\skylink-events.js:1581</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1640"><code>source\skylink-events.js:1640</code></a>
       </small>
     
 
@@ -18937,7 +18939,7 @@ This sets the timeout object associated with the Peer into
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1298"><code>source\skylink-events.js:1298</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1357"><code>source\skylink-events.js:1357</code></a>
       </small>
     
 
@@ -19243,7 +19245,7 @@ This sets the timeout object associated with the Peer into
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1531"><code>source\skylink-events.js:1531</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1590"><code>source\skylink-events.js:1590</code></a>
       </small>
     
 
@@ -19400,7 +19402,7 @@ This utilises <code>setInterval()</code> function.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1330"><code>source\stream-media.js:1330</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1327"><code>source\stream-media.js:1327</code></a>
       </small>
     
 
@@ -19689,11 +19691,9 @@ This will stop any currently attached Stream object to Skylink.</p>
 
                     <div class="param-description">
                       
-                      <p>The self
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.</p>
+                      <p>The configuration for
+  the maximum sending bandwidth. Setting the flags may or may not work depending
+  on the browser implementations and how it handles it.</p>
 
                     </div>
 
@@ -19709,9 +19709,9 @@ This will stop any currently attached Stream object to Skylink.</p>
 
                             <div class="param-description">
                               
-                              The configured
-  audio stream channel for the self Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -19724,9 +19724,9 @@ This will stop any currently attached Stream object to Skylink.</p>
 
                             <div class="param-description">
                               
-                              The configured
-  video stream channel for the self Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -19739,9 +19739,9 @@ This will stop any currently attached Stream object to Skylink.</p>
 
                             <div class="param-description">
                               
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -19824,7 +19824,7 @@ This will stop any currently attached Stream object to Skylink.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-connection.js.html#l563"><code>source\room-connection.js:563</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-connection.js.html#l560"><code>source\room-connection.js:560</code></a>
       </small>
     
 
@@ -20053,11 +20053,9 @@ This will stop any currently attached Stream object to Skylink.</p>
 
                     <div class="param-description">
                       
-                      <p>The self
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.</p>
+                      <p>The configuration for
+  the maximum sending bandwidth. Setting the flags may or may not work depending
+  on the browser implementations and how it handles it.</p>
 
                     </div>
 
@@ -20072,10 +20070,10 @@ This will stop any currently attached Stream object to Skylink.</p>
                             
 
                             <div class="param-description">
-                              <small class="default"><span>DEFAULT: </span>50</small>
-                              The configured
-  audio stream channel for the self Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -20087,10 +20085,10 @@ This will stop any currently attached Stream object to Skylink.</p>
                             
 
                             <div class="param-description">
-                              <small class="default"><span>DEFAULT: </span>256</small>
-                              The configured
-  video stream channel for the self Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -20102,10 +20100,10 @@ This will stop any currently attached Stream object to Skylink.</p>
                             
 
                             <div class="param-description">
-                              <small class="default"><span>DEFAULT: </span>1638400</small>
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -20245,7 +20243,7 @@ This will stop any currently attached Stream object to Skylink.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l1038"><code>source\socket-message.js:1038</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l1034"><code>source\socket-message.js:1034</code></a>
       </small>
     
 
@@ -20565,11 +20563,9 @@ This will stop any currently attached Stream object to Skylink.</p>
 
                     <div class="param-description">
                       
-                      <p>The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.</p>
+                      <p>The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.</p>
 
                     </div>
 
@@ -20585,9 +20581,9 @@ This will stop any currently attached Stream object to Skylink.</p>
 
                     <div class="param-description">
                       
-                      <p>The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.</p>
+                      <p>The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.</p>
 
                     </div>
 
@@ -20603,9 +20599,9 @@ This will stop any currently attached Stream object to Skylink.</p>
 
                     <div class="param-description">
                       
-                      <p>The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.</p>
+                      <p>The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.</p>
 
                     </div>
 
@@ -20621,9 +20617,9 @@ This will stop any currently attached Stream object to Skylink.</p>
 
                     <div class="param-description">
                       
-                      <p>The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.</p>
+                      <p>The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.</p>
 
                     </div>
 
@@ -21612,7 +21608,7 @@ This will stop any currently attached Stream object to Skylink.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2055"><code>source\stream-media.js:2055</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2050"><code>source\stream-media.js:2050</code></a>
       </small>
     
 
@@ -21698,7 +21694,7 @@ This will stop any currently attached Stream object to Skylink.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2091"><code>source\stream-media.js:2091</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2086"><code>source\stream-media.js:2086</code></a>
       </small>
     
 
@@ -21788,7 +21784,7 @@ This will stop any currently attached Stream object to Skylink.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2037"><code>source\stream-media.js:2037</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2032"><code>source\stream-media.js:2032</code></a>
       </small>
     
 
@@ -21878,7 +21874,7 @@ This will stop any currently attached Stream object to Skylink.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2073"><code>source\stream-media.js:2073</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2068"><code>source\stream-media.js:2068</code></a>
       </small>
     
 
@@ -22069,7 +22065,7 @@ This will stop any currently attached Stream object to Skylink.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l199"><code>source\peer-data.js:199</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l197"><code>source\peer-data.js:197</code></a>
       </small>
     
 
@@ -22211,7 +22207,7 @@ If an invalid Peer ID is provided, or no Peer ID is provided,
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-privileged.js.html#l90"><code>source\peer-privileged.js:90</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-privileged.js.html#l77"><code>source\peer-privileged.js:77</code></a>
       </small>
     
 
@@ -22404,7 +22400,7 @@ This will only work if self is a privileged Peer.</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l152"><code>source\peer-data.js:152</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l150"><code>source\peer-data.js:150</code></a>
       </small>
     
 
@@ -22519,7 +22515,7 @@ You may set the current customer user data information for self in
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1467"><code>source\stream-media.js:1467</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1462"><code>source\stream-media.js:1462</code></a>
       </small>
     
 
@@ -22935,7 +22931,7 @@ Do not invoke this function when user has already joined a room as
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-init.js.html#l840"><code>source\room-init.js:840</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-init.js.html#l839"><code>source\room-init.js:839</code></a>
       </small>
     
 
@@ -23889,7 +23885,7 @@ This will configure TURN server connection using port <code>443</code> only and
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-privileged.js.html#l181"><code>source\peer-privileged.js:181</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-privileged.js.html#l163"><code>source\peer-privileged.js:163</code></a>
       </small>
     
 
@@ -24320,11 +24316,9 @@ If any existing user media streams attached in Skylink, like for an example, cal
 
                     <div class="param-description">
                       
-                      <p>The self
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.</p>
+                      <p>The configuration for
+  the maximum sending bandwidth. Setting the flags may or may not work depending
+  on the browser implementations and how it handles it.</p>
 
                     </div>
 
@@ -24339,10 +24333,10 @@ If any existing user media streams attached in Skylink, like for an example, cal
                             
 
                             <div class="param-description">
-                              <small class="default"><span>DEFAULT: </span>50</small>
-                              The configured
-  audio stream channel for the self Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -24354,10 +24348,10 @@ If any existing user media streams attached in Skylink, like for an example, cal
                             
 
                             <div class="param-description">
-                              <small class="default"><span>DEFAULT: </span>256</small>
-                              The configured
-  video stream channel for the self Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -24369,10 +24363,10 @@ If any existing user media streams attached in Skylink, like for an example, cal
                             
 
                             <div class="param-description">
-                              <small class="default"><span>DEFAULT: </span>1638400</small>
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -24702,11 +24696,9 @@ If any existing user media streams attached in Skylink, like for an example, cal
 
                             <div class="param-description">
                               
-                              The self
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The configuration for
+  the maximum sending bandwidth. Setting the flags may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -24718,10 +24710,10 @@ If any existing user media streams attached in Skylink, like for an example, cal
                             
 
                             <div class="param-description">
-                              <small class="default"><span>DEFAULT: </span>50</small>
-                              The configured
-  audio stream channel for the self Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -24733,10 +24725,10 @@ If any existing user media streams attached in Skylink, like for an example, cal
                             
 
                             <div class="param-description">
-                              <small class="default"><span>DEFAULT: </span>256</small>
-                              The configured
-  video stream channel for the self Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -24748,10 +24740,10 @@ If any existing user media streams attached in Skylink, like for an example, cal
                             
 
                             <div class="param-description">
-                              <small class="default"><span>DEFAULT: </span>1638400</small>
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -25013,7 +25005,7 @@ If any existing user media streams attached in Skylink, like for an example, cal
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-connection.js.html#l667"><code>source\room-connection.js:667</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-connection.js.html#l662"><code>source\room-connection.js:662</code></a>
       </small>
     
 
@@ -25264,7 +25256,7 @@ If any existing user media streams attached in Skylink, like for an example, cal
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-connection.js.html#l795"><code>source\room-connection.js:795</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-connection.js.html#l790"><code>source\room-connection.js:790</code></a>
       </small>
     
 
@@ -25360,7 +25352,7 @@ If any existing user media streams attached in Skylink, like for an example, cal
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1935"><code>source\stream-media.js:1935</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1930"><code>source\stream-media.js:1930</code></a>
       </small>
     
 
@@ -25529,7 +25521,7 @@ If any existing user media streams attached in Skylink, like for an example, cal
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1433"><code>source\skylink-events.js:1433</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1492"><code>source\skylink-events.js:1492</code></a>
       </small>
     
 
@@ -25669,7 +25661,7 @@ If any existing user media streams attached in Skylink, like for an example, cal
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1357"><code>source\skylink-events.js:1357</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1416"><code>source\skylink-events.js:1416</code></a>
       </small>
     
 
@@ -25820,7 +25812,7 @@ This event handler will always be triggered when the event name is triggered. If
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1384"><code>source\skylink-events.js:1384</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1443"><code>source\skylink-events.js:1443</code></a>
       </small>
     
 
@@ -26001,7 +25993,7 @@ This event handler will always be triggered when the event name is triggered. If
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-connection.js.html#l638"><code>source\peer-connection.js:638</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-connection.js.html#l640"><code>source\peer-connection.js:640</code></a>
       </small>
     
 
@@ -27054,7 +27046,7 @@ For Peers connecting from the Web platform, the DataChannel connection channel t
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l1482"><code>source\socket-message.js:1482</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_socket-message.js.html#l1504"><code>source\socket-message.js:1504</code></a>
       </small>
     
 
@@ -27356,7 +27348,7 @@ to send longer strings (for that instance base64 binary strings are long).</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1702"><code>source\stream-media.js:1702</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1697"><code>source\stream-media.js:1697</code></a>
       </small>
     
 
@@ -28666,7 +28658,7 @@ For Peers connecting from the Web platform, the DataChannel connection channel t
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l106"><code>source\peer-data.js:106</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l104"><code>source\peer-data.js:104</code></a>
       </small>
     
 
@@ -28805,7 +28797,7 @@ You may get the current customer user data information for self in
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2108"><code>source\stream-media.js:2108</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2103"><code>source\stream-media.js:2103</code></a>
       </small>
     
 
@@ -28997,7 +28989,7 @@ This does not replace the currently attached user media Stream object in Skylink
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2320"><code>source\stream-media.js:2320</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l2315"><code>source\stream-media.js:2315</code></a>
       </small>
     
 
@@ -29087,7 +29079,7 @@ Reference <a href="../classes/Skylink.html#method_refreshConnection" class="cros
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1102"><code>source\stream-media.js:1102</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l1099"><code>source\stream-media.js:1099</code></a>
       </small>
     
 
@@ -29173,7 +29165,7 @@ Reference <a href="../classes/Skylink.html#method_refreshConnection" class="cros
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-connection.js.html#l819"><code>source\room-connection.js:819</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_room-connection.js.html#l814"><code>source\room-connection.js:814</code></a>
       </small>
     
 
@@ -30584,7 +30576,7 @@ must be set as <code>true</code> to enable the storage of logs.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l416"><code>source\stream-media.js:416</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l403"><code>source\stream-media.js:403</code></a>
       </small>
     
 
@@ -31647,69 +31639,12 @@ If the value is not provided in <a href="../classes/Skylink.html#method_init" cl
             
 
             <div class="param-description">
-                <p>The default
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.</p>
+                <p>The configuration for
+  the maximum sending bandwidth. Setting the flags may or may not work depending
+  on the browser implementations and how it handles it. By default, this is empty.</p>
 
             </div>
 
-            
-              <ul class="params-list">
-                
-                  <li class="param">
-                    <code class="param-name">audio</code>
-                    <span class="type"><b>{</b>String<b>}</b></span>
-
-                    <span class="label">Optional</span>
-                    
-
-                    <div class="param-description">
-                      <p>The default
-  audio stream channel for self Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.</p>
-
-                    </div>
-
-                    
-                  </li>
-                
-                  <li class="param">
-                    <code class="param-name">video</code>
-                    <span class="type"><b>{</b>String<b>}</b></span>
-
-                    <span class="label">Optional</span>
-                    
-
-                    <div class="param-description">
-                      <p>The default
-  video stream channel for self Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.</p>
-
-                    </div>
-
-                    
-                  </li>
-                
-                  <li class="param">
-                    <code class="param-name">data</code>
-                    <span class="type"><b>{</b>String<b>}</b></span>
-
-                    <span class="label">Optional</span>
-                    
-
-                    <div class="param-description">
-                      <p>The default
-  datachannel channel for self DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.</p>
-
-                    </div>
-
-                    
-                  </li>
-                
-              </ul>
             
           </li>
       
@@ -33097,7 +33032,7 @@ This will configure TURN server connection using port <code>443</code> only and
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l365"><code>source\stream-media.js:365</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l352"><code>source\stream-media.js:352</code></a>
       </small>
     
 
@@ -34415,7 +34350,7 @@ The current <a href="../classes/Skylink.html#attr__mediaScreen" class="crosslink
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l397"><code>source\stream-media.js:397</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l384"><code>source\stream-media.js:384</code></a>
       </small>
     
 
@@ -34617,7 +34552,7 @@ Limitations is different for Firefox as tested in some PCs (linux predominantly)
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1261"><code>source\skylink-events.js:1261</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1320"><code>source\skylink-events.js:1320</code></a>
       </small>
     
 
@@ -34684,86 +34619,6 @@ Limitations is different for Firefox as tested in some PCs (linux predominantly)
       
       </ul>
     </div>
-  
-
-  
-
-  
-  <hr>
-</div>
-            
-              <div id="attr__parentKey" class="code-item attr item private-attr-item ">
-  <a name="config__parentKey"></a> 
-  <h3 class="code-item-name"><code>_parentKey</code></h3>
-  <span class="code-item-type"><i>Attribute Type</i>: <b>{</b>String<b>}</b></span>
-
-  <div class="code-item-properties">
-    <div class="properties-wrapper">
-      
-
-      
-
-      
-
-      
-
-      
-        <span class="label label-default" title="This attribute is private.">private</span>
-      
-
-      
-
-      
-
-      
-
-      
-
-      
-
-      
-
-      
-
-      
-    </div>
-
-    <div class="code-item-information">
-      
-        
-          
-        
-      
-      
-      
-    </div>
-
-    
-      <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-privileged.js.html#l65"><code>source\peer-privileged.js:65</code></a>
-      </small>
-    
-
-    
-      <small><i class="fa">&nbsp;&nbsp;&nbsp;</i>&nbsp;&nbsp;Available since <span class="badge">0.6.1</span></small>
-    
-  </div>
-
-  <div class="code-item-description">
-    <p>Parent key in case the current key is alias.
-If the current key is not alias, this is the same as _appKey</p>
-
-  </div>
-
-  
-    <div class="code-item-section">
-      <h4>Default value:</h4>
-      <code class="prettyprint">null</code>
-    </div>
-  
-
-  
-
   
 
   
@@ -35632,11 +35487,9 @@ If the current key is not alias, this is the same as _appKey</p>
                             
 
                             <div class="param-description">
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -35648,9 +35501,9 @@ If the current key is not alias, this is the same as _appKey</p>
                             
 
                             <div class="param-description">
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -35662,9 +35515,9 @@ If the current key is not alias, this is the same as _appKey</p>
                             
 
                             <div class="param-description">
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -35676,9 +35529,9 @@ If the current key is not alias, this is the same as _appKey</p>
                             
 
                             <div class="param-description">
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -35853,7 +35706,7 @@ If the current key is not alias, this is the same as _appKey</p>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-privileged.js.html#l78"><code>source\peer-privileged.js:78</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-privileged.js.html#l65"><code>source\peer-privileged.js:65</code></a>
       </small>
     
 
@@ -36917,7 +36770,7 @@ The persistent room feature is configurable in the Application Key
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l351"><code>source\stream-media.js:351</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l338"><code>source\stream-media.js:338</code></a>
       </small>
     
 
@@ -36998,7 +36851,7 @@ Currently, Opera does not support screensharing and only premium
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l320"><code>source\stream-media.js:320</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l307"><code>source\stream-media.js:307</code></a>
       </small>
     
 
@@ -38784,7 +38637,7 @@ If the value is <code>0</code>, it will use the default timeout from
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l261"><code>source\stream-media.js:261</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_stream-media.js.html#l250"><code>source\stream-media.js:250</code></a>
       </small>
     
 
@@ -38996,11 +38849,9 @@ If the value is <code>0</code>, it will use the default timeout from
             
 
             <div class="param-description">
-                <p>The self
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.</p>
+                <p>The configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.</p>
 
             </div>
 
@@ -39015,9 +38866,9 @@ If the value is <code>0</code>, it will use the default timeout from
                     
 
                     <div class="param-description">
-                      <p>The configured
-  audio stream channel for self connection Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.</p>
+                      <p>The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.</p>
 
                     </div>
 
@@ -39032,9 +38883,9 @@ If the value is <code>0</code>, it will use the default timeout from
                     
 
                     <div class="param-description">
-                      <p>The configured
-  video stream channel for the self connection Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.</p>
+                      <p>The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.</p>
 
                     </div>
 
@@ -39049,9 +38900,9 @@ If the value is <code>0</code>, it will use the default timeout from
                     
 
                     <div class="param-description">
-                      <p>The configured
-  datachannel channel for self DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.</p>
+                      <p>The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.</p>
 
                     </div>
 
@@ -39122,7 +38973,7 @@ If the value is <code>0</code>, it will use the default timeout from
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1282"><code>source\skylink-events.js:1282</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1341"><code>source\skylink-events.js:1341</code></a>
       </small>
     
 
@@ -39805,7 +39656,7 @@ If the value is <code>0</code>, it will use the default timeout from
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l72"><code>source\peer-data.js:72</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l70"><code>source\peer-data.js:70</code></a>
       </small>
     
 
@@ -39953,7 +39804,7 @@ If the value is <code>0</code>, it will use the default timeout from
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l92"><code>source\peer-data.js:92</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_peer-data.js.html#l90"><code>source\peer-data.js:90</code></a>
       </small>
     
 
@@ -45262,7 +45113,7 @@ again and repeat the stage from there.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l940"><code>source\skylink-events.js:940</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1003"><code>source\skylink-events.js:1003</code></a>
       </small>
     
 
@@ -45414,7 +45265,7 @@ settings</a>, this event will not be triggered at all.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l965"><code>source\skylink-events.js:965</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1028"><code>source\skylink-events.js:1028</code></a>
       </small>
     
 
@@ -45705,7 +45556,7 @@ settings</a>, this event will not be triggered at all.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1224"><code>source\skylink-events.js:1224</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1283"><code>source\skylink-events.js:1283</code></a>
       </small>
     
 
@@ -46042,7 +45893,7 @@ DataChannel and media streaming connection.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l789"><code>source\skylink-events.js:789</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l854"><code>source\skylink-events.js:854</code></a>
       </small>
     
 
@@ -46277,7 +46128,7 @@ settings</a>, this event will not be triggered at all.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l824"><code>source\skylink-events.js:824</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l889"><code>source\skylink-events.js:889</code></a>
       </small>
     
 
@@ -46500,7 +46351,7 @@ settings</a>, this event will not be triggered at all.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l696"><code>source\skylink-events.js:696</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l763"><code>source\skylink-events.js:763</code></a>
       </small>
     
 
@@ -46816,11 +46667,9 @@ which indicates that self has sent the message data.</li>
                             
 
                             <div class="param-description">
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -46832,9 +46681,9 @@ which indicates that self has sent the message data.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -46846,9 +46695,9 @@ which indicates that self has sent the message data.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -46860,9 +46709,9 @@ which indicates that self has sent the message data.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -47053,7 +46902,7 @@ which indicates that self has sent the message data.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l613"><code>source\skylink-events.js:613</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l682"><code>source\skylink-events.js:682</code></a>
       </small>
     
 
@@ -47105,6 +46954,21 @@ and is sending this Stream object to other Peers connected in the room.</li>
   object that is sent in this connection.
   To display the MediaStream object to a <code>video</code> or <code>audio</code>, simply invoke:<br>
   <code>attachMediaStream(domElement, stream);</code>.</p>
+
+            </div>
+
+            
+          </li>
+      
+          <li class="param">
+            <code class="param-name">isSelf</code>
+            <span class="type"><b>{</b>Boolean<b>}</b></span>
+
+            
+            
+
+            <div class="param-description">
+                <p>The flag that indicates if self is the Peer.</p>
 
             </div>
 
@@ -47285,11 +47149,9 @@ and is sending this Stream object to other Peers connected in the room.</li>
                             
 
                             <div class="param-description">
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -47301,9 +47163,9 @@ and is sending this Stream object to other Peers connected in the room.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -47315,9 +47177,9 @@ and is sending this Stream object to other Peers connected in the room.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -47329,9 +47191,9 @@ and is sending this Stream object to other Peers connected in the room.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -47463,21 +47325,6 @@ and is sending this Stream object to other Peers connected in the room.</li>
             
           </li>
       
-          <li class="param">
-            <code class="param-name">isSelf</code>
-            <span class="type"><b>{</b>Boolean<b>}</b></span>
-
-            
-            
-
-            <div class="param-description">
-                <p>The flag that indicates if self is the Peer.</p>
-
-            </div>
-
-            
-          </li>
-      
       </ul>
     </div>
   
@@ -47522,7 +47369,7 @@ and is sending this Stream object to other Peers connected in the room.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1240"><code>source\skylink-events.js:1240</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1299"><code>source\skylink-events.js:1299</code></a>
       </small>
     
 
@@ -48592,11 +48439,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -48608,9 +48453,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -48622,9 +48467,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -48636,9 +48481,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -48829,7 +48674,7 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l536"><code>source\skylink-events.js:536</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l533"><code>source\skylink-events.js:533</code></a>
       </small>
     
 
@@ -49039,11 +48884,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -49055,9 +48898,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -49069,9 +48912,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -49083,9 +48926,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -49276,7 +49119,7 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l376"><code>source\skylink-events.js:376</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l374"><code>source\skylink-events.js:374</code></a>
       </small>
     
 
@@ -49487,11 +49330,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -49503,9 +49344,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -49517,9 +49358,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -49531,9 +49372,9 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -49725,7 +49566,7 @@ to start ICE gathering for DataChannel and media streaming connection.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l455"><code>source\skylink-events.js:455</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l451"><code>source\skylink-events.js:451</code></a>
       </small>
     
 
@@ -49941,11 +49782,23 @@ which is invoked through <a href="#method_muteStream">muteStream()</a> or
                             
 
                             <div class="param-description">
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">bandwidth</code>
+                            <span class="type"><b>{</b>String<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -49957,9 +49810,9 @@ which is invoked through <a href="#method_muteStream">muteStream()</a> or
                             
 
                             <div class="param-description">
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -49971,9 +49824,9 @@ which is invoked through <a href="#method_muteStream">muteStream()</a> or
                             
 
                             <div class="param-description">
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -49985,9 +49838,9 @@ which is invoked through <a href="#method_muteStream">muteStream()</a> or
                             
 
                             <div class="param-description">
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -50366,7 +50219,7 @@ not get triggered but stops at <u>readyStateChange</u> event.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l860"><code>source\skylink-events.js:860</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l925"><code>source\skylink-events.js:925</code></a>
       </small>
     
 
@@ -50595,11 +50448,9 @@ may allow or prevent any other Peers from joining the room.</li>
                             
 
                             <div class="param-description">
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -50611,9 +50462,9 @@ may allow or prevent any other Peers from joining the room.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -50625,9 +50476,9 @@ may allow or prevent any other Peers from joining the room.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -50639,9 +50490,9 @@ may allow or prevent any other Peers from joining the room.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -50832,7 +50683,7 @@ may allow or prevent any other Peers from joining the room.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1025"><code>source\skylink-events.js:1025</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1088"><code>source\skylink-events.js:1088</code></a>
       </small>
     
 
@@ -50928,7 +50779,7 @@ may allow or prevent any other Peers from joining the room.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1038"><code>source\skylink-events.js:1038</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1101"><code>source\skylink-events.js:1101</code></a>
       </small>
     
 
@@ -51024,7 +50875,7 @@ may allow or prevent any other Peers from joining the room.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1051"><code>source\skylink-events.js:1051</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1114"><code>source\skylink-events.js:1114</code></a>
       </small>
     
 
@@ -51074,6 +50925,436 @@ may allow or prevent any other Peers from joining the room.</li>
 
             </div>
 
+            
+          </li>
+      
+      </ul>
+    </div>
+  
+
+  
+
+  
+  <hr>
+</div>
+            
+              <div id="event_sessionDisconnect" class="code-item attr item event-item ">
+  <h3 class="code-item-name"><code>sessionDisconnect</code></h3>
+
+  <div class="code-item-properties">
+    <div class="properties-wrapper">
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+    </div>
+
+    <div class="code-item-information">
+      
+        
+          
+        
+      
+      
+      
+    </div>
+
+    
+      <small>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l608"><code>source\skylink-events.js:608</code></a>
+      </small>
+    
+
+    
+      <small><i class="fa">&nbsp;&nbsp;&nbsp;</i>&nbsp;&nbsp;Available since <span class="badge">0.6.10</span></small>
+    
+  </div>
+
+  <div class="code-item-description">
+    <p>Event triggered when self is disconnected from room.</p>
+
+  </div>
+
+  
+    <div class="code-item-section">
+      <h4>Event Payload:</h4>
+
+      <ul class="params-list">
+      
+          <li class="param">
+            <code class="param-name">peerId</code>
+            <span class="type"><b>{</b>String<b>}</b></span>
+
+            
+            
+
+            <div class="param-description">
+                <p>The Peer ID of the peer
+  that had left the room.</p>
+
+            </div>
+
+            
+          </li>
+      
+          <li class="param">
+            <code class="param-name">peerInfo</code>
+            <span class="type"><b>{</b>Object<b>}</b></span>
+
+            
+            
+
+            <div class="param-description">
+                <p>The peer information associated
+  with the Peer Connection.</p>
+
+            </div>
+
+            
+              <ul class="params-list">
+                
+                  <li class="param">
+                    <code class="param-name">userData</code>
+                    <span class="type"><b>{</b>String | JSON<b>}</b></span>
+
+                    
+                    
+
+                    <div class="param-description">
+                      <p>The custom user data
+  information set by developer. This custom user data can also
+  be set in <a href="#method_setUserData">setUserData()</a>.</p>
+
+                    </div>
+
+                    
+                  </li>
+                
+                  <li class="param">
+                    <code class="param-name">settings</code>
+                    <span class="type"><b>{</b>JSON<b>}</b></span>
+
+                    
+                    
+
+                    <div class="param-description">
+                      <p>The Peer Stream
+  streaming settings information. If both audio and video
+  option is <code>false</code>, there should be no
+  receiving remote Stream object from this associated Peer.</p>
+
+                    </div>
+
+                    
+                      <ul class="params-list">
+                        
+                          <li class="param">
+                            <code class="param-name">audio</code>
+                            <span class="type"><b>{</b>Boolean | JSON<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The
+  Peer Stream streaming audio settings. If
+  <code>false</code>, it means that audio streaming is disabled in
+  the remote Stream of the Peer.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">audio.stereo</code>
+                            <span class="type"><b>{</b>Boolean<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The flag that indicates if
+  stereo option should be explictly enabled to an OPUS enabled audio stream.
+  Check the <code>audioCodec</code> configuration settings in
+  <a href="#method_init">init()</a>
+  to enable OPUS as the audio codec. Note that stereo is already enabled
+  for OPUS codecs, this only adds a stereo flag to the SDP to explictly
+  enable stereo in the audio streaming.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">video</code>
+                            <span class="type"><b>{</b>Boolean | JSON<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The Peer
+  Stream streaming video settings. If <code>false</code>, it means that
+  video streaming is disabled in the remote Stream of the Peer.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">video.resolution</code>
+                            <span class="type"><b>{</b>JSON<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The Peer
+  Stream streaming video resolution settings. Setting the resolution may
+  not force set the resolution provided as it depends on the how the
+  browser handles the resolution. [Rel: Skylink.VIDEO_RESOLUTION]
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">video.resolution.width</code>
+                            <span class="type"><b>{</b>Number<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The Peer
+  Stream streaming video resolution width.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">video.resolution.height</code>
+                            <span class="type"><b>{</b>Number<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The Peer
+  Stream streaming video resolution height.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">video.frameRate</code>
+                            <span class="type"><b>{</b>Number<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The Peer
+  Stream streaming video maximum frameRate.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">video.screenshare</code>
+                            <span class="type"><b>{</b>Boolean<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The flag
+  that indicates if the Peer connection Stream object sent
+  is a screensharing stream or not.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">bandwidth</code>
+                            <span class="type"><b>{</b>String<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">bandwidth.audio</code>
+                            <span class="type"><b>{</b>String<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">bandwidth.video</code>
+                            <span class="type"><b>{</b>String<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">bandwidth.data</code>
+                            <span class="type"><b>{</b>String<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
+                            </div>
+                          </li>
+                        
+                      </ul>
+                    
+                  </li>
+                
+                  <li class="param">
+                    <code class="param-name">mediaStatus</code>
+                    <span class="type"><b>{</b>JSON<b>}</b></span>
+
+                    
+                    
+
+                    <div class="param-description">
+                      <p>The Peer Stream mute
+  settings for both audio and video streamings.</p>
+
+                    </div>
+
+                    
+                      <ul class="params-list">
+                        
+                          <li class="param">
+                            <code class="param-name">audioMuted</code>
+                            <span class="type"><b>{</b>Boolean<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The flag that
+  indicates if the remote Stream object audio streaming is muted. If
+  there is no audio streaming enabled for the Peer, by default,
+  it is set to <code>true</code>.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">videoMuted</code>
+                            <span class="type"><b>{</b>Boolean<b>}</b></span>
+
+                            <span class="label">Optional</span>
+                            
+
+                            <div class="param-description">
+                              The flag that
+  indicates if the remote Stream object video streaming is muted. If
+  there is no video streaming enabled for the Peer, by default,
+  it is set to <code>true</code>.
+                            </div>
+                          </li>
+                        
+                      </ul>
+                    
+                  </li>
+                
+                  <li class="param">
+                    <code class="param-name">agent</code>
+                    <span class="type"><b>{</b>JSON<b>}</b></span>
+
+                    
+                    
+
+                    <div class="param-description">
+                      <p>The Peer platform agent information.</p>
+
+                    </div>
+
+                    
+                      <ul class="params-list">
+                        
+                          <li class="param">
+                            <code class="param-name">name</code>
+                            <span class="type"><b>{</b>String<b>}</b></span>
+
+                            
+                            
+
+                            <div class="param-description">
+                              The Peer platform browser or agent name.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">version</code>
+                            <span class="type"><b>{</b>Number<b>}</b></span>
+
+                            
+                            
+
+                            <div class="param-description">
+                              The Peer platform browser or agent version.
+                            </div>
+                          </li>
+                        
+                          <li class="param">
+                            <code class="param-name">os</code>
+                            <span class="type"><b>{</b>Number<b>}</b></span>
+
+                            
+                            
+
+                            <div class="param-description">
+                              The Peer platform name.
+                            </div>
+                          </li>
+                        
+                      </ul>
+                    
+                  </li>
+                
+                  <li class="param">
+                    <code class="param-name">room</code>
+                    <span class="type"><b>{</b>String<b>}</b></span>
+
+                    
+                    
+
+                    <div class="param-description">
+                      <p>The current room that the Peer is in.</p>
+
+                    </div>
+
+                    
+                  </li>
+                
+              </ul>
             
           </li>
       
@@ -51239,7 +51520,7 @@ repeat the stage from there.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1065"><code>source\skylink-events.js:1065</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1128"><code>source\skylink-events.js:1128</code></a>
       </small>
     
 
@@ -51449,11 +51730,9 @@ repeat the stage from there.</li>
                             
 
                             <div class="param-description">
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -51465,9 +51744,9 @@ repeat the stage from there.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -51479,9 +51758,9 @@ repeat the stage from there.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -51493,9 +51772,9 @@ repeat the stage from there.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -51702,7 +51981,7 @@ repeat the stage from there.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1144"><code>source\skylink-events.js:1144</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1205"><code>source\skylink-events.js:1205</code></a>
       </small>
     
 
@@ -51913,11 +52192,9 @@ repeat the stage from there.</li>
                             
 
                             <div class="param-description">
-                              The Peer
-  streaming bandwidth settings. Setting the bandwidth flags may not
-  force set the bandwidth for each connection stream channels as it depends
-  on how the browser handles the bandwidth bitrate. Values are configured
-  in <var>kb/s</var>.
+                              The Peer configuration for
+  the maximum sending bandwidth. The flags set may or may not work depending
+  on the browser implementations and how it handles it.
                             </div>
                           </li>
                         
@@ -51929,9 +52206,9 @@ repeat the stage from there.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  audio stream channel for the remote Stream object bandwidth
-  that audio streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the audio bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -51943,9 +52220,9 @@ repeat the stage from there.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  video stream channel for the remote Stream object bandwidth
-  that video streaming should use in <var>kb/s</var>.
+                              The maximum
+  sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the video bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -51957,9 +52234,9 @@ repeat the stage from there.</li>
                             
 
                             <div class="param-description">
-                              The configured
-  datachannel channel for the DataChannel connection bandwidth
-  that datachannel connection per packet should be able use in <var>kb/s</var>.
+                              The maximum
+  sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
+  it will leave the data bitrate to the browser defaults.
                             </div>
                           </li>
                         
@@ -52166,7 +52443,7 @@ repeat the stage from there.</li>
 
     
       <small>
-        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1009"><code>source\skylink-events.js:1009</code></a>
+        <i class="fa fa-chevron-right"></i>&nbsp;&nbsp;Defined in: <a href="../files/source_skylink-events.js.html#l1072"><code>source\skylink-events.js:1072</code></a>
       </small>
     
 
