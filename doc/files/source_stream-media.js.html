@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>SkylinkJS 0.6.11-tobii.1</title>
+    <title>SkylinkJS 0.6.11-tobii.2</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- font and icon -->
     <link rel="shortcut icon" type="image/ico" href="../assets/favicon.ico">
@@ -33,7 +33,7 @@
           <span class="icon-bar"></span>
         </button>
         <a href="" class="navbar-brand">
-          <img src="../assets/img/logo.svg" />JS<small>Version: 0.6.11-tobii.1</small>
+          <img src="../assets/img/logo.svg" />JS<small>Version: 0.6.11-tobii.2</small>
         </a>
       </div>
       <div id="navbar" class="navbar-collapse collapse">
@@ -2207,6 +2207,7 @@ Skylink.prototype.disableVideo = function() {
  *   Stream streaming should have audio. If
  *   &lt;code&gt;false&lt;/code&gt;, it means that audio streaming is disabled in
  *   the remote Stream of self connection.
+ * @param {Object} [mediaOptions] Media options object
  * @param {Function} [callback] The callback fired after Skylink has shared
  *   the screen successfully or have met with an exception.
  *   The callback signature is &lt;code&gt;function (error, success)&lt;/code&gt;.
@@ -2236,15 +2237,23 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var self = this;
   var hasAudio = false;
-
   var settings = {
     video: {
       mediaSource: &#x27;window&#x27;
     }
   };
+
+  if (typeof mediaOptions === &#x27;object&#x27;) {
+    mediaOptions.video = mediaOptions.video || {};
+    mediaOptions.video.mediaSource = &#x27;window&#x27;;
+    settings = mediaOptions;
+  }
+  else if(typeof mediaOptions === &#x27;function&#x27;) {
+    callback = mediaOptions;
+  }
 
   if (typeof enableAudio === &#x27;function&#x27;) {
     callback = enableAudio;

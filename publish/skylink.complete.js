@@ -1,4 +1,4 @@
-/*! @tobiipro/skylinkjs - v0.6.11-tobii.1 - Wed Mar 30 2016 16:37:58 GMT+0200 (W. Europe Daylight Time) */
+/*! @tobiipro/skylinkjs - v0.6.11-tobii.2 - Mon Apr 04 2016 16:18:27 GMT+0200 (W. Europe Daylight Time) */
 
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.io = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 
@@ -9059,8 +9059,8 @@ if ( navigator.mozGetUserMedia
           if(!error) {
             updatedConstraints.video.mandatory = updatedConstraints.video.mandatory || {};
             updatedConstraints.video.mandatory.chromeMediaSource = 'desktop';
-            updatedConstraints.video.mandatory.maxWidth = window.screen.width > 1920 ? window.screen.width : 1920;
-            updatedConstraints.video.mandatory.maxHeight = window.screen.height > 1080 ? window.screen.height : 1080;
+            updatedConstraints.video.mandatory.maxWidth = updatedConstraints.video.mandatory.maxWidth || (window.screen.width > 1920 ? window.screen.width : 1920);
+            updatedConstraints.video.mandatory.maxHeight = updatedConstraints.video.mandatory.maxHeight || (window.screen.height > 1080 ? window.screen.height : 1080);
 
             if (sourceId) {
               updatedConstraints.video.mandatory.chromeMediaSourceId = sourceId;
@@ -9203,7 +9203,7 @@ if ( navigator.mozGetUserMedia
     console.warn('Opera does not support screensharing feature in getUserMedia');
   }
 })();
-/*! @tobiipro/skylinkjs - v0.6.11-tobii.1 - Wed Mar 30 2016 16:37:58 GMT+0200 (W. Europe Daylight Time) */
+/*! @tobiipro/skylinkjs - v0.6.11-tobii.2 - Mon Apr 04 2016 16:18:27 GMT+0200 (W. Europe Daylight Time) */
 
 (function() {
 
@@ -9393,7 +9393,7 @@ function Skylink() {
    * @for Skylink
    * @since 0.1.0
    */
-  this.VERSION = '0.6.11-tobii.1';
+  this.VERSION = '0.6.11-tobii.2';
 
   /**
    * Helper function that generates an Unique ID (UUID) string.
@@ -23366,6 +23366,7 @@ Skylink.prototype.disableVideo = function() {
  *   Stream streaming should have audio. If
  *   <code>false</code>, it means that audio streaming is disabled in
  *   the remote Stream of self connection.
+ * @param {Object} [mediaOptions] Media options object
  * @param {Function} [callback] The callback fired after Skylink has shared
  *   the screen successfully or have met with an exception.
  *   The callback signature is <code>function (error, success)</code>.
@@ -23395,15 +23396,23 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var self = this;
   var hasAudio = false;
-
   var settings = {
     video: {
       mediaSource: 'window'
     }
   };
+
+  if (typeof mediaOptions === 'object') {
+    mediaOptions.video = mediaOptions.video || {};
+    mediaOptions.video.mediaSource = 'window';
+    settings = mediaOptions;
+  }
+  else if(typeof mediaOptions === 'function') {
+    callback = mediaOptions;
+  }
 
   if (typeof enableAudio === 'function') {
     callback = enableAudio;

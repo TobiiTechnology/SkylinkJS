@@ -1,4 +1,4 @@
-/*! @tobiipro/skylinkjs - v0.6.11-tobii.1 - Wed Mar 30 2016 16:37:58 GMT+0200 (W. Europe Daylight Time) */
+/*! @tobiipro/skylinkjs - v0.6.11-tobii.2 - Mon Apr 04 2016 16:18:27 GMT+0200 (W. Europe Daylight Time) */
 
 (function() {
 
@@ -188,7 +188,7 @@ function Skylink() {
    * @for Skylink
    * @since 0.1.0
    */
-  this.VERSION = '0.6.11-tobii.1';
+  this.VERSION = '0.6.11-tobii.2';
 
   /**
    * Helper function that generates an Unique ID (UUID) string.
@@ -14161,6 +14161,7 @@ Skylink.prototype.disableVideo = function() {
  *   Stream streaming should have audio. If
  *   <code>false</code>, it means that audio streaming is disabled in
  *   the remote Stream of self connection.
+ * @param {Object} [mediaOptions] Media options object
  * @param {Function} [callback] The callback fired after Skylink has shared
  *   the screen successfully or have met with an exception.
  *   The callback signature is <code>function (error, success)</code>.
@@ -14190,15 +14191,23 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var self = this;
   var hasAudio = false;
-
   var settings = {
     video: {
       mediaSource: 'window'
     }
   };
+
+  if (typeof mediaOptions === 'object') {
+    mediaOptions.video = mediaOptions.video || {};
+    mediaOptions.video.mediaSource = 'window';
+    settings = mediaOptions;
+  }
+  else if(typeof mediaOptions === 'function') {
+    callback = mediaOptions;
+  }
 
   if (typeof enableAudio === 'function') {
     callback = enableAudio;

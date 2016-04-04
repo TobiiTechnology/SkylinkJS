@@ -2,7 +2,7 @@
     "project": {
         "name": "@tobiipro/skylinkjs",
         "description": "SkylinkJS is an open-source client-side library for your web-browser that enables any website to easily leverage the capabilities of WebRTC and its direct data streaming powers between peers for audio/video conferencing or file transfer. This version has been slightly modified bo Tobii to brand the plugins.",
-        "version": "0.6.11-tobii.1",
+        "version": "0.6.11-tobii.2",
         "url": "https://temasys.github.io/"
     },
     "files": {
@@ -12495,6 +12495,12 @@
                     "optdefault": "false"
                 },
                 {
+                    "name": "mediaOptions",
+                    "description": "Media options object",
+                    "type": "Object",
+                    "optional": true
+                },
+                {
                     "name": "callback",
                     "description": "The callback fired after Skylink has shared\n  the screen successfully or have met with an exception.\n  The callback signature is <code>function (error, success)</code>.",
                     "type": "Function",
@@ -12523,7 +12529,7 @@
         },
         {
             "file": "source\\stream-media.js",
-            "line": 2315,
+            "line": 2324,
             "description": "Stops self screensharing Stream object attached to Skylink.\nIf user media Stream object is available, Skylink will refresh all\n   Peer connections to send the user media Stream object.\nReference {{#crossLink \"Skylink/refreshConnection:method\"}}refreshConnection(){{/crossLink}}\n   on the events triggered and restart mechanism.",
             "itemtype": "method",
             "name": "stopScreen",
@@ -14156,7 +14162,7 @@
         },
         {
             "message": "unknown tag: trigger",
-            "line": " source\\stream-media.js:2315"
+            "line": " source\\stream-media.js:2324"
         },
         {
             "message": "unknown tag: component",
