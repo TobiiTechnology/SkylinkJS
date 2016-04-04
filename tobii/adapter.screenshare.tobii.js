@@ -1809,8 +1809,8 @@ if ( navigator.mozGetUserMedia
           if(!error) {
             updatedConstraints.video.mandatory = updatedConstraints.video.mandatory || {};
             updatedConstraints.video.mandatory.chromeMediaSource = 'desktop';
-            updatedConstraints.video.mandatory.maxWidth = window.screen.width > 1920 ? window.screen.width : 1920;
-            updatedConstraints.video.mandatory.maxHeight = window.screen.height > 1080 ? window.screen.height : 1080;
+            updatedConstraints.video.mandatory.maxWidth = updatedConstraints.video.mandatory.maxWidth || (window.screen.width > 1920 ? window.screen.width : 1920);
+            updatedConstraints.video.mandatory.maxHeight = updatedConstraints.video.mandatory.maxHeight || (window.screen.height > 1080 ? window.screen.height : 1080);
 
             if (sourceId) {
               updatedConstraints.video.mandatory.chromeMediaSourceId = sourceId;
