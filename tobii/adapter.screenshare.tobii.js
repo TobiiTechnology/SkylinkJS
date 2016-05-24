@@ -1774,7 +1774,7 @@ if ( navigator.mozGetUserMedia
               if (error.name === 'PermissionDeniedError' && window.parent.location.protocol === 'https:') {
                 AdapterJS.renderNotificationBar(AdapterJS.TEXT.EXTENSION.REQUIRE_INSTALLATION_FF,
                   AdapterJS.TEXT.EXTENSION.BUTTON_FF,
-                  'htts://addons.mozilla.org/en-US/firefox/addon/tobii-pro-screensharing/', false, true);
+                  'https://addons.mozilla.org/en-US/firefox/addon/tobii-pro-screensharing/', false, true);
                 //'http://skylink.io/screensharing/ff_addon.php?domain=' + window.location.hostname, false, true);
                 //window.location.href = 'http://skylink.io/screensharing/ff_addon.php?domain=' + window.location.hostname;
               } else {

@@ -1107,7 +1107,7 @@ JSONPPolling.prototype.doPoll = function () {
   this.script = script;
 
   var isUAgecko = 'undefined' != typeof navigator && /gecko/i.test(navigator.userAgent);
-  
+
   if (isUAgecko) {
     setTimeout(function () {
       var iframe = document.createElement('iframe');
@@ -7620,11 +7620,11 @@ AdapterJS.renderNotificationBar = function (text, buttonText, buttonLink, openNe
             clearInterval(pluginInstallInterval);
             AdapterJS.WebRTCPlugin.defineWebRTCInterface();
           },
-          function() { 
+          function() {
             // still no plugin detected, nothing to do
           });
       } , 500);
-    });   
+    });
 
     // On click on Cancel
     AdapterJS.addEvent(c.document.getElementById('cancel'), 'click', function(e) {
@@ -7802,8 +7802,8 @@ webrtcDetectedVersion = null;
 // Check for browser types and react accordingly
 if ( navigator.mozGetUserMedia
   || navigator.webkitGetUserMedia
-  || (navigator.mediaDevices 
-    && navigator.userAgent.match(/Edge\/(\d+).(\d+)$/)) ) { 
+  || (navigator.mediaDevices
+    && navigator.userAgent.match(/Edge\/(\d+).(\d+)$/)) ) {
 
   ///////////////////////////////////////////////////////////////////
   // INJECTION OF GOOGLE'S ADAPTER.JS CONTENT
@@ -7815,7 +7815,7 @@ if ( navigator.mozGetUserMedia
    *  that can be found in the LICENSE file in the root of the source
    *  tree.
    */
-  
+
   /* More information about these options at jshint.com/docs/options */
   /* jshint browser: true, camelcase: true, curly: true, devel: true,
      eqeqeq: true, forin: false, globalstrict: true, node: true,
@@ -7823,9 +7823,9 @@ if ( navigator.mozGetUserMedia
   /* global mozRTCIceCandidate, mozRTCPeerConnection, Promise,
   mozRTCSessionDescription, webkitRTCPeerConnection, MediaStreamTrack */
   /* exported trace,requestUserMedia */
-  
+
   'use strict';
-  
+
   var getUserMedia = null;
   var attachMediaStream = null;
   var reattachMediaStream = null;
@@ -7846,7 +7846,7 @@ if ( navigator.mozGetUserMedia
       return match && match.length >= pos && parseInt(match[pos]);
     }
   };
-  
+
   function trace(text) {
     // This function is used for logging.
     if (text[text.length - 1] === '\n') {
@@ -7859,7 +7859,7 @@ if ( navigator.mozGetUserMedia
       webrtcUtils.log(text);
     }
   }
-  
+
   if (typeof window === 'object') {
     if (window.HTMLMediaElement &&
       !('srcObject' in window.HTMLMediaElement.prototype)) {
@@ -7885,31 +7885,31 @@ if ( navigator.mozGetUserMedia
     // Proxy existing globals
     getUserMedia = window.navigator && window.navigator.getUserMedia;
   }
-  
+
   // Attach a media stream to an element.
   attachMediaStream = function(element, stream) {
     element.srcObject = stream;
   };
-  
+
   reattachMediaStream = function(to, from) {
     to.srcObject = from.srcObject;
   };
-  
+
   if (typeof window === 'undefined' || !window.navigator) {
     webrtcUtils.log('This does not appear to be a browser');
     webrtcDetectedBrowser = 'not a browser';
   } else if (navigator.mozGetUserMedia && window.mozRTCPeerConnection) {
     webrtcUtils.log('This appears to be Firefox');
-  
+
     webrtcDetectedBrowser = 'firefox';
-  
+
     // the detected firefox version.
     webrtcDetectedVersion = webrtcUtils.extractVersion(navigator.userAgent,
         /Firefox\/([0-9]+)\./, 1);
-  
+
     // the minimum firefox version still supported by adapter.
     webrtcMinimumVersion = 31;
-  
+
     // The RTCPeerConnection object.
     window.RTCPeerConnection = function(pcConfig, pcConstraints) {
       if (webrtcDetectedVersion < 38) {
@@ -7939,17 +7939,17 @@ if ( navigator.mozGetUserMedia
       }
       return new mozRTCPeerConnection(pcConfig, pcConstraints); // jscs:ignore requireCapitalizedConstructors
     };
-  
+
     // The RTCSessionDescription object.
     if (!window.RTCSessionDescription) {
       window.RTCSessionDescription = mozRTCSessionDescription;
     }
-  
+
     // The RTCIceCandidate object.
     if (!window.RTCIceCandidate) {
       window.RTCIceCandidate = mozRTCIceCandidate;
     }
-  
+
     // getUserMedia constraints shim.
     getUserMedia = function(constraints, onSuccess, onError) {
       var constraintsToFF37 = function(c) {
@@ -8007,9 +8007,9 @@ if ( navigator.mozGetUserMedia
       }
       return navigator.mozGetUserMedia(constraints, onSuccess, onError);
     };
-  
+
     navigator.getUserMedia = getUserMedia;
-  
+
     // Shim for mediaDevices on older versions.
     if (!navigator.mediaDevices) {
       navigator.mediaDevices = {getUserMedia: requestUserMedia,
@@ -8027,7 +8027,7 @@ if ( navigator.mozGetUserMedia
         resolve(infos);
       });
     };
-  
+
     if (webrtcDetectedVersion < 41) {
       // Work around http://bugzil.la/1169665
       var orgEnumerateDevices =
@@ -8043,16 +8043,16 @@ if ( navigator.mozGetUserMedia
     }
   } else if (navigator.webkitGetUserMedia && window.webkitRTCPeerConnection) {
     webrtcUtils.log('This appears to be Chrome');
-  
+
     webrtcDetectedBrowser = 'chrome';
-  
+
     // the detected chrome version.
     webrtcDetectedVersion = webrtcUtils.extractVersion(navigator.userAgent,
         /Chrom(e|ium)\/([0-9]+)\./, 2);
-  
+
     // the minimum chrome version still supported by adapter.
     webrtcMinimumVersion = 38;
-  
+
     // The RTCPeerConnection object.
     window.RTCPeerConnection = function(pcConfig, pcConstraints) {
       // Translate iceTransportPolicy to iceTransports,
@@ -8060,19 +8060,19 @@ if ( navigator.mozGetUserMedia
       if (pcConfig && pcConfig.iceTransportPolicy) {
         pcConfig.iceTransports = pcConfig.iceTransportPolicy;
       }
-  
+
       var pc = new webkitRTCPeerConnection(pcConfig, pcConstraints); // jscs:ignore requireCapitalizedConstructors
       var origGetStats = pc.getStats.bind(pc);
       pc.getStats = function(selector, successCallback, errorCallback) { // jshint ignore: line
         var self = this;
         var args = arguments;
-  
+
         // If selector is a function then we are in the old style stats so just
         // pass back the original getStats format to avoid breaking old users.
         if (arguments.length > 0 && typeof selector === 'function') {
           return origGetStats(selector, successCallback);
         }
-  
+
         var fixChromeStats = function(response) {
           var standardReport = {};
           var reports = response.result();
@@ -8087,18 +8087,18 @@ if ( navigator.mozGetUserMedia
             });
             standardReport[standardStats.id] = standardStats;
           });
-  
+
           return standardReport;
         };
-  
+
         if (arguments.length >= 2) {
           var successCallbackWrapper = function(response) {
             args[1](fixChromeStats(response));
           };
-  
+
           return origGetStats.apply(this, [successCallbackWrapper, arguments[0]]);
         }
-  
+
         // promise-support
         return new Promise(function(resolve, reject) {
           if (args.length === 1 && selector === null) {
@@ -8111,10 +8111,10 @@ if ( navigator.mozGetUserMedia
           }
         });
       };
-  
+
       return pc;
     };
-  
+
     // add promise support
     ['createOffer', 'createAnswer'].forEach(function(method) {
       var nativeMethod = webkitRTCPeerConnection.prototype[method];
@@ -8131,7 +8131,7 @@ if ( navigator.mozGetUserMedia
         }
       };
     });
-  
+
     ['setLocalDescription', 'setRemoteDescription',
         'addIceCandidate'].forEach(function(method) {
       var nativeMethod = webkitRTCPeerConnection.prototype[method];
@@ -8156,7 +8156,7 @@ if ( navigator.mozGetUserMedia
         });
       };
     });
-  
+
     // getUserMedia constraints shim.
     var constraintsToChrome = function(c) {
       if (typeof c !== 'object' || c.mandatory || c.optional) {
@@ -8208,7 +8208,7 @@ if ( navigator.mozGetUserMedia
       }
       return cc;
     };
-  
+
     getUserMedia = function(constraints, onSuccess, onError) {
       if (constraints.audio) {
         constraints.audio = constraintsToChrome(constraints.audio);
@@ -8220,7 +8220,7 @@ if ( navigator.mozGetUserMedia
       return navigator.webkitGetUserMedia(constraints, onSuccess, onError);
     };
     navigator.getUserMedia = getUserMedia;
-  
+
     if (!navigator.mediaDevices) {
       navigator.mediaDevices = {getUserMedia: requestUserMedia,
                                 enumerateDevices: function() {
@@ -8237,7 +8237,7 @@ if ( navigator.mozGetUserMedia
         });
       }};
     }
-  
+
     // A shim for getUserMedia method on the mediaDevices object.
     // TODO(KaptenJansson) remove once implemented in Chrome stable.
     if (!navigator.mediaDevices.getUserMedia) {
@@ -8258,7 +8258,7 @@ if ( navigator.mozGetUserMedia
         return origGetUserMedia(c);
       };
     }
-  
+
     // Dummy devicechange event methods.
     // TODO(KaptenJansson) remove once implemented in Chrome stable.
     if (typeof navigator.mediaDevices.addEventListener === 'undefined') {
@@ -8271,7 +8271,7 @@ if ( navigator.mozGetUserMedia
         webrtcUtils.log('Dummy mediaDevices.removeEventListener called.');
       };
     }
-  
+
     // Attach a media stream to an element.
     attachMediaStream = function(element, stream) {
       if (webrtcDetectedVersion >= 43) {
@@ -8289,28 +8289,28 @@ if ( navigator.mozGetUserMedia
         to.src = from.src;
       }
     };
-  
+
   } else if (navigator.mediaDevices && navigator.userAgent.match(
       /Edge\/(\d+).(\d+)$/)) {
     webrtcUtils.log('This appears to be Edge');
     webrtcDetectedBrowser = 'edge';
-  
+
     webrtcDetectedVersion = webrtcUtils.extractVersion(navigator.userAgent,
         /Edge\/(\d+).(\d+)$/, 2);
-  
+
     // the minimum version still supported by adapter.
     webrtcMinimumVersion = 12;
   } else {
     webrtcUtils.log('Browser does not appear to be WebRTC-capable');
   }
-  
+
   // Returns the result of getUserMedia as a Promise.
   function requestUserMedia(constraints) {
     return new Promise(function(resolve, reject) {
       getUserMedia(constraints, resolve, reject);
     });
   }
-  
+
   var webrtcTesting = {};
   try {
     Object.defineProperty(webrtcTesting, 'version', {
@@ -8319,7 +8319,7 @@ if ( navigator.mozGetUserMedia
       }
     });
   } catch (e) {}
-  
+
   /* Orginal exports removed in favor of AdapterJS custom export.
   if (typeof module !== 'undefined') {
     var RTCPeerConnection;
@@ -8365,7 +8365,7 @@ if ( navigator.mozGetUserMedia
 
   ///////////////////////////////////////////////////////////////////
   // EXTENSION FOR CHROME, FIREFOX AND EDGE
-  // Includes legacy functions 
+  // Includes legacy functions
   // -- createIceServer
   // -- createIceServers
   // -- MediaStreamTrack.getSources
@@ -8391,7 +8391,7 @@ if ( navigator.mozGetUserMedia
 
     createIceServer = function (url, username, password) {
       console.warn('createIceServer is deprecated. It should be replaced with an application level implementation.');
-      
+
       var iceServer = null;
       var url_parts = url.split(':');
       if (url_parts[0].indexOf('stun') === 0) {
@@ -8433,7 +8433,7 @@ if ( navigator.mozGetUserMedia
   } else if ( navigator.webkitGetUserMedia ) {
     createIceServer = function (url, username, password) {
       console.warn('createIceServer is deprecated. It should be replaced with an application level implementation.');
-      
+
       var iceServer = null;
       var url_parts = url.split(':');
       if (url_parts[0].indexOf('stun') === 0) {
@@ -8485,7 +8485,7 @@ if ( navigator.mozGetUserMedia
     };
   }
 
-  // Need to override attachMediaStream and reattachMediaStream 
+  // Need to override attachMediaStream and reattachMediaStream
   // to support the plugin's logic
   attachMediaStream_base = attachMediaStream;
   attachMediaStream = function (element, stream) {
@@ -8766,7 +8766,7 @@ if ( navigator.mozGetUserMedia
     window.navigator.getUserMedia = window.getUserMedia;
 
     // Defined mediaDevices when promises are available
-    if ( !navigator.mediaDevices 
+    if ( !navigator.mediaDevices
       && typeof Promise !== 'undefined') {
       navigator.mediaDevices = {getUserMedia: requestUserMedia,
                                 enumerateDevices: function() {
@@ -9024,7 +9024,7 @@ if ( navigator.mozGetUserMedia
               if (error.name === 'PermissionDeniedError' && window.parent.location.protocol === 'https:') {
                 AdapterJS.renderNotificationBar(AdapterJS.TEXT.EXTENSION.REQUIRE_INSTALLATION_FF,
                   AdapterJS.TEXT.EXTENSION.BUTTON_FF,
-                  'htts://addons.mozilla.org/en-US/firefox/addon/tobii-pro-screensharing/', false, true);
+                  'https://addons.mozilla.org/en-US/firefox/addon/tobii-pro-screensharing/', false, true);
                 //'http://skylink.io/screensharing/ff_addon.php?domain=' + window.location.hostname, false, true);
                 //window.location.href = 'http://skylink.io/screensharing/ff_addon.php?domain=' + window.location.hostname;
               } else {
@@ -9074,7 +9074,7 @@ if ( navigator.mozGetUserMedia
             if (error === 'permission-denied') {
               failureCb(new Error('Permission denied for screen retrieval'));
             } else {
-              // NOTE(J-O): I don't think we ever pass in here. 
+              // NOTE(J-O): I don't think we ever pass in here.
               // A failure to capture the screen does not lead here.
               failureCb(new Error('Failed retrieving selected screen'));
             }
@@ -9536,8 +9536,8 @@ Skylink.prototype._createDataChannel = function(peerId, channelType, dc, customC
   var channelName = (dc) ? dc.label : customChannelName;
   var pc = self._peerConnections[peerId];
 
-  var SctpSupported = 
-    !(window.webrtcDetectedBrowser === 'chrome' && window.webrtcDetectedVersion < 30 || 
+  var SctpSupported =
+    !(window.webrtcDetectedBrowser === 'chrome' && window.webrtcDetectedVersion < 30 ||
       window.webrtcDetectedBrowser === 'opera'  && window.webrtcDetectedVersion < 20 );
 
   if (!SctpSupported) {
@@ -14760,7 +14760,7 @@ Skylink.prototype.getPeers = function(showAll, callback){
 		type: self._SIG_MESSAGE_TYPE.GET_PEERS,
 		showAll: showAll || false
 	});
-	
+
 	self._trigger('getPeersStateChange',self.GET_PEERS_STATE.ENQUIRED, self._user.sid, null);
 
 	log.log('Enquired server for peers within the realm');
