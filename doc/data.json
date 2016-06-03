@@ -12455,6 +12455,12 @@
                     "optdefault": "false"
                 },
                 {
+                    "name": "mediaOptions",
+                    "description": "Media options object",
+                    "type": "Object",
+                    "optional": true
+                },
+                {
                     "name": "callback",
                     "description": "The callback fired after Skylink has shared\n  the screen successfully or have met with an exception.\n  The callback signature is <code>function (error, success)</code>.",
                     "type": "Function",
@@ -12483,7 +12489,7 @@
         },
         {
             "file": "source/stream-media.js",
-            "line": 2318,
+            "line": 2328,
             "description": "Stops self screensharing Stream object attached to Skylink.\nIf user media Stream object is available, Skylink will refresh all\n   Peer connections to send the user media Stream object.\nReference {{#crossLink \"Skylink/refreshConnection:method\"}}refreshConnection(){{/crossLink}}\n   on the events triggered and restart mechanism.",
             "itemtype": "method",
             "name": "stopScreen",
@@ -14108,7 +14114,7 @@
         },
         {
             "message": "unknown tag: trigger",
-            "line": " source/stream-media.js:2318"
+            "line": " source/stream-media.js:2328"
         },
         {
             "message": "unknown tag: component",
