@@ -1729,9 +1729,9 @@ if ( navigator.mozGetUserMedia
   var baseGetUserMedia = null;
 
   AdapterJS.TEXT.EXTENSION = {
-    REQUIRE_INSTALLATION_FF: 'To enable screensharing you need to install the Skylink WebRTC tools Firefox Add-on.',
-    REQUIRE_INSTALLATION_CHROME: 'To enable screensharing you need to install the Skylink WebRTC tools Chrome Extension.',
-    REQUIRE_REFRESH: 'Please refresh this page after the Skylink WebRTC tools extension has been installed.',
+    REQUIRE_INSTALLATION_FF: 'To enable screensharing you need to install the Tobii WebRTC tools Firefox Add-on.',
+    REQUIRE_INSTALLATION_CHROME: 'To enable screensharing you need to install the Tobii WebRTC tools Chrome Extension.',
+    REQUIRE_REFRESH: 'Please refresh this page after the Tobii WebRTC tools extension has been installed.',
     BUTTON_FF: 'Install Now',
     BUTTON_CHROME: 'Go to Chrome Web Store'
   };
@@ -1774,7 +1774,7 @@ if ( navigator.mozGetUserMedia
               if (error.name === 'PermissionDeniedError' && window.parent.location.protocol === 'https:') {
                 AdapterJS.renderNotificationBar(AdapterJS.TEXT.EXTENSION.REQUIRE_INSTALLATION_FF,
                   AdapterJS.TEXT.EXTENSION.BUTTON_FF,
-                  'http://skylink.io/screensharing/ff_addon.php?domain=' + window.location.hostname, false, true);
+                  'https://addons.mozilla.org/en-US/firefox/addon/tobii-pro-screensharing/', false, true);
                 //window.location.href = 'http://skylink.io/screensharing/ff_addon.php?domain=' + window.location.hostname;
               } else {
                 failureCb(error);
@@ -1808,8 +1808,8 @@ if ( navigator.mozGetUserMedia
           if(!error) {
             updatedConstraints.video.mandatory = updatedConstraints.video.mandatory || {};
             updatedConstraints.video.mandatory.chromeMediaSource = 'desktop';
-            updatedConstraints.video.mandatory.maxWidth = window.screen.width > 1920 ? window.screen.width : 1920;
-            updatedConstraints.video.mandatory.maxHeight = window.screen.height > 1080 ? window.screen.height : 1080;
+            updatedConstraints.video.mandatory.maxWidth = updatedConstraints.video.mandatory.maxWidth || (window.screen.width > 1920 ? window.screen.width : 1920);
+            updatedConstraints.video.mandatory.maxHeight = updatedConstraints.video.mandatory.maxHeight || (window.screen.height > 1080 ? window.screen.height : 1080);
 
             if (sourceId) {
               updatedConstraints.video.mandatory.chromeMediaSourceId = sourceId;
@@ -1918,7 +1918,20 @@ if ( navigator.mozGetUserMedia
       iframe.isLoaded = true;
     };
 
-    iframe.src = 'https://cdn.temasys.com.sg/skylink/extensions/detectRTC.html';
+    // iframe.src = 'https://cdn.temasys.com.sg/skylink/extensions/detectRTC.html';
+    var scriptSource = (function() {
+      var scripts = document.getElementsByTagName('script'),
+          script = scripts[scripts.length - 1];
+
+      if (script.getAttribute.length !== undefined) {
+        return script.getAttribute('src')
+      }
+
+      return script.getAttribute('src', 2)
+    }());
+
+    var lastslash = scriptSource.lastIndexOf('/')+1;
+    iframe.src = scriptSource.substring(0, lastslash) + 'detectRTC.tobii.html';
     iframe.style.display = 'none';
 
     (document.body || document.documentElement).appendChild(iframe);
