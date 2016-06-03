@@ -33,7 +33,7 @@ DetectRTC.screen = {
         }
     },
     getChromeExtensionStatus: function (callback) {
-        var extensionid = 'ljckddiekopnnjoeaiofddfhgnbdoafc';
+        var extensionid = 'oiagokmfmoljcemmpobhbaimkjjkigcd';
 
         var image = document.createElement('img');
         image.src = 'chrome-extension://' + extensionid + '/icon.png';
@@ -47,7 +47,7 @@ DetectRTC.screen = {
             }, 2000);
         };
         image.onerror = function () {
-            callback('not-installed', 'https://chrome.google.com/webstore/detail/skylink-webrtc-tools/' + extensionid);
+            callback('not-installed', 'https://chrome.google.com/webstore/detail/tobii-pro-webrtc-extensio/' + extensionid);
         };
     }
 };
