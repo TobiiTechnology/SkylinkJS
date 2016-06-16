@@ -2982,9 +2982,9 @@ if ( navigator.mozGetUserMedia ||
   var baseGetUserMedia = null;
 
   AdapterJS.TEXT.EXTENSION = {
-    REQUIRE_INSTALLATION_FF: 'To enable screensharing you need to install the Skylink WebRTC tools Firefox Add-on.',
-    REQUIRE_INSTALLATION_CHROME: 'To enable screensharing you need to install the Skylink WebRTC tools Chrome Extension.',
-    REQUIRE_REFRESH: 'Please refresh this page after the Skylink WebRTC tools extension has been installed.',
+    REQUIRE_INSTALLATION_FF: 'To enable screensharing you need to install the Tobii Pro WebRTC Firefox Add-on.',
+    REQUIRE_INSTALLATION_CHROME: 'To enable screensharing you need to install the Tobii Pro WebRTC Chrome Extension.',
+    REQUIRE_REFRESH: 'Please refresh this page after the Tobii Pro WebRTC extension has been installed.',
     BUTTON_FF: 'Install Now',
     BUTTON_CHROME: 'Go to Chrome Web Store'
   };
