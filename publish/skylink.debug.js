@@ -1,4 +1,4 @@
-/*! skylinkjs - v0.6.13 - Mon Jun 27 2016 17:23:26 GMT+0800 (SGT) */
+/*! skylinkjs - v0.6.13 - Mon Jun 27 2016 14:24:44 GMT+0200 (W. Europe Daylight Time) */
 
 (function() {
 
@@ -14147,6 +14147,7 @@ Skylink.prototype.disableVideo = function() {
  *   Stream streaming should have audio. If
  *   <code>false</code>, it means that audio streaming is disabled in
  *   the remote Stream of self connection.
+ * @param {Object} [mediaOptions] Media options object
  * @param {Function} [callback] The callback fired after Skylink has shared
  *   the screen successfully or have met with an exception.
  *   The callback signature is <code>function (error, success)</code>.
@@ -14176,15 +14177,24 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var self = this;
-  var hasAudio = false;
 
+  var hasAudio = false;
   var settings = {
     video: {
       mediaSource: 'window'
     }
   };
+
+  if (typeof mediaOptions === 'object') {
+    mediaOptions.video = mediaOptions.video || {};
+    mediaOptions.video.mediaSource = 'window';
+    settings = mediaOptions;
+  }
+  else if(typeof mediaOptions === 'function') {
+    callback = mediaOptions;
+  }
 
   if (typeof enableAudio === 'function') {
     callback = enableAudio;

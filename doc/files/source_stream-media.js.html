@@ -85,7 +85,7 @@
           <div class="apidocs">
               <div id="docs-main">
                   <div class="content content-main">
-                      <h1 class="file-heading">File: source/stream-media.js</h1>
+                      <h1 class="file-heading">File: source\stream-media.js</h1>
 
 <div class="file">
     <pre class="code prettyprint linenums">
@@ -2206,6 +2206,7 @@ Skylink.prototype.disableVideo = function() {
  *   Stream streaming should have audio. If
  *   &lt;code&gt;false&lt;/code&gt;, it means that audio streaming is disabled in
  *   the remote Stream of self connection.
+ * @param {Object} [mediaOptions] Media options object
  * @param {Function} [callback] The callback fired after Skylink has shared
  *   the screen successfully or have met with an exception.
  *   The callback signature is &lt;code&gt;function (error, success)&lt;/code&gt;.
@@ -2235,15 +2236,24 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var self = this;
-  var hasAudio = false;
 
+  var hasAudio = false;
   var settings = {
     video: {
       mediaSource: &#x27;window&#x27;
     }
   };
+
+  if (typeof mediaOptions === &#x27;object&#x27;) {
+    mediaOptions.video = mediaOptions.video || {};
+    mediaOptions.video.mediaSource = &#x27;window&#x27;;
+    settings = mediaOptions;
+  }
+  else if(typeof mediaOptions === &#x27;function&#x27;) {
+    callback = mediaOptions;
+  }
 
   if (typeof enableAudio === &#x27;function&#x27;) {
     callback = enableAudio;
