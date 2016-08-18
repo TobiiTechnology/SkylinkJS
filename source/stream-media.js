@@ -1966,7 +1966,7 @@ Skylink.prototype.muteStream = function(options) {
 
   // set the muted status
   if (typeof options.audioMuted === 'boolean') {
-    if (self._streamSettings.audio === false) {
+    if (self._streamSettings.audio === false && self._screenSharingStreamSettings.audio === false) {
       log.error('No audio available to mute / unmute');
       hasAudioError = true;
     } else {

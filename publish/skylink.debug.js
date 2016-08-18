@@ -1,4 +1,4 @@
-/*! skylinkjs - v0.6.13 - Mon Jun 27 2016 14:24:44 GMT+0200 (W. Europe Daylight Time) */
+/*! skylinkjs - v0.6.13 - Thu Aug 18 2016 10:56:34 GMT+0200 (W. Europe Daylight Time) */
 
 (function() {
 
@@ -13998,7 +13998,7 @@ Skylink.prototype.muteStream = function(options) {
 
   // set the muted status
   if (typeof options.audioMuted === 'boolean') {
-    if (self._streamSettings.audio === false) {
+    if (self._streamSettings.audio === false && self._screenSharingStreamSettings.audio === false) {
       log.error('No audio available to mute / unmute');
       hasAudioError = true;
     } else {
