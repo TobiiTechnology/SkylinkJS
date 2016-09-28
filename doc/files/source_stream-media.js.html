@@ -1158,6 +1158,7 @@ Skylink.prototype.disableVideo = function() {
  * Function that retrieves screensharing Stream.
  * @method shareScreen
  * @param {JSON} [enableAudio=false] The flag if audio tracks should be retrieved.
+ * @param {Object} [mediaOptions] Media options object
  * @param {Function} [callback] The callback function fired when request has completed.
  *   &lt;small&gt;Function parameters signature is &lt;code&gt;function (error, success)&lt;/code&gt;&lt;/small&gt;
  *   &lt;small&gt;Function request completion is determined by the &lt;a href=&quot;#event_mediaAccessSuccess&quot;&gt;
@@ -1236,7 +1237,7 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var self = this;
 
   if (typeof enableAudio === &#x27;function&#x27;) {
@@ -1246,6 +1247,15 @@ Skylink.prototype.shareScreen = function (enableAudio, callback) {
 
   if (typeof enableAudio !== &#x27;boolean&#x27;) {
     enableAudio = true;
+  }
+
+  if (typeof mediaOptions === &#x27;object&#x27;) {
+    mediaOptions.video = mediaOptions.video || {};
+    mediaOptions.video.mediaSource = &#x27;window&#x27;;
+    settings = mediaOptions;
+  }
+  else if(typeof mediaOptions === &#x27;function&#x27;) {
+    callback = mediaOptions;
   }
 
   var throttleFn = function (fn, wait) {
@@ -1902,7 +1912,10 @@ Skylink.prototype._addLocalMediaStreams = function(peerId) {
   try {
     log.log([peerId, null, null, &#x27;Adding local stream&#x27;]);
 
-    var pc = self._peerConnections[peerId];
+  if (typeof enableAudio === &#x27;function&#x27;) {
+    callback = enableAudio;
+    enableAudio = true;
+  }
 
     if (pc) {
       if (pc.signalingState !== self.PEER_CONNECTION_STATE.CLOSED) {
@@ -1981,6 +1994,7 @@ Skylink.prototype._addLocalMediaStreams = function(peerId) {
     }
   }, 3500);
 };
+
     </pre>
 </div>
 
