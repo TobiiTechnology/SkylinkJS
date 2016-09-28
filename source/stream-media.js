@@ -1067,6 +1067,7 @@ Skylink.prototype.disableVideo = function() {
  * Function that retrieves screensharing Stream.
  * @method shareScreen
  * @param {JSON} [enableAudio=false] The flag if audio tracks should be retrieved.
+ * @param {Object} [mediaOptions] Media options object
  * @param {Function} [callback] The callback function fired when request has completed.
  *   <small>Function parameters signature is <code>function (error, success)</code></small>
  *   <small>Function request completion is determined by the <a href="#event_mediaAccessSuccess">
@@ -1145,7 +1146,7 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var self = this;
 
   if (typeof enableAudio === 'function') {
@@ -1155,6 +1156,15 @@ Skylink.prototype.shareScreen = function (enableAudio, callback) {
 
   if (typeof enableAudio !== 'boolean') {
     enableAudio = true;
+  }
+
+  if (typeof mediaOptions === 'object') {
+    mediaOptions.video = mediaOptions.video || {};
+    mediaOptions.video.mediaSource = 'window';
+    settings = mediaOptions;
+  }
+  else if(typeof mediaOptions === 'function') {
+    callback = mediaOptions;
   }
 
   var throttleFn = function (fn, wait) {
@@ -1811,7 +1821,10 @@ Skylink.prototype._addLocalMediaStreams = function(peerId) {
   try {
     log.log([peerId, null, null, 'Adding local stream']);
 
-    var pc = self._peerConnections[peerId];
+  if (typeof enableAudio === 'function') {
+    callback = enableAudio;
+    enableAudio = true;
+  }
 
     if (pc) {
       if (pc.signalingState !== self.PEER_CONNECTION_STATE.CLOSED) {

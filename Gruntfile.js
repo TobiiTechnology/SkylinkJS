@@ -71,8 +71,11 @@ module.exports = function(grunt) {
                     ],
                     '<%= production %>/skylink.complete.js': [
                         'node_modules/socket.io-client/socket.io.js',
-                        'node_modules/adapterjs/publish/adapter.screenshare.js',
+                        'tobii/adapter.screenshare.tobii.js',
                         '<%= production %>/skylink.debug.js'
+                    ],
+                    '<%= production %>/detectRTC.tobii.html': [
+                        'tobii/detectRTC.tobii.html'
                     ]
                 }
             },
