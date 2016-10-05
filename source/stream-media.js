@@ -1112,7 +1112,7 @@ Skylink.prototype.disableVideo = function() {
  *   <code>mediaAccessSuccess</code> event</a> triggers parameter payload <code>isScreensharing</code>
  *   value as <code>true</code> and <code>isAudioFallback</code> value as <code>false</code>.</li></ol></li><li>Else: <ol>
  *   <li>If there is any previous <code>shareScreen()</code> Stream: <ol>
- *   <li>Invokes <a href="#method_stopScreen"><code>stopScreen()</code> method</a>.</li></ol></li> 
+ *   <li>Invokes <a href="#method_stopScreen"><code>stopScreen()</code> method</a>.</li></ol></li>
  *   <li><a href="#event_mediaAccessFallback"><code>mediaAccessFallback</code> event</a> triggers parameter payload
  *   <code>state</code> as <code>FALLBACKED</code>, <code>isScreensharing</code> value as <code>true</code> and
  *   <code>isAudioFallback</code> value as <code>false</code>.</li>
@@ -1158,12 +1158,7 @@ Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
     enableAudio = true;
   }
 
-  if (typeof mediaOptions === 'object') {
-    mediaOptions.video = mediaOptions.video || {};
-    mediaOptions.video.mediaSource = 'window';
-    settings = mediaOptions;
-  }
-  else if(typeof mediaOptions === 'function') {
+  if(typeof mediaOptions === 'function') {
     callback = mediaOptions;
   }
 
@@ -1198,6 +1193,12 @@ Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
         }
       }
     };
+
+    if (typeof mediaOptions === 'object') {
+      mediaOptions.video = mediaOptions.video || {};
+      mediaOptions.video.mediaSource = 'window';
+      settings.getUserMediaSettings = mediaOptions;
+    }
 
     var mediaAccessSuccessFn = function (stream) {
       self.off('mediaAccessError', mediaAccessErrorFn);
@@ -1820,11 +1821,12 @@ Skylink.prototype._addLocalMediaStreams = function(peerId) {
   // are attached to the tracks. We should iterates over track and print
   try {
     log.log([peerId, null, null, 'Adding local stream']);
+    var pc = self._peerConnections[peerId];
 
-  if (typeof enableAudio === 'function') {
-    callback = enableAudio;
-    enableAudio = true;
-  }
+    if (typeof enableAudio === 'function') {
+      callback = enableAudio;
+      enableAudio = true;
+    }
 
     if (pc) {
       if (pc.signalingState !== self.PEER_CONNECTION_STATE.CLOSED) {
