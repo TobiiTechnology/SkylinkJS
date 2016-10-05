@@ -1,4 +1,4 @@
-/*! skylinkjs - v0.6.15 - Wed Sep 28 2016 14:04:08 GMT+0200 (CEST) */
+/*! skylinkjs - v0.6.15 - Wed Oct 05 2016 15:29:09 GMT+0200 (W. Europe Daylight Time) */
 
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.io = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 
@@ -10474,7 +10474,7 @@ if ( navigator.mozGetUserMedia ||
   }
 })();
 
-/*! skylinkjs - v0.6.15 - Wed Sep 28 2016 14:04:08 GMT+0200 (CEST) */
+/*! skylinkjs - v0.6.15 - Wed Oct 05 2016 15:29:09 GMT+0200 (W. Europe Daylight Time) */
 
 (function() {
 
@@ -22359,7 +22359,7 @@ Skylink.prototype.disableVideo = function() {
  *   <code>mediaAccessSuccess</code> event</a> triggers parameter payload <code>isScreensharing</code>
  *   value as <code>true</code> and <code>isAudioFallback</code> value as <code>false</code>.</li></ol></li><li>Else: <ol>
  *   <li>If there is any previous <code>shareScreen()</code> Stream: <ol>
- *   <li>Invokes <a href="#method_stopScreen"><code>stopScreen()</code> method</a>.</li></ol></li> 
+ *   <li>Invokes <a href="#method_stopScreen"><code>stopScreen()</code> method</a>.</li></ol></li>
  *   <li><a href="#event_mediaAccessFallback"><code>mediaAccessFallback</code> event</a> triggers parameter payload
  *   <code>state</code> as <code>FALLBACKED</code>, <code>isScreensharing</code> value as <code>true</code> and
  *   <code>isAudioFallback</code> value as <code>false</code>.</li>
@@ -22405,12 +22405,7 @@ Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
     enableAudio = true;
   }
 
-  if (typeof mediaOptions === 'object') {
-    mediaOptions.video = mediaOptions.video || {};
-    mediaOptions.video.mediaSource = 'window';
-    settings = mediaOptions;
-  }
-  else if(typeof mediaOptions === 'function') {
+  if(typeof mediaOptions === 'function') {
     callback = mediaOptions;
   }
 
@@ -22445,6 +22440,12 @@ Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
         }
       }
     };
+
+    if (typeof mediaOptions === 'object') {
+      mediaOptions.video = mediaOptions.video || {};
+      mediaOptions.video.mediaSource = 'window';
+      settings.getUserMediaSettngs = mediaOptions;
+    }
 
     var mediaAccessSuccessFn = function (stream) {
       self.off('mediaAccessError', mediaAccessErrorFn);
@@ -23067,11 +23068,12 @@ Skylink.prototype._addLocalMediaStreams = function(peerId) {
   // are attached to the tracks. We should iterates over track and print
   try {
     log.log([peerId, null, null, 'Adding local stream']);
+    var pc = self._peerConnections[peerId];
 
-  if (typeof enableAudio === 'function') {
-    callback = enableAudio;
-    enableAudio = true;
-  }
+    if (typeof enableAudio === 'function') {
+      callback = enableAudio;
+      enableAudio = true;
+    }
 
     if (pc) {
       if (pc.signalingState !== self.PEER_CONNECTION_STATE.CLOSED) {
