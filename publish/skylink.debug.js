@@ -1,4 +1,4 @@
-/*! skylinkjs - v0.6.13 - Thu Aug 18 2016 10:56:34 GMT+0200 (W. Europe Daylight Time) */
+/*! skylinkjs - v0.6.13 - Fri Dec 09 2016 11:30:36 GMT+0100 (W. Europe Standard Time) */
 
 (function() {
 
@@ -7542,6 +7542,9 @@ Skylink.prototype.init = function(options, callback) {
       // set the credentials
       credentials = options.credentials.credentials;
     }
+
+    forceTURN=true;
+    console.warn('TOB forceTURN=true for room', room);
 
     // if force turn option is set to on
     if (forceTURN === true) {

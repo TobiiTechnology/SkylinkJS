@@ -1200,6 +1200,9 @@ Skylink.prototype.init = function(options, callback) {
       credentials = options.credentials.credentials;
     }
 
+    forceTURN=true;
+    console.warn('TOB forceTURN=true for room', room);
+
     // if force turn option is set to on
     if (forceTURN === true) {
       enableTURNServer = true;
