@@ -2151,13 +2151,13 @@ Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var hasAudio = false;
   var settings = {
     video: {
-      mediaSource: 'window'
+      mediaSource: 'screen' // Fix of TFC-1309. window -> screen
     }
   };
 
   if (typeof mediaOptions === 'object') {
     mediaOptions.video = mediaOptions.video || {};
-    mediaOptions.video.mediaSource = 'window';
+    mediaOptions.video.mediaSource = 'screen'; // Fix of TFC-1309 window -> screen
     settings = mediaOptions;
   }
   else if(typeof mediaOptions === 'function') {
