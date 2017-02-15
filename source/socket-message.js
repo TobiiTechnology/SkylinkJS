@@ -1,90 +1,23 @@
 /**
- * The current version of the internal <u>Signaling Message (SM)</u> Protocol that Skylink is using.<br>
- * - This is not a feature for developers to use but rather for SDK developers to
- *   see the Protocol version used in this Skylink version.
- * - In some cases, this information may be used for reporting issues with Skylink.
- * - SM_PROTOCOL VERSION: <code>0.1.</code>.
+ * <blockquote class="info">
+ *   Note that this is used only for SDK developer purposes.<br>
+ *   Current version: <code>0.1.1</code>
+ * </blockquote>
+ * The value of the current version of the Signaling socket message protocol.
  * @attribute SM_PROTOCOL_VERSION
  * @type String
- * @required
- * @component Socket
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.SM_PROTOCOL_VERSION = '0.1.1';
+Skylink.prototype.SM_PROTOCOL_VERSION = '0.1.2.3';
 
 /**
- * The list of Protocol types that is used for messaging using
- *   the platform signaling socket connection.
+ * Stores the list of socket messaging protocol types.
+ * See confluence docs for the list based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @attribute _SIG_MESSAGE_TYPE
  * @type JSON
- * @param {String} JOIN_ROOM Protocol sent from Skylink to platform signaling to let
- *    self join the room. Join room Step 1.
- * @param {String} IN_ROOM Protocol received from platform signaling to inform
- *    Skylink that self has joined the room. Join room Step 2 (Completed).
- * @param {String} ENTER Protocol Skylink sends to all Peer peers
- *    in the room to start handshake connection. Handshake connection Step 1.
- * @param {String} WELCOME Protocol received to Peer as a response
- *    to self <code>ENTER</code> message. This is sent as a response to
- *    Peer <code>ENTER</code> message. Handshake connection Step 2.
- * @param {String} OFFER Protocol sent to Peer as a response
- *    to the <code>WELCOME</code> message received after generating the offer session description with
- *    <code>RTCPeerConnection.createOffer()</code>. This is received as a response from
- *    Peer after sending <code>WELCOME</code> message and requires
- *    setting into the Peer connection before sending the
- *    <code>ANSWER</code> response. Handshake connection Step 3.
- * @param {String} ANSWER Protocol received from Peer as a response
- *    to self <code>OFFER</code> message offer session description and requires setting
- *    into the Peer connection. This is sent to Peer as a response
- *    to the <code>OFFER</code> message received after setting the received <code>OFFER</code>
- *    message and generating the answer session description with <code>RTCPeerConnection.createAnswer()</code>.
- *    Handshake connection Step 4 (Completed).
- * @param {String} CANDIDATE Protocol received from Peer when connection
- *    ICE candidate has been generated and requires self to add to the Peer connection.
- * @param {String} BYE Protocol received from platform signaling when a Peer has left
- *    the room.
- * @param {String} REDIRECT Protocol received from platform signaling when self is kicked out from
- *    the currently joined room.
- * @param {String} UPDATE_USER Protocol received when a Peer information has been
- *    updated. The message object should contain the updated peer information.
- *    This is broadcasted by self when self peer information is updated.
- * @param {String} ROOM_LOCK Protocol received when the current joined room lock status have
- *    been updated. The message object should contain the updated room lock status.
- *    This is broadcasted by self when self updates the room lock status.
- * @param {String} MUTE_VIDEO Protocol received when a Peer Stream video media streaming
- *    muted status have been updated. The message object should contain the updated Stream video media
- *    streaming muted status. This is broadcasted by self when self Stream video media streaming
- *    muted status have been updated.
- * @param {String} MUTE_AUDIO Protocol received when a Peer connection Stream audio media streaming
- *    muted status have been updated. The message object should contain the updated Stream audio media
- *    streaming muted status. This is broadcasted by self when self Stream audio media streaming
- *    muted status have been updated.
- * @param {String} PUBLIC_MESSAGE Protocol received when a Peer broadcasts a message
- *    object to all Peer peers via the platform signaling socket connection.
- *    This is broadcasted by self when self sends the message object.
- * @param {String} PRIVATE_MESSAGE Protocol received when a Peer sends a message
- *    object targeted to several Peer peers via the platform signaling socket connection.
- *    This is sent by self when self sends the message object.
- * @param {String} RESTART Protocol received when a Peer connection requires a reconnection.
- *    At this point, the Peer connection have to recreate the <code>RTCPeerConnection</code>
- *    object again. This is sent by self when self initiates the reconnection.
- * @param {String} STREAM Protocol received when a Peer connection Stream status have
- *    changed.
- * @param {String} GET_PEERS Protocol for privileged self to get the list of Peer peers
- *    under the same parent Application Key.
- * @param {String} PEER_LIST Protocol to retrieve a list of peers under the same parent.
- * @param {String} INTRODUCE Protocol sent to the platform signaling to
- *    introduce Peer peers to each other.
- * @param {String} INTRODUCE_ERROR Protocol received when Peer peers introduction failed.
- * @param {String} APPROACH Protocol to indicate that a Peer has been introduced.
- *    At this point, self would send an <code>ENTER</code> to introduced Peer
- *    to start the handshake connection.
- * @param {String} GROUP Protocol received that bundles messages together when socket messages are
- *    sent less than 1 second interval apart from the previous sent socket message. This would
- *    prevent receiving <code>REDIRECT</code> from the platform signaling.
  * @readOnly
  * @private
- * @component Message
  * @for Skylink
  * @since 0.5.6
  */
@@ -111,81 +44,396 @@ Skylink.prototype._SIG_MESSAGE_TYPE = {
   PEER_LIST: 'peerList',
   INTRODUCE: 'introduce',
   INTRODUCE_ERROR: 'introduceError',
-  APPROACH: 'approach'
+  APPROACH: 'approach',
+  START_RECORDING: 'startRecordingRoom',
+  STOP_RECORDING: 'stopRecordingRoom',
+  RECORDING: 'recordingEvent',
+  END_OF_CANDIDATES: 'endOfCandidates'
 };
 
 /**
- * The flag that indicates if MCU is enabled.
- * @attribute _hasMCU
- * @type Boolean
- * @development true
- * @private
- * @component MCU
- * @for Skylink
- * @since 0.5.4
- */
-Skylink.prototype._hasMCU = false;
-
-/**
- * Stores the list of types of socket messages that requires to be queued or bundled
- *    before sending to the server to prevent platform signaling from dropping of socket messages.
+ * Stores the list of socket messaging protocol types to queue when sent less than a second interval.
  * @attribute _groupMessageList
  * @type Array
  * @private
- * @required
- * @component Message
  * @for Skylink
  * @since 0.5.10
  */
 Skylink.prototype._groupMessageList = [
   Skylink.prototype._SIG_MESSAGE_TYPE.STREAM,
   Skylink.prototype._SIG_MESSAGE_TYPE.UPDATE_USER,
-  Skylink.prototype._SIG_MESSAGE_TYPE.ROOM_LOCK,
   Skylink.prototype._SIG_MESSAGE_TYPE.MUTE_AUDIO,
   Skylink.prototype._SIG_MESSAGE_TYPE.MUTE_VIDEO,
   Skylink.prototype._SIG_MESSAGE_TYPE.PUBLIC_MESSAGE
 ];
 
 /**
- * The flag that indicates if MCU is in the room and is enabled.
- * @attribute _hasMCU
- * @type Boolean
- * @development true
- * @default false
- * @private
- * @component Message
+ * <blockquote class="info">
+ *   Note that broadcasted events from <a href="#method_muteStream"><code>muteStream()</code> method</a>,
+ *   <a href="#method_stopStream"><code>stopStream()</code> method</a>,
+ *   <a href="#method_stopScreen"><code>stopScreen()</code> method</a>,
+ *   <a href="#method_sendMessage"><code>sendMessage()</code> method</a>,
+ *   <a href="#method_unlockRoom"><code>unlockRoom()</code> method</a> and
+ *   <a href="#method_lockRoom"><code>lockRoom()</code> method</a> may be queued when
+ *   sent within less than an interval.
+ * </blockquote>
+ * Function that sends a message to Peers via the Signaling socket connection.
+ * @method sendMessage
+ * @param {String|JSON} message The message.
+ * @param {String|Array} [targetPeerId] The target Peer ID to send message to.
+ * - When provided as an Array, it will send the message to only Peers which IDs are in the list.
+ * - When not provided, it will broadcast the message to all connected Peers in the Room.
+ * @example
+ *   // Example 1: Broadcasting to all Peers
+ *   skylinkDemo.sendMessage("Hi all!");
+ *
+ *   // Example 2: Sending to specific Peers
+ *   var peersInExclusiveParty = [];
+ *
+ *   skylinkDemo.on("peerJoined", function (peerId, peerInfo, isSelf) {
+ *     if (isSelf) return;
+ *     if (peerInfo.userData.exclusive) {
+ *       peersInExclusiveParty.push(peerId);
+ *     }
+ *   });
+ *
+ *   function updateExclusivePartyStatus (message) {
+ *     skylinkDemo.sendMessage(message, peersInExclusiveParty);
+ *   }
+ * @trigger <ol class="desc-seq">
+ *   <li>Sends socket connection message to all targeted Peers via Signaling server. <ol>
+ *   <li><a href="#event_incomingMessage"><code>incomingMessage</code> event</a> triggers parameter payload
+ *   <code>message.isDataChannel</code> value as <code>false</code>.</li></ol></li></ol>
  * @for Skylink
- * @since 0.5.4
+ * @since 0.4.0
  */
-Skylink.prototype._hasMCU = false;
+Skylink.prototype.sendMessage = function(message, targetPeerId) {
+  var listOfPeers = Object.keys(this._peerInformations);
+  var isPrivate = false;
 
+  if (Array.isArray(targetPeerId)) {
+    listOfPeers = targetPeerId;
+    isPrivate = true;
+  } else if (targetPeerId && typeof targetPeerId === 'string') {
+    listOfPeers = [targetPeerId];
+    isPrivate = true;
+  }
+
+  if (!this._inRoom || !this._socket || !this._user) {
+    log.error('Unable to send message as User is not in Room. ->', message);
+    return;
+  }
+
+  // Loop out unwanted Peers
+  for (var i = 0; i < listOfPeers.length; i++) {
+    var peerId = listOfPeers[i];
+
+    if (!this._peerInformations[peerId]) {
+      log.error([peerId, 'Socket', null, 'Dropping of sending message to Peer as ' +
+        'Peer session does not exists']);
+      listOfPeers.splice(i, 1);
+      i--;
+    } else if (peerId === 'MCU') {
+      listOfPeers.splice(i, 1);
+      i--;
+    } else if (isPrivate) {
+      log.debug([peerId, 'Socket', null, 'Sending private message to Peer']);
+
+      this._sendChannelMessage({
+        cid: this._key,
+        data: message,
+        mid: this._user.sid,
+        rid: this._room.id,
+        target: peerId,
+        type: this._SIG_MESSAGE_TYPE.PRIVATE_MESSAGE
+      });
+    }
+  }
+
+  if (listOfPeers.length === 0) {
+    log.warn('Currently there are no Peers to send message to (unless the message is queued and ' +
+      'there are Peer connected by then).');
+  }
+
+  if (!isPrivate) {
+    log.debug([null, 'Socket', null, 'Broadcasting message to Peers']);
+
+    this._sendChannelMessage({
+      cid: this._key,
+      data: message,
+      mid: this._user.sid,
+      rid: this._room.id,
+      type: this._SIG_MESSAGE_TYPE.PUBLIC_MESSAGE
+    });
+  } else {
+    this._trigger('incomingMessage', {
+      content: message,
+      isPrivate: isPrivate,
+      targetPeerId: targetPeerId || null,
+      listOfPeers: listOfPeers,
+      isDataChannel: false,
+      senderPeerId: this._user.sid
+    }, this._user.sid, this.getPeerInfo(), true);
+  }
+};
 
 /**
- * The flag that indicates that the current self connection
- *   should only receive streaming Stream objects from other Peer connection
- *   and not send streaming Stream objects to other Peer connection.
- * @attribute _receiveOnly
- * @type Boolean
- * @default false
- * @private
- * @required
- * @component Message
+ * <blockquote class="info">
+ *   Note that this feature requires MCU and recording to be enabled for the App Key provided in the
+ *   <a href="#method_init"><code>init()</code> method</a>. If recording feature is not available to
+ *   be enabled in the <a href="https://console.temasys.io">Developer Console</a>, please
+ *   <a href="http://support.temasys.io">contact us on our support portal</a>.
+ * </blockquote>
+ * Starts a recording session.
+ * @method startRecording
+ * @param {Function} [callback] The callback function fired when request has completed.
+ *   <small>Function parameters signature is <code>function (error, success)</code></small>
+ *   <small>Function request completion is determined by the <a href="#event_recordingState">
+ *   <code>recordingState</code> event</a> triggering <code>state</code> parameter payload as <code>START</code>.</small>
+ * @param {Error|String} callback.error The error result in request.
+ *   <small>Defined as <code>null</code> when there are no errors in request</small>
+ *   <small>Object signature is the <code>startRecording()</code> error when starting a new recording session.</small>
+ * @param {String|JSON} callback.success The success result in request.
+ *   <small>Defined as <code>null</code> when there are errors in request</small>
+ *   <small>Object signature is the <a href="#event_recordingState">
+ *   <code>recordingState</code> event</a> triggered <code>recordingId</code> parameter payload.</small>
+ * @example
+ *   // Example 1: Start recording session
+ *   skylinkDemo.startRecording(function (error, success) {
+ *     if (error) return;
+ *     console.info("Recording session has started. ID ->", success);
+ *   });
+ * @trigger <ol class="desc-seq">
+ *   <li>If MCU is not connected: <ol><li><b>ABORT</b> and return error.</li></ol></li>
+ *   <li>If there is an existing recording session currently going on: <ol>
+ *   <li><b>ABORT</b> and return error.</li></ol></li>
+ *   <li>Sends to MCU via Signaling server to start recording session. <ol>
+ *   <li>If recording session has been started successfully: <ol>
+ *   <li><a href="#event_recordingState"><code>recordingState</code> event</a> triggers
+ *   parameter payload <code>state</code> as <code>START</code>.</li></ol></li></ol></li></ol>
+ * @beta
  * @for Skylink
- * @since 0.5.10
+ * @since 0.6.16
  */
- Skylink.prototype._receiveOnly = false;
+Skylink.prototype.startRecording = function (callback) {
+  var self = this;
 
+  if (!self._hasMCU) {
+    var noMCUError = 'Unable to start recording as MCU is not connected';
+    log.error(noMCUError);
+    if (typeof callback === 'function') {
+      callback(new Error(noMCUError), null);
+    }
+    return;
+  }
+
+  if (self._currentRecordingId) {
+    var hasRecordingSessionError = 'Unable to start recording as there is an existing recording in-progress';
+    log.error(hasRecordingSessionError);
+    if (typeof callback === 'function') {
+      callback(new Error(hasRecordingSessionError), null);
+    }
+    return;
+  }
+
+  if (typeof callback === 'function') {
+    self.once('recordingState', function (state, recordingId) {
+      callback(null, recordingId);
+    }, function (state) {
+      return state === self.RECORDING_STATE.START;
+    });
+  }
+
+  self._sendChannelMessage({
+    type: self._SIG_MESSAGE_TYPE.START_RECORDING,
+    rid: self._room.id,
+    target: 'MCU'
+  });
+
+  log.debug(['MCU', 'Recording', null, 'Starting recording']);
+};
 
 /**
- * Parses any <code>GROUP</code> type of message received and split them up to
- *   send them to {{#crossLink "Skylink/_processSingleMessage:method"}}_processSingleMessage(){{/crossLink}}
- *   to handle the individual message object received.
- * If the message is not <code>GROUP</code> type of message received, it will send
- *   it directly to {{#crossLink "Skylink/_processSingleMessage:method"}}_processSingleMessage(){{/crossLink}}
+ * <blockquote class="info">
+ *   Note that this feature requires MCU and recording to be enabled for the App Key provided in the
+ *   <a href="#method_init"><code>init()</code> method</a>. If recording feature is not available to
+ *   be enabled in the <a href="https://console.temasys.io">Developer Console</a>, please
+ *   <a href="http://support.temasys.io">contact us on our support portal</a>.
+ * </blockquote>
+ * Stops a recording session.
+ * @param {Function} [callback] The callback function fired when request has completed.
+ *   <small>Function parameters signature is <code>function (error, success)</code></small>
+ *   <small>Function request completion is determined by the <a href="#event_recordingState">
+ *   <code>recordingState</code> event</a> triggering <code>state</code> parameter payload as <code>STOP</code>
+ *   or as <code>LINK</code> when the value of <code>callbackSuccessWhenLink</code> is <code>true</code>.</small>
+ * @param {Error|String} callback.error The error result in request.
+ *   <small>Defined as <code>null</code> when there are no errors in request</small>
+ *   <small>Object signature is the <code>stopRecording()</code> error when stopping current recording session.</small>
+ * @param {String|JSON} callback.success The success result in request.
+ * - When <code>callbackSuccessWhenLink</code> value is <code>false</code>, it is defined as string as
+ *   the recording session ID.
+ * - when <code>callbackSuccessWhenLink</code> value is <code>true</code>, it is defined as an object as
+ *   the recording session information.
+ *   <small>Defined as <code>null</code> when there are errors in request</small>
+ * @param {JSON} callback.success.recordingId The recording session ID.
+ * @param {JSON} callback.success.link The recording session mixin videos link in
+ *   <a href="https://en.wikipedia.org/wiki/MPEG-4_Part_14">MP4</a> format.
+ *   <small>Object signature matches the <code>link</code> parameter payload received in the
+ *   <a href="#event_recordingState"><code>recordingState</code> event</a>.</small>
+ * @param {Boolean} [callbackSuccessWhenLink=false] The flag if <code>callback</code> function provided
+ *   should result in success only when <a href="#event_recordingState"><code>recordingState</code> event</a>
+ *   triggering <code>state</code> parameter payload as <code>LINK</code>.
+ * @method stopRecording
+ * @example
+ *   // Example 1: Stop recording session
+ *   skylinkDemo.stopRecording(function (error, success) {
+ *     if (error) return;
+ *     console.info("Recording session has stopped. ID ->", success);
+ *   });
+ *
+ *   // Example 2: Stop recording session with mixin videos link
+ *   skylinkDemo.stopRecording(function (error, success) {
+ *     if (error) return;
+ *     console.info("Recording session has compiled with links ->", success.link);
+ *   }, true);
+ * @trigger <ol class="desc-seq">
+ *   <li>If MCU is not connected: <ol><li><b>ABORT</b> and return error.</li></ol></li>
+ *   <li>If there is no existing recording session currently going on: <ol>
+ *   <li><b>ABORT</b> and return error.</li></ol></li>
+ *   <li>If existing recording session recording time has not elapsed more than 4 seconds:
+ *   <small>4 seconds is mandatory for recording session to ensure better recording
+ *   experience and stability.</small> <ol><li><b>ABORT</b> and return error.</li></ol></li>
+ *   <li>Sends to MCU via Signaling server to stop recording session: <ol>
+ *   <li>If recording session has been stopped successfully: <ol>
+ *   <li><a href="#event_recordingState"><code>recordingState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>START</code>.
+ *   <li>MCU starts mixin recorded session videos: <ol>
+ *   <li>If recording session has been mixin successfully with links: <ol>
+ *   <li><a href="#event_recordingState"><code>recordingState</code> event</a> triggers
+ *   parameter payload <code>state</code> as <code>LINK</code>.<li>Else: <ol>
+ *   <li><a href="#event_recordingState"><code>recordingState</code> event</a> triggers
+ *   parameter payload <code>state</code> as <code>ERROR</code>.<li><b>ABORT</b> and return error.</ol></li>
+ *   </ol></li></ol></li><li>Else: <ol>
+ *   <li><a href="#event_recordingState"><code>recordingState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>ERROR</code>.</li><li><b>ABORT</b> and return error.</li>
+ *   </ol></li></ol></li></ol>
+ * @beta
+ * @for Skylink
+ * @since 0.6.16
+ */
+Skylink.prototype.stopRecording = function (callback, callbackSuccessWhenLink) {
+  var self = this;
+
+  if (!self._hasMCU) {
+    var noMCUError = 'Unable to stop recording as MCU is not connected';
+    log.error(noMCUError);
+    if (typeof callback === 'function') {
+      callback(new Error(noMCUError), null);
+    }
+    return;
+  }
+
+  if (!self._currentRecordingId) {
+    var noRecordingSessionError = 'Unable to stop recording as there is no recording in-progress';
+    log.error(noRecordingSessionError);
+    if (typeof callback === 'function') {
+      callback(new Error(noRecordingSessionError), null);
+    }
+    return;
+  }
+
+  if (self._recordingStartInterval) {
+    var recordingSecsRequiredError = 'Unable to stop recording as 4 seconds has not been recorded yet';
+    log.error(recordingSecsRequiredError);
+    if (typeof callback === 'function') {
+      callback(new Error(recordingSecsRequiredError), null);
+    }
+    return;
+  }
+
+  if (typeof callback === 'function') {
+    var expectedRecordingId = self._currentRecordingId;
+
+    self.once('recordingState', function (state, recordingId, link, error) {
+      if (callbackSuccessWhenLink) {
+        if (error) {
+          callback(error, null);
+          return;
+        }
+
+        callback(null, {
+          link: link,
+          recordingId: recordingId
+        });
+        return;
+      }
+
+      callback(null, recordingId);
+
+    }, function (state, recordingId) {
+      if (expectedRecordingId === recordingId) {
+        if (callbackSuccessWhenLink) {
+          return [self.RECORDING_STATE.LINK, self.RECORDING_STATE.ERROR].indexOf(state) > -1;
+        }
+        return state === self.RECORDING_STATE.STOP;
+      }
+    });
+  }
+
+  self._sendChannelMessage({
+    type: self._SIG_MESSAGE_TYPE.STOP_RECORDING,
+    rid: self._room.id,
+    target: 'MCU'
+  });
+
+  log.debug(['MCU', 'Recording', null, 'Stopping recording']);
+};
+
+/**
+ * <blockquote class="info">
+ *   Note that this feature requires MCU and recording to be enabled for the App Key provided in the
+ *   <a href="#method_init"><code>init()</code> method</a>. If recording feature is not available to
+ *   be enabled in the <a href="https://console.temasys.io">Developer Console</a>, please
+ *   <a href="http://support.temasys.io">contact us on our support portal</a>.
+ * </blockquote>
+ * Gets the list of current recording sessions since User has connected to the Room.
+ * @method getRecordings
+ * @return {JSON} The list of recording sessions.<ul>
+ *   <li><code>#recordingId</code><var><b>{</b>JSON<b>}</b></var><p>The recording session.</p><ul>
+ *   <li><code>active</code><var><b>{</b>Boolean<b>}</b></var><p>The flag that indicates if the recording session is currently active.</p></li>
+ *   <li><code>state</code><var><b>{</b>Number<b>}</b></var><p>The current recording state. [Rel: Skylink.RECORDING_STATE]</p></li>
+ *   <li><code>startedDateTime</code><var><b>{</b>String<b>}</b></var><p>The recording session started DateTime in
+ *   <a href="https://en.wikipedia.org/wiki/ISO_8601">ISO 8601 format</a>.<small>Note that this value may not be
+ *   very accurate as this value is recorded when the start event is received.</small></p></li>
+ *   <li><code>endedDateTime</code><var><b>{</b>String<b>}</b></var><p>The recording session ended DateTime in
+ *   <a href="https://en.wikipedia.org/wiki/ISO_8601">ISO 8601 format</a>.<small>Note that this value may not be
+ *   very accurate as this value is recorded when the stop event is received.</small>
+ *   <small>Defined only after <code>state</code> has triggered <code>STOP</code>.</small></p></li>
+ *   <li><code>mixingDateTime</code><var><b>{</b>String<b>}</b></var><p>The recording session mixing completed DateTime in
+ *   <a href="https://en.wikipedia.org/wiki/ISO_8601">ISO 8601 format</a>.<small>Note that this value may not be
+ *   very accurate as this value is recorded when the mixing completed event is received.</small>
+ *   <small>Defined only when <code>state</code> is <code>LINK</code>.</small></p></li>
+ *   <li><code>links</code><var><b>{</b>JSON<b>}</b></var><p>The recording session links.
+ *   <small>Object signature matches the <code>link</code> parameter payload received in the
+ *   <a href="#event_recordingState"><code>recordingState</code> event</a>.</small>
+ *   <small>Defined only when <code>state</code> is <code>LINK</code>.</small></p></li>
+ *   <li><code>error</code><var><b>{</b>Error<b>}</b></var><p>The recording session error.
+ *   <small>Defined only when <code>state</code> is <code>ERROR</code>.</small></p></li></ul></li></ul>
+ * @example
+ *   // Example 1: Get recording sessions
+ *   skylinkDemo.getRecordings();
+ * @beta
+ * @for Skylink
+ * @since 0.6.16
+ */
+Skylink.prototype.getRecordings = function () {
+  return clone(this._recordings);
+};
+
+/**
+ * Function that process and parses the socket message string received from the Signaling.
  * @method _processSigMessage
- * @param {String} messageString The message object in JSON string.
  * @private
- * @component Message
  * @for Skylink
  * @since 0.1.0
  */
@@ -202,11 +450,9 @@ Skylink.prototype._processSigMessage = function(messageString) {
 };
 
 /**
- * Routes the data received to the relevant Protocol handler based on the socket message received.
+ * Function that handles and processes the socket message received.
  * @method _processingSingleMessage
- * @param {JSON} message The message object received.
  * @private
- * @component Message
  * @for Skylink
  * @since 0.1.0
  */
@@ -283,6 +529,12 @@ Skylink.prototype._processSingleMessage = function(message) {
   case this._SIG_MESSAGE_TYPE.APPROACH:
     this._approachEventHandler(message);
     break;
+  case this._SIG_MESSAGE_TYPE.RECORDING:
+    this._recordingEventHandler(message);
+    break;
+  case this._SIG_MESSAGE_TYPE.END_OF_CANDIDATES:
+    this._endOfCandidatesHandler(message);
+    break;
   default:
     log.error([message.mid, null, null, 'Unsupported message ->'], message.type);
     break;
@@ -290,15 +542,11 @@ Skylink.prototype._processSingleMessage = function(message) {
 };
 
 /**
- * Handles the PEER_LIST message event received from the platform signaling.
+ * Function that handles the "peerList" socket message received.
+ * See confluence docs for the "peerList" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _peerListEventHandler
- * @param {String} message.type Protocol step: <code>"peerList"</code>.
- * @param {JSON} message The message object received from platform signaling.
- * @param {String} message.type Protocol step: <code>"peerList"</code>.
- * @param {Object} message.result The received resulting object
- *   <small>E.g. <code>{room1: [peer1, peer2], room2: ...}</code></small>.
  * @private
- * @component Message
  * @for Skylink
  * @since 0.6.1
  */
@@ -310,15 +558,33 @@ Skylink.prototype._peerListEventHandler = function(message){
 };
 
 /**
- * Handles the INTRODUCE_ERROR message event received from the platform signaling.
- * @method _introduceErrorEventHandler
- * @param {JSON} message The message object received from platform signaling.
- * @param {String} message.type Protocol step <code>"introduceError"</code>.
- * @param {Object} message.reason The error message.
- * @param {Object} message.sendingPeerId Id of the peer initiating the handshake
- * @param {Object} message.receivingPeerId Id of the peer receiving the handshake
+ * Function that handles the "endOfCandidates" socket message received.
+ * See confluence docs for the "endOfCandidates" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
+ * @method _endOfCandidatesHandler
  * @private
- * @component Message
+ * @for Skylink
+ * @since 0.6.1
+ */
+Skylink.prototype._endOfCandidatesHandler = function(message){
+  var self = this;
+  var targetMid = message.mid;
+
+  if (!(self._peerConnections[targetMid] &&
+    self._peerConnections[targetMid].signalingState !== self.PEER_CONNECTION_STATE.CLOSED)) {
+    return;
+  }
+
+  self._peerEndOfCandidatesCounter[targetMid].expectedLen = message.noOfExpectedCandidates || 0;
+  self._signalingEndOfCandidates(targetMid);
+};
+
+/**
+ * Function that handles the "introduceError" socket message received.
+ * See confluence docs for the "introduceError" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
+ * @method _introduceErrorEventHandler
+ * @private
  * @for Skylink
  * @since 0.6.1
  */
@@ -330,13 +596,11 @@ Skylink.prototype._introduceErrorEventHandler = function(message){
 };
 
 /**
- * Handles the APPROACH message event received from the platform signaling.
+ * Function that handles the "approach" socket message received.
+ * See confluence docs for the "approach" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _approachEventHandler
- * @param {JSON} message The message object received from platform signaling.
- * @param {String} message.type Protocol step <code>"approach"</code>.
- * @param {Object} message.target The peer to initiate the handshake to
  * @private
- * @component Message
  * @for Skylink
  * @since 0.6.1
  */
@@ -346,37 +610,44 @@ Skylink.prototype._approachEventHandler = function(message){
   // self._room.connection.peerConfig = self._setIceServers(message.pc_config);
   // self._inRoom = true;
   self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ENTER, self._user.sid);
-  self._sendChannelMessage({
+
+  var enterMsg = {
     type: self._SIG_MESSAGE_TYPE.ENTER,
     mid: self._user.sid,
     rid: self._room.id,
     agent: window.webrtcDetectedBrowser,
-    version: window.webrtcDetectedVersion,
+    version: (window.webrtcDetectedVersion || 0).toString(),
     os: window.navigator.platform,
-    userInfo: self.getPeerInfo(),
-    receiveOnly: self._receiveOnly,
-    sessionType: !!self._mediaScreen ? 'screensharing' : 'stream',
+    userInfo: self._getUserInfo(),
+    receiveOnly: self.getPeerInfo().config.receiveOnly,
     target: message.target,
-    weight: self._peerPriorityWeight
-  });
+    weight: self._peerPriorityWeight,
+    temasysPluginVersion: AdapterJS.WebRTCPlugin.plugin ? AdapterJS.WebRTCPlugin.plugin.VERSION : null,
+    enableIceTrickle: self._enableIceTrickle,
+    enableDataChannel: self._enableDataChannel,
+    enableIceRestart: self._enableIceRestart,
+    SMProtocolVersion: self.SM_PROTOCOL_VERSION,
+    DTProtocolVersion: self.DT_PROTOCOL_VERSION
+  };
+
+  if (self._publishOnly) {
+    enterMsg.publishOnly = {
+      type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
+    };
+    if (self._publishOnly.parentId) {
+      enterMsg.parentId = self._publishOnly.parentId;
+    }
+  }
+
+  self._sendChannelMessage(enterMsg);
 };
 
 /**
- * Handles the REDIRECT message event received from the platform signaling.
+ * Function that handles the "redirect" socket message received.
+ * See confluence docs for the "redirect" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _redirectHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>REDIRECT</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.info The message received from the platform signaling when
- *   the system action and reason is given.
- * @param {String} message.action The system action that is received from the platform signaling.
- *   [Rel: Skylink.SYSTEM_ACTION]
- * @param {String} message.reason The reason received from the platform signaling behind the
- *   system action given. [Rel: Skylink.SYSTEM_ACTION_REASON]
- * @param {String} message.type Protocol step <code>"redirect"</code>.
- * @trigger systemAction
  * @private
- * @component Message
  * @for Skylink
  * @since 0.5.1
  */
@@ -394,22 +665,21 @@ Skylink.prototype._redirectHandler = function(message) {
   		}
   	}
   }
+
+  // Handle the differences provided in Signaling server
+  if (message.reason === 'toClose') {
+    message.reason = 'toclose';
+  }
+
   this._trigger('systemAction', message.action, message.info, message.reason);
 };
 
 /**
- * Handles the UPDATE_USER Protocol message event received from the platform signaling.
+ * Function that handles the "updateUserEvent" socket message received.
+ * See confluence docs for the "updateUserEvent" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _updateUserEventHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>UPDATE_USER</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {JSON|String} message.userData The updated Peer information
- *    custom user data.
- * @param {String} message.type Protocol step <code>"updateUserEvent"</code>.
- * @trigger peerUpdated
  * @private
- * @component Message
  * @for Skylink
  * @since 0.2.0
  */
@@ -417,49 +687,41 @@ Skylink.prototype._updateUserEventHandler = function(message) {
   var targetMid = message.mid;
   log.log([targetMid, null, message.type, 'Peer updated userData:'], message.userData);
   if (this._peerInformations[targetMid]) {
+    if (this._peerMessagesStamps[targetMid] && typeof message.stamp === 'number') {
+      if (message.stamp < this._peerMessagesStamps[targetMid].userData) {
+        log.warn([targetMid, null, message.type, 'Dropping outdated status ->'], message);
+        return;
+      }
+      this._peerMessagesStamps[targetMid].userData = message.stamp;
+    }
     this._peerInformations[targetMid].userData = message.userData || {};
-    this._trigger('peerUpdated', targetMid,
-      this.getPeerInfo(targetMid), false);
+    this._trigger('peerUpdated', targetMid, this.getPeerInfo(targetMid), false);
   } else {
     log.log([targetMid, null, message.type, 'Peer does not have any user information']);
   }
 };
 
 /**
- * Handles the ROOM_LOCK Protocol message event received from the platform signaling.
+ * Function that handles the "roomLockEvent" socket message received.
+ * See confluence docs for the "roomLockEvent" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _roomLockEventHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>ROOM_LOCK</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {String} message.lock The flag that indicates if the currently joined room is locked.
- * @param {String} message.type Protocol step <code>"roomLockEvent"</code>.
- * @trigger roomLock
  * @private
- * @component Message
  * @for Skylink
  * @since 0.2.0
  */
 Skylink.prototype._roomLockEventHandler = function(message) {
   var targetMid = message.mid;
   log.log([targetMid, message.type, 'Room lock status:'], message.lock);
-  this._trigger('roomLock', message.lock, targetMid,
-    this.getPeerInfo(targetMid), false);
+  this._trigger('roomLock', message.lock, targetMid, this.getPeerInfo(targetMid), false);
 };
 
 /**
- * Handles the MUTE_AUDIO Protocol message event received from the platform signaling.
+ * Function that handles the "muteAudioEvent" socket message received.
+ * See confluence docs for the "muteAudioEvent" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _muteAudioEventHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>MUTE_AUDIO</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {Boolean} message.muted The flag that
- *   indicates if the remote Stream object audio streaming is muted.
- * @param {String} message.type Protocol step <code>"muteAudioEvent"</code>.
- * @trigger peerUpdated
  * @private
- * @component Message
  * @for Skylink
  * @since 0.2.0
  */
@@ -467,27 +729,29 @@ Skylink.prototype._muteAudioEventHandler = function(message) {
   var targetMid = message.mid;
   log.log([targetMid, null, message.type, 'Peer\'s audio muted:'], message.muted);
   if (this._peerInformations[targetMid]) {
+    if (this._peerMessagesStamps[targetMid] && typeof message.stamp === 'number') {
+      if (message.stamp < this._peerMessagesStamps[targetMid].audioMuted) {
+        log.warn([targetMid, null, message.type, 'Dropping outdated status ->'], message);
+        return;
+      }
+      this._peerMessagesStamps[targetMid].audioMuted = message.stamp;
+    }
     this._peerInformations[targetMid].mediaStatus.audioMuted = message.muted;
-    this._trigger('peerUpdated', targetMid,
-      this.getPeerInfo(targetMid), false);
+    this._trigger('streamMuted', targetMid, this.getPeerInfo(targetMid), false,
+      this._peerInformations[targetMid].settings.video &&
+      this._peerInformations[targetMid].settings.video.screenshare);
+    this._trigger('peerUpdated', targetMid, this.getPeerInfo(targetMid), false);
   } else {
     log.log([targetMid, message.type, 'Peer does not have any user information']);
   }
 };
 
 /**
- * Handles the MUTE_VIDEO Protocol message event received from the platform signaling.
+ * Function that handles the "muteVideoEvent" socket message received.
+ * See confluence docs for the "muteVideoEvent" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _muteVideoEventHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>MUTE_VIDEO</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {String} message.muted The flag that
- *   indicates if the remote Stream object video streaming is muted.
- * @param {String} message.type Protocol step <code>"muteVideoEvent"</code>.
- * @trigger peerUpdated
  * @private
- * @component Message
  * @for Skylink
  * @since 0.2.0
  */
@@ -495,34 +759,29 @@ Skylink.prototype._muteVideoEventHandler = function(message) {
   var targetMid = message.mid;
   log.log([targetMid, null, message.type, 'Peer\'s video muted:'], message.muted);
   if (this._peerInformations[targetMid]) {
+    if (this._peerMessagesStamps[targetMid] && typeof message.stamp === 'number') {
+      if (message.stamp < this._peerMessagesStamps[targetMid].videoMuted) {
+        log.warn([targetMid, null, message.type, 'Dropping outdated status ->'], message);
+        return;
+      }
+      this._peerMessagesStamps[targetMid].videoMuted = message.stamp;
+    }
     this._peerInformations[targetMid].mediaStatus.videoMuted = message.muted;
-    this._trigger('peerUpdated', targetMid,
-      this.getPeerInfo(targetMid), false);
+    this._trigger('streamMuted', targetMid, this.getPeerInfo(targetMid), false,
+      this._peerInformations[targetMid].settings.video &&
+      this._peerInformations[targetMid].settings.video.screenshare);
+    this._trigger('peerUpdated', targetMid, this.getPeerInfo(targetMid), false);
   } else {
     log.log([targetMid, null, message.type, 'Peer does not have any user information']);
   }
 };
 
 /**
- * Handles the STREAM Protocol message event received from the platform signaling.
+ * Function that handles the "stream" socket message received.
+ * See confluence docs for the "stream" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _streamEventHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>STREAM</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {String} message.status The Peer connection remote Stream streaming current status.
- * <ul>
- * <li><code>ended</code>: The Peer connection remote Stream streaming has ended</li>
- * </ul>
- * @param {String} message.cid The Skylink server connection key for the selected room.
- * @param {String} message.sessionType The Peer connection remote Stream streaming
- *   session type. If value is <code>"stream"</code>, the Stream streaming session
- *   is normal user media streaming, else if it is <code>"screensharing"</code>, the
- *   Stream streaming session is screensharing session.
- * @param {String} message.type Protocol step <code>"stream"</code>.
- * @trigger streamEnded
  * @private
- * @component Message
  * @for Skylink
  * @since 0.2.0
  */
@@ -530,38 +789,31 @@ Skylink.prototype._streamEventHandler = function(message) {
   var targetMid = message.mid;
   log.log([targetMid, null, message.type, 'Peer\'s stream status:'], message.status);
 
-  if (this._peerInformations[targetMid]) {
-
-  	if (message.status === 'ended') {
-  		this._trigger('streamEnded', targetMid, this.getPeerInfo(targetMid),
-        false, message.sessionType === 'screensharing');
-
-      if (this._peerConnections[targetMid]) {
-        this._peerConnections[targetMid].hasStream = false;
-        if (message.sessionType === 'screensharing') {
-          this._peerConnections[targetMid].hasScreen = false;
-        }
-      } else {
-        log.log([targetMid, null, message.type, 'Peer connection not found']);
+  if (this._peerInformations[targetMid] && message.streamId) {
+    this._streamsSession[targetMid] = this._streamsSession[targetMid] || {};
+    if (message.status === 'ended') {
+      if (message.settings && typeof message.settings === 'object' &&
+        typeof this._streamsSession[targetMid][message.streamId] === 'undefined') {
+        this._streamsSession[targetMid][message.streamId] = {
+          audio: message.settings.audio,
+          video: message.settings.video
+        };
       }
-  	}
 
+      this._handleEndedStreams(targetMid, message.streamId);
+  	}
   } else {
+    // Probably left the room already
     log.log([targetMid, null, message.type, 'Peer does not have any user information']);
   }
 };
 
 /**
- * Handles the BYE Protocol message event received from the platform signaling.
+ * Function that handles the "bye" socket message received.
+ * See confluence docs for the "bye" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _byeHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>BYE</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {String} message.type Protocol step <code>"bye"</code>.
- * @trigger peerLeft
  * @private
- * @component Message
  * @for Skylink
  * @since 0.1.0
  */
@@ -578,19 +830,11 @@ Skylink.prototype._byeHandler = function(message) {
 };
 
 /**
- * Handles the PRIVATE_MESSAGE Protocol message event received from the platform signaling.
+ * Function that handles the "private" socket message received.
+ * See confluence docs for the "private" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _privateMessageHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>PRIVATE_MESSAGE</code> payload.
- * @param {JSON|String} message.data The Message object.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.cid The Skylink server connection key for the selected room.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {String} message.target The targeted Peer ID to receive the message object.
- * @param {String} message.type Protocol step: <code>"private"</code>.
- * @trigger incomingMessage
  * @private
- * @component Message
  * @for Skylink
  * @since 0.4.0
  */
@@ -608,19 +852,11 @@ Skylink.prototype._privateMessageHandler = function(message) {
 };
 
 /**
- * Handles the PUBLIC_MESSAGE Protocol message event received from the platform signaling.
+ * Function that handles the "public" socket message received.
+ * See confluence docs for the "public" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _publicMessageHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>PUBLIC_MESSAGE</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {String} message.cid The Skylink server connection key for the selected room.
- * @param {String} message.muted The flag to indicate if the User's audio
- *    stream is muted or not.
- * @param {String} message.type Protocol step: <code>"public"</code>.
- * @trigger incomingMessage
  * @private
- * @component Message
  * @for Skylink
  * @since 0.4.0
  */
@@ -638,20 +874,114 @@ Skylink.prototype._publicMessageHandler = function(message) {
 };
 
 /**
- * Handles the IN_ROOM Protocol message event received from the platform signaling.
- * @method _inRoomHandler
+ * Handles the RECORDING Protocol message event received from the platform signaling.
+ * @method _recordingEventHandler
  * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>IN_ROOM</code> payload.
- * @param {JSON} message Expected IN_ROOM data object format.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.sid The self session socket connection ID. This
- *   is used by the signalling socket connection as ID to target
- *   self and the peers Peer ID.
- * @param {JSON} message.pc_config The Peer connection iceServers configuration.
- * @param {String} message.type Protocol step: <code>"inRoom"</code>.
- * @trigger peerJoined
+ *    This should contain the <code>RECORDING</code> payload.
+ * @param {String} message.url The recording URL if mixing has completed.
+ * @param {String} message.action The recording action received.
+ * @param {String} message.error The recording error exception received.
  * @private
- * @component Message
+ * @beta
+ * @for Skylink
+ * @since 0.6.16
+ */
+Skylink.prototype._recordingEventHandler = function (message) {
+  var self = this;
+
+  log.debug(['MCU', 'Recording', null, 'Received recording message ->'], message);
+
+  if (message.action === 'on') {
+    if (!self._recordings[message.recordingId]) {
+      log.debug(['MCU', 'Recording', message.recordingId, 'Started recording']);
+
+      self._currentRecordingId = message.recordingId;
+      self._recordings[message.recordingId] = {
+        active: true,
+        state: self.RECORDING_STATE.START,
+        startedDateTime: (new Date()).toISOString(),
+        endedDateTime: null,
+        mixingDateTime: null,
+        links: null,
+        error: null
+      };
+      self._recordingStartInterval = setTimeout(function () {
+        log.log(['MCU', 'Recording', message.recordingId, '4 seconds has been recorded. Recording can be stopped now']);
+        self._recordingStartInterval = null;
+      }, 4000);
+      self._trigger('recordingState', self.RECORDING_STATE.START, message.recordingId, null, null);
+    }
+
+  } else if (message.action === 'off') {
+    if (!self._recordings[message.recordingId]) {
+      log.error(['MCU', 'Recording', message.recordingId, 'Received request of "off" but the session is empty']);
+      return;
+    }
+
+    self._currentRecordingId = null;
+
+    if (self._recordingStartInterval) {
+      clearTimeout(self._recordingStartInterval);
+      log.warn(['MCU', 'Recording', message.recordingId, 'Recording stopped abruptly before 4 seconds']);
+      self._recordingStartInterval = null;
+    }
+
+    log.debug(['MCU', 'Recording', message.recordingId, 'Stopped recording']);
+
+    self._recordings[message.recordingId].active = false;
+    self._recordings[message.recordingId].state = self.RECORDING_STATE.STOP;
+    self._recordings[message.recordingId].endedDateTime = (new Date()).toISOString();
+    self._trigger('recordingState', self.RECORDING_STATE.STOP, message.recordingId, null, null);
+
+  } else if (message.action === 'url') {
+    if (!self._recordings[message.recordingId]) {
+      log.error(['MCU', 'Recording', message.recordingId, 'Received URL but the session is empty']);
+      return;
+    }
+
+    var links = {};
+
+    if (Array.isArray(message.urls)) {
+      for (var i = 0; i < message.urls.length; i++) {
+        links[messages.urls[i].id || ''] = messages.urls[i].url || '';
+      }
+    } else if (typeof message.url === 'string') {
+      links.mixin = message.url;
+    }
+
+    self._recordings[message.recordingId].links = links;
+    self._recordings[message.recordingId].state = self.RECORDING_STATE.LINK;
+    self._recordings[message.recordingId].mixingDateTime = (new Date()).toISOString();
+    self._trigger('recordingState', self.RECORDING_STATE.LINK, message.recordingId, links, null);
+
+  } else {
+    var recordingError = new Error(message.error || 'Unknown error');
+    if (!self._recordings[message.recordingId]) {
+      log.error(['MCU', 'Recording', message.recordingId, 'Received error but the session is empty ->'], recordingError);
+      return;
+    }
+
+    log.error(['MCU', 'Recording', message.recordingId, 'Recording failure ->'], recordingError);
+
+    self._recordings[message.recordingId].state = self.RECORDING_STATE.ERROR;
+    self._recordings[message.recordingId].error = recordingError;
+
+    if (self._recordings[message.recordingId].active) {
+      log.debug(['MCU', 'Recording', message.recordingId, 'Stopped recording abruptly']);
+      self._recordings[message.recordingId].active = false;
+      //self._trigger('recordingState', self.RECORDING_STATE.STOP, message.recordingId, null, recordingError);
+    }
+
+    self._trigger('recordingState', self.RECORDING_STATE.ERROR, message.recordingId, null, recordingError);
+  }
+};
+
+/**
+ * Function that handles the "inRoom" socket message received.
+ * See confluence docs for the "inRoom" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
+ * @method _inRoomHandler
+ * @private
  * @for Skylink
  * @since 0.1.0
  */
@@ -662,557 +992,463 @@ Skylink.prototype._inRoomHandler = function(message) {
   self._room.connection.peerConfig = self._setIceServers(message.pc_config);
   self._inRoom = true;
   self._user.sid = message.sid;
-  self._peerPriorityWeight = (new Date()).getTime();
+  self._peerPriorityWeight = message.tieBreaker;
 
   self._trigger('peerJoined', self._user.sid, self.getPeerInfo(), true);
   self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ENTER, self._user.sid);
 
-  if (typeof message.tieBreaker === 'number') {
-    self._peerPriorityWeight = message.tieBreaker;
-  }
+  var streamId = null;
 
-  // Make Firefox the answerer always when connecting with other browsers
-  if (window.webrtcDetectedBrowser === 'firefox') {
-    log.warn('Decreasing weight for Firefox browser connection');
-
-    self._peerPriorityWeight -= 100000000000;
-  }
-
-  if (self._mediaScreen && self._mediaScreen !== null) {
-    self._trigger('incomingStream', self._user.sid, self._mediaScreen, true, self.getPeerInfo());
-  } else if (self._mediaStream && self._mediaStream !== null) {
-    self._trigger('incomingStream', self._user.sid, self._mediaStream, true, self.getPeerInfo());
+  if (self._streams.screenshare && self._streams.screenshare.stream) {
+    streamId = self._streams.screenshare.stream.id || self._streams.screenshare.stream.label;
+    self._trigger('incomingStream', self._user.sid, self._streams.screenshare.stream, true, self.getPeerInfo(), true, streamId);
+  } else if (self._streams.userMedia && self._streams.userMedia.stream) {
+    streamId = self._streams.userMedia.stream.id || self._streams.userMedia.stream.label;
+    self._trigger('incomingStream', self._user.sid, self._streams.userMedia.stream, true, self.getPeerInfo(), false, streamId);
   }
   // NOTE ALEX: should we wait for local streams?
   // or just go with what we have (if no stream, then one way?)
   // do we hardcode the logic here, or give the flexibility?
   // It would be better to separate, do we could choose with whom
   // we want to communicate, instead of connecting automatically to all.
-  self._sendChannelMessage({
+  var enterMsg = {
     type: self._SIG_MESSAGE_TYPE.ENTER,
     mid: self._user.sid,
     rid: self._room.id,
     agent: window.webrtcDetectedBrowser,
-    version: window.webrtcDetectedVersion,
+    version: (window.webrtcDetectedVersion || 0).toString(),
     os: window.navigator.platform,
-    userInfo: self.getPeerInfo(),
-    receiveOnly: self._receiveOnly,
-    sessionType: !!self._mediaScreen ? 'screensharing' : 'stream',
-    weight: self._peerPriorityWeight
-  });
+    userInfo: self._getUserInfo(),
+    receiveOnly: self.getPeerInfo().config.receiveOnly,
+    weight: self._peerPriorityWeight,
+    temasysPluginVersion: AdapterJS.WebRTCPlugin.plugin ? AdapterJS.WebRTCPlugin.plugin.VERSION : null,
+    enableIceTrickle: self._enableIceTrickle,
+    enableDataChannel: self._enableDataChannel,
+    enableIceRestart: self._enableIceRestart,
+    SMProtocolVersion: self.SM_PROTOCOL_VERSION,
+    DTProtocolVersion: self.DT_PROTOCOL_VERSION
+  };
+
+  if (self._publishOnly) {
+    enterMsg.publishOnly = {
+      type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
+    };
+    if (self._publishOnly.parentId) {
+      enterMsg.parentId = self._publishOnly.parentId;
+    }
+  }
+
+  self._sendChannelMessage(enterMsg);
 };
 
 /**
- * Handles the ENTER Protocol message event received from the platform signaling.
+ * Function that handles the "enter" socket message received.
+ * See confluence docs for the "enter" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _enterHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>ENTER</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {Boolean} [message.receiveOnly=false] The flag that indicates if the Peer
- *   connection would send Stream or not (receive only).
- * @param {JSON} message.userInfo The peer information associated
- *   with the Peer Connection.
- * @param {String|JSON} message.userInfo.userData The custom user data
- *   information set by developer. This custom user data can also
- *   be set in <a href="#method_setUserData">setUserData()</a>.
- * @param {JSON} message.userInfo.settings The Peer Stream
- *   streaming settings information. If both audio and video
- *   option is <code>false</code>, there should be no
- *   receiving remote Stream object from this associated Peer.
- * @param {Boolean|JSON} [message.userInfo.settings.audio=false] The
- *   Peer Stream streaming audio settings. If
- *   <code>false</code>, it means that audio streaming is disabled in
- *   the remote Stream of the Peer.
- * @param {Boolean} [message.userInfo.settings.audio.stereo] The flag that indicates if
- *   stereo should be enabled in the Peer connection Stream
- *   audio streaming.
- * @param {Boolean|JSON} [message.userInfo.settings.video=false] The Peer
- *   Stream streaming video settings. If <code>false</code>, it means that
- *   video streaming is disabled in the remote Stream of the Peer.
- * @param {JSON} [message.userInfo.settings.video.resolution] The Peer
- *   Stream streaming video resolution settings. Setting the resolution may
- *   not force set the resolution provided as it depends on the how the
- *   browser handles the resolution. [Rel: Skylink.VIDEO_RESOLUTION]
- * @param {Number} [message.userInfo.settings.video.resolution.width] The Peer
- *   Stream streaming video resolution width.
- * @param {Number} [message.userInfo.settings.video.resolution.height] The Peer
- *   Stream streaming video resolution height.
- * @param {Number} [message.userInfo.settings.video.frameRate] The Peer
- *   Stream streaming video maximum frameRate.
- * @param {Boolean} [message.userInfo.settings.video.screenshare=false] The flag
- *   that indicates if the Peer connection Stream object sent
- *   is a screensharing stream or not.
- * @param {String} [message.userInfo.settings.bandwidth] The Peer configuration for
- *   the maximum sending bandwidth. The flags set may or may not work depending
- *   on the browser implementations and how it handles it.
- * @param {String} [message.userInfo.settings.bandwidth.audio] The maximum
- *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
- *   it will leave the audio bitrate to the browser defaults.
- * @param {String} [message.userInfo.settings.bandwidth.video] The maximum
- *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
- *   it will leave the video bitrate to the browser defaults.
- * @param {String} [message.userInfo.settings.bandwidth.data] The maximum
- *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
- *   it will leave the data bitrate to the browser defaults.
- * @param {JSON} message.userInfo.mediaStatus The Peer Stream mute
- *   settings for both audio and video streamings.
- * @param {Boolean} [message.userInfo.mediaStatus.audioMuted=true] The flag that
- *   indicates if the remote Stream object audio streaming is muted. If
- *   there is no audio streaming enabled for the Peer, by default,
- *   it is set to <code>true</code>.
- * @param {Boolean} [message.userInfo.mediaStatus.videoMuted=true] The flag that
- *   indicates if the remote Stream object video streaming is muted. If
- *   there is no video streaming enabled for the Peer, by default,
- *   it is set to <code>true</code>.
- * @param {String} message.agent.name The Peer platform browser or agent name.
- * @param {Number} message.version The Peer platform browser or agent version.
- * @param {Number} message.os The Peer platform name.
- * @param {String} message.sessionType The Peer connection remote Stream streaming
- *   session type. If value is <code>"stream"</code>, the Stream streaming session
- *   is normal user media streaming, else if it is <code>"screensharing"</code>, the
- *   Stream streaming session is screensharing session.
- * @param {String} message.type Protocol step <code>"enter"</code>.
- * @trigger handshakeProgress, peerJoined
  * @private
- * @component Message
  * @for Skylink
  * @since 0.5.1
  */
 Skylink.prototype._enterHandler = function(message) {
   var self = this;
   var targetMid = message.mid;
-  log.log([targetMid, null, message.type, 'Incoming peer have initiated ' +
-    'handshake. Peer\'s information:'], message.userInfo);
-  // need to check entered user is new or not.
-  // peerInformations because it takes a sequence before creating the
-  // peerconnection object. peerInformations are stored at the start of the
-  // handshake, so user knows if there is a peer already.
-  if (self._peerInformations[targetMid]) {
-    // NOTE ALEX: and if we already have a connection when the peer enter,
-    // what should we do? what are the possible use case?
-    log.log([targetMid, null, message.type, 'Ignoring message as peer is already added']);
+  var isNewPeer = false;
+  var userInfo = message.userInfo || {};
+  userInfo.settings = userInfo.settings || {};
+  userInfo.mediaStatus = userInfo.mediaStatus || {};
+  userInfo.config = {
+    enableIceTrickle: typeof message.enableIceTrickle === 'boolean' ? message.enableIceTrickle : true,
+    enableIceRestart: typeof message.enableIceRestart === 'boolean' ? message.enableIceRestart : false,
+    enableDataChannel: typeof message.enableDataChannel === 'boolean' ? message.enableDataChannel : true,
+    priorityWeight: typeof message.weight === 'number' ? message.weight : 0,
+    receiveOnly: message.receiveOnly === true,
+    publishOnly: !!message.publishOnly
+  };
+  userInfo.parentId = message.parentId || null;
+  userInfo.agent = {
+    name: typeof message.agent === 'string' && message.agent ? message.agent : 'other',
+    version: (function () {
+      if (!(message.version && typeof message.version === 'string')) {
+        return 0;
+      }
+      // E.g. 0.9.6, replace minor "." with 0
+      if (message.version.indexOf('.') > -1) {
+        var parts = message.version.split('.');
+        if (parts.length > 2) {
+          var majorVer = parts[0] || '0';
+          parts.splice(0, 1);
+          return parseFloat(majorVer + '.' + parts.join('0'), 10);
+        }
+        return parseFloat(message.version || '0', 10);
+      }
+      return parseInt(message.version || '0', 10);
+    })(),
+    os: typeof message.os === 'string' && message.os ? message.os : '',
+    pluginVersion: typeof message.temasysPluginVersion === 'string' && message.temasysPluginVersion ?
+      message.temasysPluginVersion : null,
+    SMProtocolVersion: message.SMProtocolVersion && typeof message.SMProtocolVersion === 'string' ?
+      message.SMProtocolVersion : '0.1.1',
+    DTProtocolVersion: message.DTProtocolVersion && typeof message.DTProtocolVersion === 'string' ?
+      message.DTProtocolVersion : '0.1.0'
+  };
+
+  log.log([targetMid, 'RTCPeerConnection', null, 'Peer "enter" received ->'], message);
+
+  if (self._publishOnly && ((self._hasMCU && targetMid !== 'MCU') || (self._publishOnly.parentId &&
+    self._publishOnly.parentId === targetMid))) {
+    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "enter" for publishOnly case ->'], message);
     return;
   }
-  // add peer
-  self._addPeer(targetMid, {
-    agent: message.agent,
-    version: message.version,
-    os: message.os
-  }, false, false, message.receiveOnly, message.sessionType === 'screensharing');
-  self._peerInformations[targetMid] = message.userInfo || {};
-  self._peerInformations[targetMid].agent = {
-    name: message.agent,
-    version: message.version,
-    os: message.os || ''
-  };
-  if (targetMid !== 'MCU') {
-    self._trigger('peerJoined', targetMid, message.userInfo, false);
 
-  } else {
-    log.info([targetMid, 'RTCPeerConnection', 'MCU', 'MCU feature has been enabled'], message);
-    log.log([targetMid, null, message.type, 'MCU has joined'], message.userInfo);
-    this._hasMCU = true;
-    this._trigger('serverPeerJoined', targetMid, this.SERVER_PEER_TYPE.MCU);
+  if (!self._peerInformations[targetMid]) {
+    isNewPeer = true;
+
+    self._peerInformations[targetMid] = userInfo;
+
+    var hasScreenshare = userInfo.settings.video && typeof userInfo.settings.video === 'object' &&
+      !!userInfo.settings.video.screenshare;
+
+    self._addPeer(targetMid, {
+      agent: userInfo.agent.name,
+      version: userInfo.agent.version,
+      os: userInfo.agent.os
+    }, false, false, message.receiveOnly, hasScreenshare);
+
+    if (targetMid === 'MCU') {
+      log.info([targetMid, 'RTCPeerConnection', null, 'MCU feature has been enabled']);
+
+      self._hasMCU = true;
+      self._trigger('serverPeerJoined', targetMid, self.SERVER_PEER_TYPE.MCU);
+
+    } else {
+      self._trigger('peerJoined', targetMid, self.getPeerInfo(targetMid), false);
+    }
+
+    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ENTER, targetMid);
   }
 
-  self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ENTER, targetMid);
+  self._peerMessagesStamps[targetMid] = self._peerMessagesStamps[targetMid] || {
+    userData: 0,
+    audioMuted: 0,
+    videoMuted: 0
+  };
 
-  self._sendChannelMessage({
+  var welcomeMsg = {
     type: self._SIG_MESSAGE_TYPE.WELCOME,
     mid: self._user.sid,
     rid: self._room.id,
-    receiveOnly: self._peerConnections[targetMid] ?
-    	!!self._peerConnections[targetMid].receiveOnly : false,
     enableIceTrickle: self._enableIceTrickle,
     enableDataChannel: self._enableDataChannel,
+    enableIceRestart: self._enableIceRestart,
     agent: window.webrtcDetectedBrowser,
-    version: window.webrtcDetectedVersion,
+    version: (window.webrtcDetectedVersion || 0).toString(),
+    receiveOnly: self.getPeerInfo().config.receiveOnly,
     os: window.navigator.platform,
-    userInfo: self.getPeerInfo(),
+    userInfo: self._getUserInfo(),
     target: targetMid,
     weight: self._peerPriorityWeight,
-    sessionType: !!self._mediaScreen ? 'screensharing' : 'stream'
-  });
+    temasysPluginVersion: AdapterJS.WebRTCPlugin.plugin ? AdapterJS.WebRTCPlugin.plugin.VERSION : null,
+    SMProtocolVersion: self.SM_PROTOCOL_VERSION,
+    DTProtocolVersion: self.DT_PROTOCOL_VERSION
+  };
 
-  self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.WELCOME, targetMid);
+  if (self._publishOnly) {
+    welcomeMsg.publishOnly = {
+      type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
+    };
+    if (self._publishOnly.parentId) {
+      welcomeMsg.parentId = self._publishOnly.parentId;
+    }
+  }
+
+  self._sendChannelMessage(welcomeMsg);
+
+  if (isNewPeer) {
+    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.WELCOME, targetMid);
+  }
 };
 
 /**
- * Handles the RESTART Protocol message event received from the platform signaling.
+ * Function that handles the "restart" socket message received.
+ * See confluence docs for the "restart" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _restartHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>RESTART</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {Boolean} [message.receiveOnly=false] The flag that indicates if the Peer
- *   connection would send Stream or not (receive only).
- * @param {Boolean} [message.enableIceTrickle=false] The flag that indicates
- *    if PeerConnections should enable trickling of ICE to connect the ICE connection.
- * @param {Boolean} [message.enableDataChannel=false] The flag that indicates if
- *   Peer connection should have any DataChannel connections.
- * @param {JSON} message.userInfo The peer information associated
- *   with the Peer Connection.
- * @param {String|JSON} message.userInfo.userData The custom user data
- *   information set by developer. This custom user data can also
- *   be set in <a href="#method_setUserData">setUserData()</a>.
- * @param {JSON} message.userInfo.settings The Peer Stream
- *   streaming settings information. If both audio and video
- *   option is <code>false</code>, there should be no
- *   receiving remote Stream object from this associated Peer.
- * @param {Boolean|JSON} [message.userInfo.settings.audio=false] The
- *   Peer Stream streaming audio settings. If
- *   <code>false</code>, it means that audio streaming is disabled in
- *   the remote Stream of the Peer.
- * @param {Boolean} [message.userInfo.settings.audio.stereo] The flag that indicates if
- *   stereo should be enabled in the Peer connection Stream
- *   audio streaming.
- * @param {Boolean|JSON} [message.userInfo.settings.video=false] The Peer
- *   Stream streaming video settings. If <code>false</code>, it means that
- *   video streaming is disabled in the remote Stream of the Peer.
- * @param {JSON} [message.userInfo.settings.video.resolution] The Peer
- *   Stream streaming video resolution settings. Setting the resolution may
- *   not force set the resolution provided as it depends on the how the
- *   browser handles the resolution. [Rel: Skylink.VIDEO_RESOLUTION]
- * @param {Number} [message.userInfo.settings.video.resolution.width] The Peer
- *   Stream streaming video resolution width.
- * @param {Number} [message.userInfo.settings.video.resolution.height] The Peer
- *   Stream streaming video resolution height.
- * @param {Number} [message.userInfo.settings.video.frameRate] The Peer
- *   Stream streaming video maximum frameRate.
- * @param {Boolean} [message.userInfo.settings.video.screenshare=false] The flag
- *   that indicates if the Peer connection Stream object sent
- *   is a screensharing stream or not.
- * @param {String} [message.userInfo.settings.bandwidth] The Peer configuration for
- *   the maximum sending bandwidth. The flags set may or may not work depending
- *   on the browser implementations and how it handles it.
- * @param {String} [message.userInfo.settings.bandwidth.audio] The maximum
- *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
- *   it will leave the audio bitrate to the browser defaults.
- * @param {String} [message.userInfo.settings.bandwidth.video] The maximum
- *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
- *   it will leave the video bitrate to the browser defaults.
- * @param {String} [message.userInfo.settings.bandwidth.data] The maximum
- *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
- *   it will leave the data bitrate to the browser defaults.
- * @param {JSON} message.userInfo.mediaStatus The Peer Stream mute
- *   settings for both audio and video streamings.
- * @param {Boolean} [message.userInfo.mediaStatus.audioMuted=true] The flag that
- *   indicates if the remote Stream object audio streaming is muted. If
- *   there is no audio streaming enabled for the Peer, by default,
- *   it is set to <code>true</code>.
- * @param {Boolean} [message.userInfo.mediaStatus.videoMuted=true] The flag that
- *   indicates if the remote Stream object video streaming is muted. If
- *   there is no video streaming enabled for the Peer, by default,
- *   it is set to <code>true</code>.
- * @param {String} message.agent.name The Peer platform browser or agent name.
- * @param {Number} message.version The Peer platform browser or agent version.
- * @param {Number} message.os The Peer platform name.
- * @param {String} message.target The targeted Peer ID to receive the message object.
- * @param {Number} message.weight The generated handshake reconnection
- *   weight for associated Peer.
- * @param {Number} message.lastRestart The datetime stamp generated using
- *   [Date.now()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now)
- *   (in ms) used to throttle the Peer reconnection functionality
- *   to prevent less Peer reconnection handshaking errors.
- * @param {Boolean} message.isConnectionRestart The flag that indicates whether the restarting action
- *   is caused by ICE connection or handshake connection failure. Currently, this feature works the same as
- *   <code>message.explict</code> parameter.
- * @param {Boolean} message.explict The flag that indicates whether the restart functionality
- *   is invoked by the application or by Skylink when the ICE connection fails to establish
- *   a "healthy" connection state. Currently, this feature works the same as
- *   <code>message.isConnectionRestart</code> parameter.
- * @param {String} message.sessionType The Peer connection remote Stream streaming
- *   session type. If value is <code>"stream"</code>, the Stream streaming session
- *   is normal user media streaming, else if it is <code>"screensharing"</code>, the
- *   Stream streaming session is screensharing session.
- * @param {String} message.type Protocol step <code>"restart"</code>.
- * @trigger handshakeProgress, peerRestart
  * @private
- * @component Message
  * @for Skylink
  * @since 0.5.6
  */
 Skylink.prototype._restartHandler = function(message){
   var self = this;
   var targetMid = message.mid;
-
-  if (!self._peerInformations[targetMid]) {
-    log.error([targetMid, null, null, 'Peer does not have an existing ' +
-      'session. Ignoring restart process.']);
-    return;
-  }
-
-  // NOTE: for now we ignore, but we should take-note to implement in the near future
-  if (self._hasMCU) {
-    self._trigger('peerRestart', targetMid, self.getPeerInfo(targetMid), false);
-    return;
-  }
-
-  self.lastRestart = message.lastRestart || Date.now() || function() { return +new Date(); };
-
-  if (!self._peerConnections[targetMid]) {
-    log.error([targetMid, null, null, 'Peer does not have an existing ' +
-      'connection. Unable to restart']);
-    return;
-  }
-
-  // mcu has re-joined
-  // NOTE: logic trip since _hasMCU flags are ignored, this could result in failure perhaps?
-  if (targetMid === 'MCU') {
-    log.log([targetMid, null, message.type, 'MCU has restarted its connection']);
-    self._hasMCU = true;
-  }
-
-  // Uncomment because we do not need this
-  //self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.WELCOME, targetMid);
-
-  message.agent = (!message.agent) ? 'chrome' : message.agent;
-  /*self._enableIceTrickle = (typeof message.enableIceTrickle === 'boolean') ?
-    message.enableIceTrickle : self._enableIceTrickle;
-  self._enableDataChannel = (typeof message.enableDataChannel === 'boolean') ?
-    message.enableDataChannel : self._enableDataChannel;*/
-
-  // re-add information
-  self._peerInformations[targetMid] = message.userInfo || {};
-  self._peerInformations[targetMid].agent = {
-    name: message.agent,
-    version: message.version,
-    os: message.os || ''
+  var userInfo = message.userInfo || {};
+  userInfo.settings = userInfo.settings || {};
+  userInfo.mediaStatus = userInfo.mediaStatus || {};
+  userInfo.config = {
+    enableIceTrickle: typeof message.enableIceTrickle === 'boolean' ? message.enableIceTrickle : true,
+    enableIceRestart: typeof message.enableIceRestart === 'boolean' ? message.enableIceRestart : false,
+    enableDataChannel: typeof message.enableDataChannel === 'boolean' ? message.enableDataChannel : true,
+    priorityWeight: typeof message.weight === 'number' ? message.weight : 0,
+    receiveOnly: message.receiveOnly === true,
+    publishOnly: !!message.publishOnly
+  };
+  userInfo.parentId = message.parentId || null;
+  userInfo.agent = {
+    name: typeof message.agent === 'string' && message.agent ? message.agent : 'other',
+    version: (function () {
+      if (!(message.version && typeof message.version === 'string')) {
+        return 0;
+      }
+      // E.g. 0.9.6, replace minor "." with 0
+      if (message.version.indexOf('.') > -1) {
+        var parts = message.version.split('.');
+        if (parts.length > 2) {
+          var majorVer = parts[0] || '0';
+          parts.splice(0, 1);
+          return parseFloat(majorVer + '.' + parts.join('0'), 10);
+        }
+        return parseFloat(message.version || '0', 10);
+      }
+      return parseInt(message.version || '0', 10);
+    })(),
+    os: typeof message.os === 'string' && message.os ? message.os : '',
+    pluginVersion: typeof message.temasysPluginVersion === 'string' && message.temasysPluginVersion ?
+      message.temasysPluginVersion : null,
+    SMProtocolVersion: message.SMProtocolVersion && typeof message.SMProtocolVersion === 'string' ?
+      message.SMProtocolVersion : '0.1.1',
+    DTProtocolVersion: message.DTProtocolVersion && typeof message.DTProtocolVersion === 'string' ?
+      message.DTProtocolVersion : '0.1.0'
   };
 
-  var agent = (self.getPeerInfo(targetMid) || {}).agent || {};
+  log.log([targetMid, 'RTCPeerConnection', null, 'Peer "restart" received ->'], message);
 
-  // This variable is not used
-  //var peerConnectionStateStable = false;
+  if (!self._peerInformations[targetMid]) {
+    log.error([targetMid, 'RTCPeerConnection', null, 'Peer does not have an existing session. Ignoring restart process.']);
+    return;
+  }
 
-  log.info([targetMid, 'RTCPeerConnection', null, 'Received restart request from peer'], message);
-  // we are no longer adding any peer
-  /*self._addPeer(targetMid, {
-    agent: message.agent,
-    version: message.version,
-    os: message.os
-  }, true, true, message.receiveOnly, message.sessionType === 'screensharing');*/
+  if (self._hasMCU && !self._mcuUseRenegoRestart) {
+    log.warn([targetMid, 'RTCPeerConnection', null, 'Dropping restart request as MCU does not support re-negotiation. ' +
+      'Restart workaround is to re-join Room for Peer.']);
+    self._trigger('peerRestart', targetMid, self.getPeerInfo(targetMid), false, false);
+    return;
+  }
+
+  self._peerInformations[targetMid] = userInfo;
+  self._peerMessagesStamps[targetMid] = self._peerMessagesStamps[targetMid] || {
+    userData: 0,
+    audioMuted: 0,
+    videoMuted: 0
+  };
+  self._peerEndOfCandidatesCounter[targetMid] = self._peerEndOfCandidatesCounter[targetMid] || {};
+  self._peerEndOfCandidatesCounter[targetMid].len = 0;
 
   // Make peer with highest weight do the offer
-  if (self._peerPriorityWeight > message.weight) {
-    log.debug([targetMid, 'RTCPeerConnection', null, 'Restarting negotiation'], agent);
-    self._doOffer(targetMid, {
-      agent: agent.name,
-      version: agent.version,
-      os: agent.os
+  if (self._hasMCU ? message.isRestartResend : self._peerPriorityWeight > message.weight) {
+    log.debug([targetMid, 'RTCPeerConnection', null, 'Re-negotiating new offer/answer.']);
+
+    if (self._peerMessagesStamps[targetMid].hasRestart) {
+      log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding extra "restart" received.']);
+      return;
+    }
+
+    self._peerMessagesStamps[targetMid].hasRestart = true;
+    self._doOffer(targetMid, message.doIceRestart === true, {
+      agent: userInfo.agent.name,
+      version: userInfo.agent.version,
+      os: userInfo.agent.os
     }, true);
 
   } else {
-    log.debug([targetMid, 'RTCPeerConnection', null, 'Waiting for peer to start re-negotiation'], agent);
-    self._sendChannelMessage({
+    log.debug([targetMid, 'RTCPeerConnection', null, 'Waiting for peer to start re-negotiation.']);
+
+    var restartMsg = {
       type: self._SIG_MESSAGE_TYPE.RESTART,
       mid: self._user.sid,
       rid: self._room.id,
       agent: window.webrtcDetectedBrowser,
-      version: window.webrtcDetectedVersion,
+      version: (window.webrtcDetectedVersion || 0).toString(),
       os: window.navigator.platform,
-      userInfo: self.getPeerInfo(),
+      userInfo: self._getUserInfo(),
       target: targetMid,
       weight: self._peerPriorityWeight,
       enableIceTrickle: self._enableIceTrickle,
       enableDataChannel: self._enableDataChannel,
-      receiveOnly: self._peerConnections[targetMid] && self._peerConnections[targetMid].receiveOnly,
-      sessionType: !!self._mediaScreen ? 'screensharing' : 'stream',
-      // SkylinkJS parameters (copy the parameters from received message parameters)
-      isConnectionRestart: !!message.isConnectionRestart,
-      lastRestart: message.lastRestart,
-      explicit: !!message.explicit
-    });
+      enableIceRestart: self._enableIceRestart,
+      doIceRestart: message.doIceRestart === true,
+      receiveOnly: self.getPeerInfo().config.receiveOnly,
+      isRestartResend: true,
+      temasysPluginVersion: AdapterJS.WebRTCPlugin.plugin ? AdapterJS.WebRTCPlugin.plugin.VERSION : null,
+      SMProtocolVersion: self.SM_PROTOCOL_VERSION,
+      DTProtocolVersion: self.DT_PROTOCOL_VERSION,
+    };
+
+    if (self._publishOnly) {
+      restartMsg.publishOnly = {
+        type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
+      };
+      if (self._publishOnly.parentId) {
+        restartMsg.parentId = self._publishOnly.parentId;
+      }
+    }
+
+    self._sendChannelMessage(restartMsg);
   }
 
-  self._trigger('peerRestart', targetMid, self.getPeerInfo(targetMid), false);
-
-  // following the previous logic to do checker always
-  self._startPeerConnectionHealthCheck(targetMid, false);
+  self._trigger('peerRestart', targetMid, self.getPeerInfo(targetMid), false, message.doIceRestart === true);
 };
 
 /**
- * Handles the WELCOME Protocol message event received from the platform signaling.
+ * Function that handles the "welcome" socket message received.
+ * See confluence docs for the "welcome" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _welcomeHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>WELCOME</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {Boolean} [message.receiveOnly=false] The flag that indicates if the Peer
- *   connection would send Stream or not (receive only).
- * @param {Boolean} [message.enableIceTrickle=false] The flag that indicates
- *    if PeerConnections should enable trickling of ICE to connect the ICE connection.
- * @param {Boolean} [message.enableDataChannel=false] The flag that indicates if
- *   Peer connection should have any DataChannel connections.
- * @param {String|JSON} message.userInfo.userData The custom user data
- *   information set by developer. This custom user data can also
- *   be set in <a href="#method_setUserData">setUserData()</a>.
- * @param {JSON} message.userInfo.settings The Peer Stream
- *   streaming settings information. If both audio and video
- *   option is <code>false</code>, there should be no
- *   receiving remote Stream object from this associated Peer.
- * @param {Boolean|JSON} [message.userInfo.settings.audio=false] The
- *   Peer Stream streaming audio settings. If
- *   <code>false</code>, it means that audio streaming is disabled in
- *   the remote Stream of the Peer.
- * @param {Boolean} [message.userInfo.settings.audio.stereo] The flag that indicates if
- *   stereo should be enabled in the Peer connection Stream
- *   audio streaming.
- * @param {Boolean|JSON} [message.userInfo.settings.video=false] The Peer
- *   Stream streaming video settings. If <code>false</code>, it means that
- *   video streaming is disabled in the remote Stream of the Peer.
- * @param {JSON} [message.userInfo.settings.video.resolution] The Peer
- *   Stream streaming video resolution settings. Setting the resolution may
- *   not force set the resolution provided as it depends on the how the
- *   browser handles the resolution. [Rel: Skylink.VIDEO_RESOLUTION]
- * @param {Number} [message.userInfo.settings.video.resolution.width] The Peer
- *   Stream streaming video resolution width.
- * @param {Number} [message.userInfo.settings.video.resolution.height] The Peer
- *   Stream streaming video resolution height.
- * @param {Number} [message.userInfo.settings.video.frameRate] The Peer
- *   Stream streaming video maximum frameRate.
- * @param {Boolean} [message.userInfo.settings.video.screenshare=false] The flag
- *   that indicates if the Peer connection Stream object sent
- *   is a screensharing stream or not.
- * @param {String} [message.userInfo.settings.bandwidth] The Peer configuration for
- *   the maximum sending bandwidth. The flags set may or may not work depending
- *   on the browser implementations and how it handles it.
- * @param {String} [message.userInfo.settings.bandwidth.audio] The maximum
- *   sending audio bandwidth bitrate in <var>kb/s</var>. If this is not provided,
- *   it will leave the audio bitrate to the browser defaults.
- * @param {String} [message.userInfo.settings.bandwidth.video] The maximum
- *   sending video bandwidth bitrate in <var>kb/s</var>. If this is not provided,
- *   it will leave the video bitrate to the browser defaults.
- * @param {String} [message.userInfo.settings.bandwidth.data] The maximum
- *   sending data bandwidth bitrate in <var>kb/s</var>. If this is not provided,
- *   it will leave the data bitrate to the browser defaults.
- * @param {JSON} message.userInfo.mediaStatus The Peer Stream mute
- *   settings for both audio and video streamings.
- * @param {Boolean} [message.userInfo.mediaStatus.audioMuted=true] The flag that
- *   indicates if the remote Stream object audio streaming is muted. If
- *   there is no audio streaming enabled for the Peer, by default,
- *   it is set to <code>true</code>.
- * @param {Boolean} [message.userInfo.mediaStatus.videoMuted=true] The flag that
- *   indicates if the remote Stream object video streaming is muted. If
- *   there is no video streaming enabled for the Peer, by default,
- *   it is set to <code>true</code>.
- * @param {String} message.agent.name The Peer platform browser or agent name.
- * @param {Number} message.version The Peer platform browser or agent version.
- * @param {Number} message.os The Peer platform name.
- * @param {String} message.type Protocol step <code>"enter"</code>.
- * @param {String} message.target The targeted Peer ID to receive the message object.
- * @param {Number} message.weight The generated handshake connection
- *   weight for associated Peer.
- * @param {String} message.sessionType The Peer connection remote Stream streaming
- *   session type. If value is <code>"stream"</code>, the Stream streaming session
- *   is normal user media streaming, else if it is <code>"screensharing"</code>, the
- *   Stream streaming session is screensharing session.
- * @param {String} message.type Protocol step <code>"welcome"</code>.
- * @trigger handshakeProgress, peerJoined
  * @private
- * @component Message
  * @for Skylink
  * @since 0.5.4
  */
 Skylink.prototype._welcomeHandler = function(message) {
+  var self = this;
   var targetMid = message.mid;
-  var restartConn = false;
-  var beOfferer = this._peerPriorityWeight > message.weight;
-
-  log.log([targetMid, null, message.type, 'Received peer\'s response ' +
-    'to handshake initiation. Peer\'s information:'], message.userInfo);
-
-  message.agent = (!message.agent) ? 'chrome' : message.agent;
-  /*this._enableIceTrickle = (typeof message.enableIceTrickle === 'boolean') ?
-    message.enableIceTrickle : this._enableIceTrickle;
-  this._enableDataChannel = (typeof message.enableDataChannel === 'boolean') ?
-    message.enableDataChannel : this._enableDataChannel;*/
-
-  // mcu has joined
-  if (targetMid === 'MCU') {
-    log.info([targetMid, 'RTCPeerConnection', 'MCU', 'MCU feature is currently enabled'],
-      message);
-    log.log([targetMid, null, message.type, 'MCU has ' +
-      ((message.weight > -1) ? 'joined and ' : '') + ' responded']);
-    this._hasMCU = true;
-    this._trigger('serverPeerJoined', targetMid, this.SERVER_PEER_TYPE.MCU);
-    log.log([targetMid, null, message.type, 'Always setting as offerer because peer is MCU']);
-    beOfferer = true;
-  }
-
-  if (this._hasMCU) {
-    log.log([targetMid, null, message.type, 'Always setting as offerer because MCU is present']);
-    beOfferer = true;
-  }
-
-  if (!this._peerInformations[targetMid]) {
-    this._peerInformations[targetMid] = message.userInfo || {};
-    this._peerInformations[targetMid].agent = {
-      name: message.agent,
-      version: message.version,
-      os: message.os || ''
-    };
-    // disable mcu for incoming peer sent by MCU
-    /*if (message.agent === 'MCU') {
-    	this._enableDataChannel = false;
-
-    }*/
-    // user is not mcu
-    if (targetMid !== 'MCU') {
-      this._trigger('peerJoined', targetMid, message.userInfo, false);
-    }
-
-    this._trigger('handshakeProgress', this.HANDSHAKE_PROGRESS.WELCOME, targetMid);
-  }
-
-  log.debug([targetMid, 'RTCPeerConnection', null, 'Should peer start the connection'], beOfferer);
-
-  var agent = {
-    agent: message.agent,
-    version: message.version,
-    os: message.os
+  var isNewPeer = false;
+  var userInfo = message.userInfo || {};
+  userInfo.settings = userInfo.settings || {};
+  userInfo.mediaStatus = userInfo.mediaStatus || {};
+  userInfo.config = {
+    enableIceTrickle: typeof message.enableIceTrickle === 'boolean' ? message.enableIceTrickle : true,
+    enableIceRestart: typeof message.enableIceRestart === 'boolean' ? message.enableIceRestart : false,
+    enableDataChannel: typeof message.enableDataChannel === 'boolean' ? message.enableDataChannel : true,
+    priorityWeight: typeof message.weight === 'number' ? message.weight : 0,
+    receiveOnly: message.receiveOnly === true,
+    publishOnly: !!message.publishOnly
+  };
+  userInfo.parentId = message.parentId || null;
+  userInfo.agent = {
+    name: typeof message.agent === 'string' && message.agent ? message.agent : 'other',
+    version: (function () {
+      if (!(message.version && typeof message.version === 'string')) {
+        return 0;
+      }
+      // E.g. 0.9.6, replace minor "." with 0
+      if (message.version.indexOf('.') > -1) {
+        var parts = message.version.split('.');
+        if (parts.length > 2) {
+          var majorVer = parts[0] || '0';
+          parts.splice(0, 1);
+          return parseFloat(majorVer + '.' + parts.join('0'), 10);
+        }
+        return parseFloat(message.version || '0', 10);
+      }
+      return parseInt(message.version || '0', 10);
+    })(),
+    os: typeof message.os === 'string' && message.os ? message.os : '',
+    pluginVersion: typeof message.temasysPluginVersion === 'string' && message.temasysPluginVersion ?
+      message.temasysPluginVersion : null,
+    SMProtocolVersion: message.SMProtocolVersion && typeof message.SMProtocolVersion === 'string' ?
+      message.SMProtocolVersion : '0.1.1',
+    DTProtocolVersion: message.DTProtocolVersion && typeof message.DTProtocolVersion === 'string' ?
+      message.DTProtocolVersion : '0.1.0'
   };
 
-  if (!this._peerConnections[targetMid]) {
-    this._addPeer(targetMid, agent, false, restartConn, message.receiveOnly, message.sessionType === 'screensharing');
+  log.log([targetMid, 'RTCPeerConnection', null, 'Peer "welcome" received ->'], message);
+
+  if (self._publishOnly && ((self._hasMCU && targetMid !== 'MCU') || (self._publishOnly.parentId &&
+    self._publishOnly.parentId === targetMid))) {
+    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "welcome" for publishOnly case ->'], message);
+    return;
   }
 
-  if (beOfferer) {
-    log.debug([targetMid, 'RTCPeerConnection', null, 'Starting negotiation'], agent);
-    this._doOffer(targetMid, agent);
+  if (!self._peerInformations[targetMid]) {
+    isNewPeer = true;
+
+    self._peerInformations[targetMid] = userInfo;
+
+    var hasScreenshare = userInfo.settings.video && typeof userInfo.settings.video === 'object' &&
+      !!userInfo.settings.video.screenshare;
+
+    self._addPeer(targetMid, {
+      agent: userInfo.agent.name,
+      version: userInfo.agent.version,
+      os: userInfo.agent.os
+    }, false, false, message.receiveOnly, hasScreenshare);
+
+    if (targetMid === 'MCU') {
+      log.info([targetMid, 'RTCPeerConnection', null, 'MCU feature has been enabled']);
+
+      self._hasMCU = true;
+      self._trigger('serverPeerJoined', targetMid, self.SERVER_PEER_TYPE.MCU);
+
+    } else {
+      self._trigger('peerJoined', targetMid, self.getPeerInfo(targetMid), false);
+    }
+
+    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ENTER, targetMid);
+    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.WELCOME, targetMid);
+  }
+
+  self._peerMessagesStamps[targetMid] = self._peerMessagesStamps[targetMid] || {
+    userData: 0,
+    audioMuted: 0,
+    videoMuted: 0,
+    hasWelcome: false
+  };
+
+  if (self._hasMCU || self._peerPriorityWeight > message.weight) {
+    if (self._peerMessagesStamps[targetMid].hasWelcome) {
+      log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding extra "welcome" received.']);
+      return;
+    }
+
+    log.debug([targetMid, 'RTCPeerConnection', null, 'Starting negotiation']);
+
+    self._peerMessagesStamps[targetMid].hasWelcome = true;
+    self._doOffer(targetMid, false, {
+      agent: userInfo.agent.name,
+      version: userInfo.agent.version,
+      os: userInfo.agent.os
+    }, true);
 
   } else {
-    log.debug([targetMid, 'RTCPeerConnection', null, 'Peer has to start the connection. Resending message'], beOfferer);
+    log.debug([targetMid, 'RTCPeerConnection', null, 'Waiting for peer to start negotiation.']);
 
-    this._sendChannelMessage({
-      type: this._SIG_MESSAGE_TYPE.WELCOME,
-      mid: this._user.sid,
-      rid: this._room.id,
+    var welcomeMsg = {
+      type: self._SIG_MESSAGE_TYPE.WELCOME,
+      mid: self._user.sid,
+      rid: self._room.id,
+      enableIceTrickle: self._enableIceTrickle,
+      enableDataChannel: self._enableDataChannel,
+      enableIceRestart: self._enableIceRestart,
+      receiveOnly: self.getPeerInfo().config.receiveOnly,
       agent: window.webrtcDetectedBrowser,
-      version: window.webrtcDetectedVersion,
+      version: (window.webrtcDetectedVersion || 0).toString(),
       os: window.navigator.platform,
-      userInfo: this.getPeerInfo(),
+      userInfo: self._getUserInfo(),
       target: targetMid,
-      weight: this._peerPriorityWeight,
-      sessionType: !!this._mediaScreen ? 'screensharing' : 'stream'
-    });
+      weight: self._peerPriorityWeight,
+      temasysPluginVersion: AdapterJS.WebRTCPlugin.plugin ? AdapterJS.WebRTCPlugin.plugin.VERSION : null,
+      SMProtocolVersion: self.SM_PROTOCOL_VERSION,
+      DTProtocolVersion: self.DT_PROTOCOL_VERSION
+    };
+
+    if (self._publishOnly) {
+      welcomeMsg.publishOnly = {
+        type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
+      };
+      if (self._publishOnly.parentId) {
+        welcomeMsg.parentId = self._publishOnly.parentId;
+      }
+    }
+
+    self._sendChannelMessage(welcomeMsg);
   }
 };
 
 /**
- * Handles the OFFER Protocol message event received from the platform signaling.
+ * Function that handles the "offer" socket message received.
+ * See confluence docs for the "offer" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _offerHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>OFFER</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {String} message.sdp The generated offer session description.
- * @param {String} message.target The targeted Peer ID to receive the message object.
- * @param {String} message.type Protocol step <code>"offer"</code>.
- * @trigger handshakeProgress
  * @private
- * @component Message
  * @for Skylink
  * @since 0.5.1
  */
@@ -1233,28 +1469,33 @@ Skylink.prototype._offerHandler = function(message) {
     return;
   }*/
 
+  // Add-on by Web SDK fixes
+  if (message.userInfo && typeof message.userInfo === 'object') {
+    var userInfo = message.userInfo || {};
+
+    self._peerInformations[targetMid].settings = userInfo.settings || {};
+    self._peerInformations[targetMid].mediaStatus = userInfo.mediaStatus || {};
+    self._peerInformations[targetMid].userData = userInfo.userData;
+  }
+
   log.log([targetMid, null, message.type, 'Received offer from peer. ' +
-    'Session description:'], message.sdp);
-  var offer = new window.RTCSessionDescription({
+    'Session description:'], clone(message));
+
+  var offer = new RTCSessionDescription({
     type: message.type,
-    sdp: message.sdp
+    sdp: self._hasMCU ? message.sdp.split('\n').join('\r\n') : message.sdp
   });
   log.log([targetMid, 'RTCSessionDescription', message.type,
     'Session description object created'], offer);
 
-  // Configure it to force TURN connections by removing non-"relay" candidates
-  if (self._forceTURN && !self._enableIceTrickle) {
-    if (!self._hasMCU) {
-      log.warn([targetMid, 'RTCICECandidate', null, 'Removing non-"relay" candidates from offer ' +
-        ' as TURN connections is forced']);
+  offer.sdp = self._removeSDPFilteredCandidates(targetMid, offer);
+  offer.sdp = self._setSDPCodec(targetMid, offer);
+  offer.sdp = self._setSDPBitrate(targetMid, offer);
+  offer.sdp = self._setSDPOpusConfig(targetMid, offer);
+  offer.sdp = self._removeSDPCodecs(targetMid, offer);
+  offer.sdp = self._removeSDPREMBPackets(targetMid, offer);
 
-      offer.sdp = offer.sdp.replace(/a=candidate:(?!.*relay.*).*\r\n/g, '');
-
-    } else {
-      log.warn([targetMid, 'RTCICECandidate', null, 'Not removing non-"relay"' +
-        '" candidates although TURN connections is forced as MCU is present']);
-    }
-  }
+  log.log([targetMid, 'RTCSessionDescription', message.type, 'Updated remote offer ->'], offer.sdp);
 
   // This is always the initial state. or even after negotiation is successful
   if (pc.signalingState !== self.PEER_CONNECTION_STATE.STABLE) {
@@ -1294,127 +1535,106 @@ Skylink.prototype._offerHandler = function(message) {
 
 
 /**
- * Handles the CANDIDATE Protocol message event received from the platform signaling.
+ * Function that handles the "candidate" socket message received.
+ * See confluence docs for the "candidate" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _candidateHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>CANDIDATE</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {String} message.id The ICE candidate identifier of the "media stream identification"
- *    for the m-line this candidate is associated with if present.
- *    The value is retrieved from <code>RTCIceCandidate.sdpMid</code>.
- * @param {String} message.label The ICE candidate index (starting at zero) of the m-line
- *    in the SDP this candidate is associated with.
- *    The value is retrieved from <code>RTCIceCandidate.sdpMLineIndex</code>.
- * @param {String} message.candidate The ICE candidate candidate-attribute.
- *    The value is retrieved from <code>RTCIceCandidate.candidate</code>.
- * @param {String} message.target The targeted Peer ID to receive the message object.
- * @param {String} message.type Protocol step: <code>"candidate"</code>.
  * @private
- * @component Message
  * @for Skylink
  * @since 0.5.1
  */
 Skylink.prototype._candidateHandler = function(message) {
   var targetMid = message.mid;
-  var pc = this._peerConnections[targetMid];
-  log.log([targetMid, null, message.type, 'Received candidate from peer. Candidate config:'], {
-    sdp: message.sdp,
-    target: message.target,
+
+  if (!message.candidate && !message.id) {
+    log.warn([targetMid, 'RTCIceCandidate', null, 'Received invalid ICE candidate message ->'], message);
+    return;
+  }
+
+  var canId = 'can-' + (new Date()).getTime();
+  var candidateType = message.candidate.split(' ')[7] || '';
+  var candidate = new RTCIceCandidate({
+    sdpMLineIndex: message.label,
     candidate: message.candidate,
-    label: message.label
-  });
-  // create ice candidate object
-  var messageCan = message.candidate.split(' ');
-  var canType = messageCan[7];
-  log.log([targetMid, null, message.type, 'Candidate type:'], canType);
-  // if (canType !== 'relay' && canType !== 'srflx') {
-  // trace('Skipping non relay and non srflx candidates.');
-  var index = message.label;
-  var candidate = new window.RTCIceCandidate({
-    sdpMLineIndex: index,
-    candidate: message.candidate,
-    //id: message.id,
     sdpMid: message.id
-    //label: index
   });
 
-  if (this._forceTURN && canType !== 'relay') {
-    if (!this._hasMCU) {
-      log.warn([targetMid, 'RTCICECandidate', null, 'Ignoring adding of "' + canType +
-        '" candidate as TURN connections is forced'], candidate);
-      return;
-    }
+  log.debug([targetMid, 'RTCIceCandidate', canId + ':' + candidateType, 'Received ICE candidate ->'], candidate);
 
-    log.warn([targetMid, 'RTCICECandidate', null, 'Not ignoring adding of "' + canType +
-      '" candidate although TURN connections is forced as MCU is present'], candidate);
+  this._peerEndOfCandidatesCounter[targetMid] = this._peerEndOfCandidatesCounter[targetMid] || {};
+  this._peerEndOfCandidatesCounter[targetMid].len = this._peerEndOfCandidatesCounter[targetMid].len || 0;
+  this._peerEndOfCandidatesCounter[targetMid].hasSet = false;
+  this._peerEndOfCandidatesCounter[targetMid].len++;
+
+  this._trigger('candidateProcessingState', this.CANDIDATE_PROCESSING_STATE.RECEIVED,
+    targetMid, canId, candidateType, {
+    candidate: candidate.candidate,
+    sdpMid: candidate.sdpMid,
+    sdpMLineIndex: candidate.sdpMLineIndex
+  }, null);
+
+  if (!(this._peerConnections[targetMid] &&
+    this._peerConnections[targetMid].signalingState !== this.PEER_CONNECTION_STATE.CLOSED)) {
+    log.warn([targetMid, 'RTCIceCandidate', canId + ':' + candidateType, 'Dropping ICE candidate ' +
+      'as Peer connection does not exists or is closed'], this._peerConnections[targetMid].signalingState);
+    this._trigger('candidateProcessingState', this.CANDIDATE_PROCESSING_STATE.DROPPED,
+      targetMid, canId, candidateType, {
+      candidate: candidate.candidate,
+      sdpMid: candidate.sdpMid,
+      sdpMLineIndex: candidate.sdpMLineIndex
+    }, new Error('Failed processing ICE candidate as Peer connection does not exists or is closed.'));
+    this._signalingEndOfCandidates(targetMid);
+    return;
   }
 
-  if (pc) {
-  	if (pc.signalingState === this.PEER_CONNECTION_STATE.CLOSED) {
-  		log.warn([targetMid, null, message.type, 'Peer connection state ' +
-  			'is closed. Not adding candidate'], candidate);
-	    return;
-  	}
-    /*if (pc.iceConnectionState === this.ICE_CONNECTION_STATE.CONNECTED) {
-      log.debug([targetMid, null, null,
-        'Received but not adding Candidate as we are already connected to this peer']);
+  if (this._filterCandidatesType[candidateType]) {
+    if (!(this._hasMCU && this._forceTURN)) {
+      log.warn([targetMid, 'RTCIceCandidate', canId + ':' + candidateType, 'Dropping received ICE candidate as ' +
+        'it matches ICE candidate filtering flag ->'], candidate);
+      this._trigger('candidateProcessingState', this.CANDIDATE_PROCESSING_STATE.DROPPED,
+        targetMid, canId, candidateType, {
+        candidate: candidate.candidate,
+        sdpMid: candidate.sdpMid,
+        sdpMLineIndex: candidate.sdpMLineIndex
+      }, new Error('Dropping of processing ICE candidate as it matches ICE candidate filtering flag.'));
+      this._signalingEndOfCandidates(targetMid);
       return;
-    }*/
-    // set queue before ice candidate cannot be added before setRemoteDescription.
-    // this will cause a black screen of media stream
-    if ((pc.setOffer === 'local' && pc.setAnswer === 'remote') ||
-      (pc.setAnswer === 'local' && pc.setOffer === 'remote')) {
-      pc.addIceCandidate(candidate, this._onAddIceCandidateSuccess, this._onAddIceCandidateFailure);
-      // NOTE ALEX: not implemented in chrome yet, need to wait
-      // function () { trace('ICE  -  addIceCandidate Succesfull. '); },
-      // function (error) { trace('ICE  - AddIceCandidate Failed: ' + error); }
-      //);
-      log.debug([targetMid, 'RTCIceCandidate', message.type,
-        'Added candidate'], candidate);
-    } else {
-      this._addIceCandidateToQueue(targetMid, candidate);
     }
+
+    log.warn([targetMid, 'RTCIceCandidate', canId + ':' + candidateType, 'Not dropping received ICE candidate as ' +
+      'TURN connections are enforced as MCU is present (and act as a TURN itself) so filtering of ICE candidate ' +
+      'flags are not honoured ->'], candidate);
+  }
+
+  if (this._peerConnections[targetMid].remoteDescription && this._peerConnections[targetMid].remoteDescription.sdp &&
+    this._peerConnections[targetMid].localDescription && this._peerConnections[targetMid].localDescription.sdp) {
+    this._addIceCandidate(targetMid, canId, candidate);
   } else {
-    // Added ice candidate to queue because it may be received before sending the offer
-    log.debug([targetMid, 'RTCIceCandidate', message.type,
-      'Not adding candidate as peer connection not present'], candidate);
-    // NOTE ALEX: if the offer was slow, this can happen
-    // we might keep a buffer of candidates to replay after receiving an offer.
-    this._addIceCandidateToQueue(targetMid, candidate);
+    this._addIceCandidateToQueue(targetMid, canId, candidate);
   }
 
-  if (!this._addedCandidates[targetMid]) {
-    this._addedCandidates[targetMid] = {
-      relay: [],
-      host: [],
-      srflx: []
+  this._signalingEndOfCandidates(targetMid);
+
+  if (!this._gatheredCandidates[targetMid]) {
+    this._gatheredCandidates[targetMid] = {
+      sending: { host: [], srflx: [], relay: [] },
+      receiving: { host: [], srflx: [], relay: [] }
     };
   }
 
-  // shouldnt happen but just incase
-  if (!this._addedCandidates[targetMid][canType]) {
-    this._addedCandidates[targetMid][canType] = [];
-  }
-
-  this._addedCandidates[targetMid][canType].push('remote:' + messageCan[4] +
-    (messageCan[5] !== '0' ? ':' + messageCan[5] : '') +
-    (messageCan[2] ? '?transport=' + messageCan[2].toLowerCase() : ''));
+  this._gatheredCandidates[targetMid].receiving[candidateType].push({
+    sdpMid: candidate.sdpMid,
+    sdpMLineIndex: candidate.sdpMLineIndex,
+    candidate: candidate.candidate
+  });
 };
 
 /**
- * Handles the ANSWER Protocol message event received from the platform signaling.
+ * Function that handles the "answer" socket message received.
+ * See confluence docs for the "answer" expected properties to be received
+ *   based on the current <code>SM_PROTOCOL_VERSION</code>.
  * @method _answerHandler
- * @param {JSON} message The message object received from platform signaling.
- *    This should contain the <code>ANSWER</code> payload.
- * @param {String} message.rid The room ID for identification to the platform signaling connection.
- * @param {String} message.sdp The generated answer session description.
- * @param {String} message.mid The Peer ID associated with this message.
- * @param {String} message.target The targeted Peer ID to receive the message object.
- * @param {String} message.type Protocol step <code>"answer"</code>.
- * @trigger handshakeProgress
  * @private
- * @component Message
  * @for Skylink
  * @since 0.5.1
  */
@@ -1423,7 +1643,7 @@ Skylink.prototype._answerHandler = function(message) {
   var targetMid = message.mid;
 
   log.log([targetMid, null, message.type,
-    'Received answer from peer. Session description:'], message.sdp);
+    'Received answer from peer. Session description:'], clone(message));
 
   var pc = self._peerConnections[targetMid];
 
@@ -1433,9 +1653,18 @@ Skylink.prototype._answerHandler = function(message) {
     return;
   }
 
-  var answer = new window.RTCSessionDescription({
+  // Add-on by Web SDK fixes
+  if (message.userInfo && typeof message.userInfo === 'object') {
+    var userInfo = message.userInfo || {};
+
+    self._peerInformations[targetMid].settings = userInfo.settings || {};
+    self._peerInformations[targetMid].mediaStatus = userInfo.mediaStatus || {};
+    self._peerInformations[targetMid].userData = userInfo.userData;
+  }
+
+  var answer = new RTCSessionDescription({
     type: message.type,
-    sdp: message.sdp
+    sdp: self._hasMCU ? message.sdp.split('\n').join('\r\n') : message.sdp
   });
 
   log.log([targetMid, 'RTCSessionDescription', message.type,
@@ -1453,25 +1682,15 @@ Skylink.prototype._answerHandler = function(message) {
     return;
   }*/
 
-  // if firefox and peer is mcu, replace the sdp to suit mcu needs
-  if (window.webrtcDetectedType === 'moz' && targetMid === 'MCU') {
-    answer.sdp = answer.sdp.replace(/ generation 0/g, '');
-    answer.sdp = answer.sdp.replace(/ udp /g, ' UDP ');
-  }
+  answer.sdp = self._removeSDPFilteredCandidates(targetMid, answer);
+  answer.sdp = self._setSDPCodec(targetMid, answer);
+  answer.sdp = self._setSDPBitrate(targetMid, answer);
+  answer.sdp = self._setSDPOpusConfig(targetMid, answer);
+  answer.sdp = self._removeSDPCodecs(targetMid, answer);
+  answer.sdp = self._removeSDPREMBPackets(targetMid, answer);
 
-  // Configure it to force TURN connections by removing non-"relay" candidates
-  if (self._forceTURN && !self._enableIceTrickle) {
-    if (!self._hasMCU) {
-      log.warn([targetMid, 'RTCICECandidate', null, 'Removing non-"relay" candidates from answer ' +
-        ' as TURN connections is forced']);
+  log.log([targetMid, 'RTCSessionDescription', message.type, 'Updated remote answer ->'], answer.sdp);
 
-      answer.sdp = answer.sdp.replace(/a=candidate:(?!.*relay.*).*\r\n/g, '');
-
-    } else {
-      log.warn([targetMid, 'RTCICECandidate', null, 'Not removing non-"relay"' +
-        '" candidates although TURN connections is forced as MCU is present']);
-    }
-  }
 
   // This should be the state after offer is received. or even after negotiation is successful
   if (pc.signalingState !== self.PEER_CONNECTION_STATE.HAVE_LOCAL_OFFER) {
@@ -1500,6 +1719,10 @@ Skylink.prototype._answerHandler = function(message) {
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ANSWER, targetMid);
     self._addIceCandidateFromQueue(targetMid);
 
+    if (self._peerMessagesStamps[targetMid]) {
+      self._peerMessagesStamps[targetMid].hasRestart = false;
+    }
+
   }, function(error) {
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
 
@@ -1513,87 +1736,21 @@ Skylink.prototype._answerHandler = function(message) {
 };
 
 /**
- * Send a message object or string using the platform signaling socket connection
- *   to the list of targeted PeerConnections.
- * To send message objects with DataChannel connections, see
- *   {{#crossLink "Skylink/sendP2PMessage:method"}}sendP2PMessage(){{/crossLink}}.
- * @method sendMessage
- * @param {String|JSON} message The message object.
- * @param {String|Array} [targetPeerId] The array of targeted PeerConnections to
- *   transfer the message object to. Alternatively, you may provide this parameter
- *   as a string to a specific targeted Peer to transfer the message object.
- * @example
- *   // Example 1: Send to all peers
- *   SkylinkDemo.sendMessage("Hi there!"");
- *
- *   // Example 2: Send to a targeted peer
- *   SkylinkDemo.sendMessage("Hi there peer!", targetPeerId);
- * @trigger incomingMessage
- * @component Message
+ * Function that compares the SM / DT protocol versions to see if it in the version.
+ * @method _isLowerThanVersion
+ * @private
  * @for Skylink
- * @since 0.4.0
+ * @since 0.6.16
  */
-Skylink.prototype.sendMessage = function(message, targetPeerId) {
-  var params = {
-    cid: this._key,
-    data: message,
-    mid: this._user.sid,
-    rid: this._room.id,
-    type: this._SIG_MESSAGE_TYPE.PUBLIC_MESSAGE
-  };
+Skylink.prototype._isLowerThanVersion = function (agentVer, requiredVer) {
+  var partsA = agentVer.split('.');
+  var partsB = requiredVer.split('.');
 
-  var listOfPeers = Object.keys(this._peerConnections);
-  var isPrivate = false;
-  var i;
-
-  if(Array.isArray(targetPeerId)) {
-    listOfPeers = targetPeerId;
-    isPrivate = true;
-
-  } else if (typeof targetPeerId === 'string') {
-    listOfPeers = [targetPeerId];
-    isPrivate = true;
-  }
-
-  if (!isPrivate) {
-    log.log([null, 'Socket', null, 'Broadcasting message to peers']);
-
-    this._sendChannelMessage({
-      cid: this._key,
-      data: message,
-      mid: this._user.sid,
-      rid: this._room.id,
-      type: this._SIG_MESSAGE_TYPE.PUBLIC_MESSAGE
-    });
-  }
-
-  for (i = 0; i < listOfPeers.length; i++) {
-    var peerId = listOfPeers[i];
-
-    // Ignore MCU peer
-    if (peerId === 'MCU') {
-      continue;
-    }
-
-    if (isPrivate) {
-      log.log([peerId, 'Socket', null, 'Sending message to peer']);
-
-      this._sendChannelMessage({
-        cid: this._key,
-        data: message,
-        mid: this._user.sid,
-        rid: this._room.id,
-        target: peerId,
-        type: this._SIG_MESSAGE_TYPE.PRIVATE_MESSAGE
-      });
+  for (var i = 0; i < partsB.length; i++) {
+    if (parseInt(partsA[i] || '0', 10) < parseInt(partsB[i] || '0', 10)) {
+      return true;
     }
   }
 
-  this._trigger('incomingMessage', {
-    content: message,
-    isPrivate: isPrivate,
-    targetPeerId: targetPeerId,
-    isDataChannel: false,
-    senderPeerId: this._user.sid
-  }, this._user.sid, this.getPeerInfo(), true);
+  return false;
 };

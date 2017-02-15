@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>SkylinkJS 0.6.13</title>
+    <title>SkylinkJS 0.6.17</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- font and icon -->
     <link rel="shortcut icon" type="image/ico" href="../assets/favicon.ico">
@@ -33,7 +33,7 @@
           <span class="icon-bar"></span>
         </button>
         <a href="" class="navbar-brand">
-          <img src="../assets/img/logo.svg" />JS<small>Version: 0.6.13</small>
+          <img src="../assets/img/logo.svg" />JS<small>Version: 0.6.17</small>
         </a>
       </div>
       <div id="navbar" class="navbar-collapse collapse">
@@ -90,95 +90,28 @@
 <div class="file">
     <pre class="code prettyprint linenums">
 /**
- * These are the list of Peer connection handshake states that Skylink would trigger.
- * - Do not be confused with {{#crossLink &quot;Skylink/PEER_CONNECTION_STATE:attr&quot;}}PEER_CONNECTION_STATE{{/crossLink}}.
- *   This is the Peer recognition connection that is established with the platform signaling protocol, and not
- *   the Peer connection signaling state itself.
- * - In this case, this happens before the {{#crossLink &quot;Skylink/PEER_CONNECTION_STATE:attr&quot;}}PEER_CONNECTION_STATE
- *   handshaking states. {{/crossLink}} The &lt;code&gt;OFFER&lt;/code&gt; and &lt;code&gt;ANSWER&lt;/code&gt; relates to the
- *   {{#crossLink &quot;Skylink/PEER_CONNECTION_STATE:attr&quot;}}PEER_CONNECTION_STATE states{{/crossLink}}.
- * - For example as explanation how these state works below, let&#x27;s make self as the offerer and
- *   the connecting Peer as the answerer.
+ * The list of Peer connection states.
  * @attribute HANDSHAKE_PROGRESS
- * @type JSON
- * @param {String} ENTER &lt;small&gt;Value &lt;code&gt;&quot;enter&quot;&lt;/code&gt;&lt;/small&gt;
- *   The state when Peer have received &lt;code&gt;ENTER&lt;/code&gt; from self,
- *   and Peer connection with self is initialised with self.&lt;br&gt;
- * This state will occur for both self and Peer as &lt;code&gt;ENTER&lt;/code&gt;
- *   message is sent to ping for Peers in the room.&lt;br&gt;
- * At this state, Peer would sent &lt;code&gt;WELCOME&lt;/code&gt; to the peer to
- *   start the session description connection handshake.&lt;br&gt;
- * &lt;table class=&quot;table table-condensed&quot;&gt;
- *   &lt;thead&gt;&lt;tr&gt;&lt;th class=&quot;col-md-1&quot;&gt;&lt;/th&gt;&lt;th class=&quot;col-md-5&quot;&gt;Self&lt;/th&gt;&lt;th&gt;Peer&lt;/th&gt;&lt;/thead&gt;
- *   &lt;tbody&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;1.&lt;/td&gt;
- *       &lt;td class=&quot;col-md-5&quot;&gt;Sends &lt;code&gt;ENTER&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Sends &lt;code&gt;ENTER&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;2.&lt;/td&gt;
- *       &lt;td class=&quot;col-md-5&quot;&gt;-&lt;/td&gt;&lt;td&gt;Receives self &lt;code&gt;ENTER&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;3.&lt;/td&gt;
- *       &lt;td class=&quot;col-md-5&quot;&gt;-&lt;/td&gt;&lt;td&gt;Sends self &lt;code&gt;WELCOME&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
- *   &lt;/tbody&gt;
- * &lt;/table&gt;
+ * @param {String} ENTER   &lt;small&gt;Value &lt;code&gt;&quot;enter&quot;&lt;/code&gt;&lt;/small&gt;
+ *   The value of the connection state when Peer has just entered the Room.
+ *   &lt;small&gt;At this stage, &lt;a href=&quot;#event_peerJoined&quot;&gt;&lt;code&gt;peerJoined&lt;/code&gt; event&lt;/a&gt;
+ *   is triggered.&lt;/small&gt;
  * @param {String} WELCOME &lt;small&gt;Value &lt;code&gt;&quot;welcome&quot;&lt;/code&gt;&lt;/small&gt;
- *   The state when self have received &lt;code&gt;WELCOME&lt;/code&gt; from Peer,
- *   and Peer connection is initialised with Peer.&lt;br&gt;
- * At this state, self would start the session description connection handshake and
- *   send the local &lt;code&gt;OFFER&lt;/code&gt; session description to Peer.
- * &lt;table class=&quot;table table-condensed&quot;&gt;
- *   &lt;thead&gt;&lt;tr&gt;&lt;th class=&quot;col-md-1&quot;&gt;&lt;/th&gt;&lt;th class=&quot;col-md-5&quot;&gt;Self&lt;/th&gt;&lt;th&gt;Peer&lt;/th&gt;&lt;/thead&gt;
- *   &lt;tbody&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;4.&lt;/td&gt;
- *       &lt;td class=&quot;col-md-5&quot;&gt;Receives &lt;code&gt;WELCOME&lt;/code&gt;&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;/tr&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;5.&lt;/td&gt;
- *       &lt;td class=&quot;col-md-5&quot;&gt;Generates &lt;code&gt;OFFER&lt;/code&gt;&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;/tr&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;6.&lt;/td&gt;
- *       &lt;td class=&quot;col-md-5&quot;&gt;Sets local &lt;code&gt;OFFER&lt;/code&gt;&lt;sup&gt;REF&lt;/sup&gt;&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;/tr&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;7.&lt;/td&gt;
- *       &lt;td class=&quot;col-md-5&quot;&gt;Sends &lt;code&gt;OFFER&lt;/code&gt;&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;/tr&gt;
- *   &lt;/tbody&gt;
- * &lt;/table&gt;
- * &lt;sup&gt;REF&lt;/sup&gt;: The will cause {{#crossLink &quot;Skylink/PEER_CONNECTION_STATE:attr&quot;}}PEER_CONNECTION_STATE{{/crossLink}}
- *   state go to &lt;code&gt;HAVE_LOCAL_OFFER&lt;/code&gt;.
- * @param {String} OFFER &lt;small&gt;Value &lt;code&gt;&quot;offer&quot;&lt;/code&gt;&lt;/small&gt;
- *   The state when Peer received &lt;code&gt;OFFER&lt;/code&gt; from self.
- * At this state, Peer would set the remote &lt;code&gt;OFFER&lt;/code&gt; session description and
- *   start to send local &lt;code&gt;ANSWER&lt;/code&gt; session description to self.&lt;br&gt;
- * &lt;table class=&quot;table table-condensed&quot;&gt;
- *   &lt;thead&gt;&lt;tr&gt;&lt;th class=&quot;col-md-1&quot;&gt;&lt;/th&gt;&lt;th class=&quot;col-md-5&quot;&gt;Self&lt;/th&gt;&lt;th&gt;Peer&lt;/th&gt;&lt;/thead&gt;
- *   &lt;tbody&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;8.&lt;/td&gt;
- *        &lt;td class=&quot;col-md-5&quot;&gt;-&lt;/td&gt;&lt;td&gt;Receives &lt;code&gt;OFFER&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;9.&lt;/td&gt;
- *        &lt;td class=&quot;col-md-5&quot;&gt;-&lt;/td&gt;&lt;td&gt;Sets remote &lt;code&gt;OFFER&lt;/code&gt;&lt;sup&gt;REF&lt;/sup&gt;&lt;/td&gt;&lt;/tr&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;10.&lt;/td&gt;
- *        &lt;td class=&quot;col-md-5&quot;&gt;-&lt;/td&gt;&lt;td&gt;Generates &lt;code&gt;ANSWER&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;11.&lt;/td&gt;
- *        &lt;td class=&quot;col-md-5&quot;&gt;-&lt;/td&gt;&lt;td&gt;Sets local &lt;code&gt;ANSWER&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;12.&lt;/td&gt;
- *        &lt;td class=&quot;col-md-5&quot;&gt;-&lt;/td&gt;&lt;td&gt;Sends &lt;code&gt;ANSWER&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;
- *   &lt;/tbody&gt;
- * &lt;/table&gt;
- * &lt;sup&gt;REF&lt;/sup&gt;: The will cause {{#crossLink &quot;Skylink/PEER_CONNECTION_STATE:attr&quot;}}PEER_CONNECTION_STATE{{/crossLink}}
- *   state go to &lt;code&gt;HAVE_REMOTE_OFFER&lt;/code&gt;.
- * @param {String} ANSWER &lt;small&gt;Value &lt;code&gt;&quot;answer&quot;&lt;/code&gt;&lt;/small&gt;
- *   The state when self received &lt;code&gt;ANSWER&lt;/code&gt; from Peer.&lt;br&gt;
- * At this state, self would set the remote &lt;code&gt;ANSWER&lt;/code&gt; session description and
- *   the connection handshaking progress has been completed.&lt;br&gt;
- * &lt;table class=&quot;table table-condensed&quot;&gt;
- *   &lt;thead&gt;&lt;tr&gt;&lt;th class=&quot;col-md-1&quot;&gt;&lt;/th&gt;&lt;th class=&quot;col-md-5&quot;&gt;Self&lt;/th&gt;&lt;th&gt;Peer&lt;/th&gt;&lt;/thead&gt;
- *   &lt;tbody&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;13.&lt;/td&gt;
- *        &lt;td class=&quot;col-md-5&quot;&gt;Receives &lt;code&gt;ANSWER&lt;/code&gt;&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;/tr&gt;
- *     &lt;tr&gt;&lt;td class=&quot;col-md-1&quot;&gt;14.&lt;/td&gt;
- *        &lt;td class=&quot;col-md-5&quot;&gt;Sets remote &lt;code&gt;ANSWER&lt;/code&gt;&lt;/td&gt;&lt;td&gt;-&lt;/td&gt;&lt;/tr&gt;
- *   &lt;/tbody&gt;
- * &lt;/table&gt;
- * @param {String} ERROR &lt;small&gt;Value &lt;code&gt;&quot;error&quot;&lt;/code&gt;&lt;/small&gt;
- *   The state when connection handshake has occurred and exception,
- *   in this which the connection handshake could have been aborted abruptly
- *   and no Peer connection is established.
+ *   The value of the connection state when Peer is aware that User has entered the Room.
+ *   &lt;small&gt;At this stage, &lt;a href=&quot;#event_peerJoined&quot;&gt;&lt;code&gt;peerJoined&lt;/code&gt; event&lt;/a&gt;
+ *   is triggered and Peer connection may commence.&lt;/small&gt;
+ * @param {String} OFFER   &lt;small&gt;Value &lt;code&gt;&quot;offer&quot;&lt;/code&gt;&lt;/small&gt;
+ *   The value of the connection state when Peer connection has set the local / remote &lt;code&gt;&quot;offer&quot;&lt;/code&gt;
+ *   session description to start streaming connection.
+ * @param {String} ANSWER  &lt;small&gt;Value &lt;code&gt;&quot;answer&quot;&lt;/code&gt;&lt;/small&gt;
+ *   The value of the connection state when Peer connection has set the local / remote &lt;code&gt;&quot;answer&quot;&lt;/code&gt;
+ *   session description to establish streaming connection.
+ * @param {String} ERROR   &lt;small&gt;Value &lt;code&gt;&quot;error&quot;&lt;/code&gt;&lt;/small&gt;
+ *   The value of the connection state when Peer connection has failed to establish streaming connection.
+ *   &lt;small&gt;This happens when there are errors that occurs in creating local &lt;code&gt;&quot;offer&quot;&lt;/code&gt; /
+ *   &lt;code&gt;&quot;answer&quot;&lt;/code&gt;, or when setting remote / local &lt;code&gt;&quot;offer&quot;&lt;/code&gt; / &lt;code&gt;&quot;answer&quot;&lt;/code&gt;.&lt;/small&gt;
+ * @type JSON
  * @readOnly
- * @component Peer
  * @for Skylink
  * @since 0.1.0
  */
@@ -191,75 +124,13 @@ Skylink.prototype.HANDSHAKE_PROGRESS = {
 };
 
 /**
- * Stores the list of Peer connection health timeout objects that
- *   waits for any existing Peer &quot;healthy&quot; state in successful
- *   {{#crossLink &quot;Skylink/_peerConnectionHealth:attr&quot;}}_peerConnectionHealth{{/crossLink}}.
- *   If timeout has reached it&#x27;s limit and does not have any &quot;healthy&quot; connection state
- *   with Peer connection, it will restart the connection again with
- *   {{#crossLink &quot;Skylink/_restartPeerConnection:method&quot;}}_restartPeerConnection(){{/crossLink}}.
- * @attribute _peerConnectionHealthTimers
- * @param {Object} (#peerId) The timeout object set using &lt;code&gt;setTimeout()&lt;/code&gt; that
- *   does the wait for any &quot;healthy&quot; state connection associated with the Peer connection.
- *   This will be removed when the Peer connection has ended or when the Peer
- *   connection has been met with a &quot;healthy&quot; state.
- * @type JSON
- * @private
- * @required
- * @component Peer
- * @for Skylink
- * @since 0.5.5
- */
-Skylink.prototype._peerConnectionHealthTimers = {};
-
-/**
- * Stores the list of Peer connections that has connection
- *   established successfully. When the Peer connection has a
- *   successful ICE connection state of &lt;code&gt;&quot;completed&quot;&lt;/code&gt;,
- *   it stores the Peer connection as &quot;healthy&quot;.
- * @attribute _peerConnectionHealth
- * @param {Boolean} (#peerId) The flag that indicates if the associated Peer
- *   connection is in a &quot;healthy&quot; state. If the value is &lt;code&gt;true&lt;/code&gt;, it means
- *   that the Peer connectin is in a &quot;healthy&quot; state.
- * @type JSON
- * @private
- * @required
- * @component Peer
- * @since 0.5.5
- */
-Skylink.prototype._peerConnectionHealth = {};
-
-/**
- * Stores the peer connection priority weight.
- * @attribute _peerPriorityWeight
- * @type Number
- * @private
- * @required
- * @for Skylink
- * @since 0.5.0
- */
-Skylink.prototype._peerPriorityWeight = 0;
-
-/**
- * Starts to initiate the WebRTC layer of handshake connection by
- *   creating the &lt;code&gt;OFFER&lt;/code&gt; session description and then
- *   sending it to the associated Peer.
- * The offerer status may be shifted to the other peer depending on
- *   when version of browser that is initiating the connection
- *   to what version of browser to.
+ * Function that creates the Peer connection offer session description.
  * @method _doOffer
- * @param {String} targetMid The Peer ID to send the &lt;code&gt;OFFER&lt;/code&gt; to.
- * @param {JSON} peerBrowser The Peer platform agent information.
- * @param {String} peerBrowser.name The Peer platform browser or agent name.
- * @param {Number} peerBrowser.version The Peer platform browser or agent version.
- * @param {Number} peerBrowser.os The Peer platform name.
- * @param {Function} renegoCallback The callback function that triggers after
- *   the offer has been created or responsed.
  * @private
  * @for Skylink
- * @component Peer
  * @since 0.5.2
  */
-Skylink.prototype._doOffer = function(targetMid, peerBrowser) {
+Skylink.prototype._doOffer = function(targetMid, iceRestart, peerBrowser) {
   var self = this;
   var pc = self._peerConnections[targetMid] || self._addPeer(targetMid, peerBrowser);
 
@@ -280,9 +151,12 @@ Skylink.prototype._doOffer = function(targetMid, peerBrowser) {
     return;
   }
 
+  var peerIceRestartSupport = !!((self._peerInformations[targetMid] || {}).config || {}).enableIceRestart;
+
   var offerConstraints = {
     offerToReceiveAudio: true,
-    offerToReceiveVideo: true
+    offerToReceiveVideo: true,
+    iceRestart: self._enableIceRestart &amp;&amp; peerIceRestartSupport ? iceRestart === true : false
   };
 
   // NOTE: Removing ICE restart functionality as of now since Firefox does not support it yet
@@ -315,26 +189,29 @@ Skylink.prototype._doOffer = function(targetMid, peerBrowser) {
     offerConstraints = {
       mandatory: {
         OfferToReceiveAudio: true,
-        OfferToReceiveVideo: true
+        OfferToReceiveVideo: true,
+        iceRestart: self._enableIceRestart &amp;&amp; peerIceRestartSupport ? iceRestart === true : false
       }
     };
   }
 
-  if (self._enableDataChannel) {
-    if (typeof self._dataChannels[targetMid] !== &#x27;object&#x27;) {
-      log.error([targetMid, &#x27;RTCDataChannel&#x27;, null, &#x27;Create offer error as unable to create datachannel &#x27; +
-        &#x27;as datachannels array is undefined&#x27;], self._dataChannels[targetMid]);
-      return;
-    }
+  // Add stream only at offer/answer end
+  if (!self._hasMCU || targetMid === &#x27;MCU&#x27;) {
+    self._addLocalMediaStreams(targetMid);
+  }
 
-    if (!self._dataChannels[targetMid].main) {
-      self._dataChannels[targetMid].main =
-        self._createDataChannel(targetMid, self.DATA_CHANNEL_TYPE.MESSAGING, null, targetMid);
+  if (self._enableDataChannel &amp;&amp; self._peerInformations[targetMid] &amp;&amp;
+    self._peerInformations[targetMid].config.enableDataChannel) {
+    // Edge doesn&#x27;t support datachannels yet
+    if (!(self._dataChannels[targetMid] &amp;&amp; self._dataChannels[targetMid].main)) {
+      self._createDataChannel(targetMid);
       self._peerConnections[targetMid].hasMainChannel = true;
     }
   }
 
   log.debug([targetMid, null, null, &#x27;Creating offer with config:&#x27;], offerConstraints);
+
+  pc.endOfCandidates = false;
 
   pc.createOffer(function(offer) {
     log.debug([targetMid, null, null, &#x27;Created offer&#x27;], offer);
@@ -350,14 +227,11 @@ Skylink.prototype._doOffer = function(targetMid, peerBrowser) {
 };
 
 /**
- * Responses to the &lt;code&gt;OFFER&lt;/code&gt; session description received and
- *    creates an &lt;code&gt;ANSWER&lt;/code&gt; session description to sent
- *   to the associated Peer to complete the WebRTC handshake layer.
+ * Function that creates the Peer connection answer session description.
+ * This comes after receiving and setting the offer session description.
  * @method _doAnswer
- * @param {String} targetMid The Peer ID to send the &lt;code&gt;ANSWER&lt;/code&gt; to.
  * @private
  * @for Skylink
- * @component Peer
  * @since 0.1.0
  */
 Skylink.prototype._doAnswer = function(targetMid) {
@@ -381,6 +255,11 @@ Skylink.prototype._doAnswer = function(targetMid) {
     return;
   }
 
+  // Add stream only at offer/answer end
+  if (!self._hasMCU || targetMid === &#x27;MCU&#x27;) {
+    self._addLocalMediaStreams(targetMid);
+  }
+
   // No ICE restart constraints for createAnswer as it fails in chrome 48
   // { iceRestart: true }
   pc.createAnswer(function(answer) {
@@ -389,142 +268,15 @@ Skylink.prototype._doAnswer = function(targetMid) {
   }, function(error) {
     log.error([targetMid, null, null, &#x27;Failed creating an answer:&#x27;], error);
     self._trigger(&#x27;handshakeProgress&#x27;, self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
-  });//, self._room.connection.sdpConstraints);
+  });
 };
 
 /**
- * Starts the waiting timeout for a &quot;healthy&quot; connection
- *   with associated Peer connection.
- * It waits for any existing Peer &quot;healthy&quot; state in successful
- *   {{#crossLink &quot;Skylink/_peerConnectionHealth:attr&quot;}}_peerConnectionHealth{{/crossLink}}.
- * If timeout has reached it&#x27;s limit and does not have any &quot;healthy&quot; connection state
- *   with Peer connection, it will restart the connection again with
- *   {{#crossLink &quot;Skylink/_restartPeerConnection:method&quot;}}_restartPeerConnection(){{/crossLink}}.
- * This sets the timeout object associated with the Peer into
- *   {{#crossLink &quot;Skylink/_peerConnectionHealthTimers&quot;}}_peerConnectionHealthTimers(){{/crossLink}}.
- * @method _startPeerConnectionHealthCheck
- * @param {String} peerId The Peer ID to start a waiting timeout for a &quot;healthy&quot; connection.
- * @param {Boolean} [toOffer=false] The flag that indicates if Peer connection
- *   is an offerer or an answerer for an accurate timeout waiting time.
- * @private
- * @component Peer
- * @for Skylink
- * @since 0.5.5
- */
-Skylink.prototype._startPeerConnectionHealthCheck = function (peerId, toOffer) {
-  var self = this;
-  var timer = self._enableIceTrickle ? (toOffer ? 12500 : 10000) : 50000;
-  timer = (self._hasMCU) ? 105000 : timer;
-
-  // increase timeout for android/ios
-  /*var agent = self.getPeerInfo(peerId).agent;
-  if ([&#x27;Android&#x27;, &#x27;iOS&#x27;].indexOf(agent.name) &gt; -1) {
-    timer = 105000;
-  }*/
-
-  timer += self._retryCount*10000;
-
-  log.log([peerId, &#x27;PeerConnectionHealth&#x27;, null,
-    &#x27;Initializing check for peer\&#x27;s connection health&#x27;]);
-
-  if (self._peerConnectionHealthTimers[peerId]) {
-    // might be a re-handshake again
-    self._stopPeerConnectionHealthCheck(peerId);
-  }
-
-  self._peerConnectionHealthTimers[peerId] = setTimeout(function () {
-    // re-handshaking should start here.
-    var connectionStable = false;
-    var pc = self._peerConnections[peerId];
-
-    if (pc) {
-      var dc = (self._dataChannels[peerId] || {}).main;
-
-      var dcConnected = pc.hasMainChannel ? dc &amp;&amp; dc.readyState === self.DATA_CHANNEL_STATE.OPEN : true;
-      var iceConnected = pc.iceConnectionState === self.ICE_CONNECTION_STATE.CONNECTED ||
-        pc.iceConnectionState === self.ICE_CONNECTION_STATE.COMPLETED;
-      var signalingConnected = pc.signalingState === self.PEER_CONNECTION_STATE.STABLE;
-
-      connectionStable = dcConnected &amp;&amp; iceConnected &amp;&amp; signalingConnected;
-
-      log.debug([peerId, &#x27;PeerConnectionHealth&#x27;, null, &#x27;Connection status&#x27;], {
-        dcConnected: dcConnected,
-        iceConnected: iceConnected,
-        signalingConnected: signalingConnected
-      });
-    }
-
-    log.debug([peerId, &#x27;PeerConnectionHealth&#x27;, null, &#x27;Require reconnection?&#x27;], connectionStable);
-
-    if (!connectionStable) {
-      log.warn([peerId, &#x27;PeerConnectionHealth&#x27;, null, &#x27;Peer\&#x27;s health timer &#x27; +
-      &#x27;has expired&#x27;], 10000);
-
-      // clear the loop first
-      self._stopPeerConnectionHealthCheck(peerId);
-
-      log.debug([peerId, &#x27;PeerConnectionHealth&#x27;, null,
-        &#x27;Ice connection state time out. Re-negotiating connection&#x27;]);
-
-      //Maximum increament is 5 minutes
-      if (self._retryCount&lt;30){
-        //Increase after each consecutive connection failure
-        self._retryCount++;
-      }
-
-      // do a complete clean
-      if (!self._hasMCU) {
-        self._restartPeerConnection(peerId, true, true, null, false);
-      } else {
-        self._restartMCUConnection();
-      }
-    } else {
-      self._peerConnectionHealth[peerId] = true;
-    }
-  }, timer);
-};
-
-/**
- * Stops the waiting timeout for a &quot;healthy&quot; connection associated
- *   with the Peer.
- * @method _stopPeerConnectionHealthCheck
- * @param {String} peerId The Peer ID to stop a waiting
- *   timeout for a &quot;healthy&quot; connection.
- * @private
- * @component Peer
- * @for Skylink
- * @since 0.5.5
- */
-Skylink.prototype._stopPeerConnectionHealthCheck = function (peerId) {
-  var self = this;
-
-  if (self._peerConnectionHealthTimers[peerId]) {
-    log.debug([peerId, &#x27;PeerConnectionHealth&#x27;, null,
-      &#x27;Stopping peer connection health timer check&#x27;]);
-
-    clearTimeout(self._peerConnectionHealthTimers[peerId]);
-    delete self._peerConnectionHealthTimers[peerId];
-
-  } else {
-    log.debug([peerId, &#x27;PeerConnectionHealth&#x27;, null,
-      &#x27;Peer connection health does not have a timer check&#x27;]);
-  }
-};
-
-/**
- * Sets the WebRTC handshake layer session description into the
- *   Peer &lt;code&gt;RTCPeerConnection&lt;/code&gt; object &lt;i&gt;&lt;code&gt;
- *   RTCPeerConnection.setLocalDescription()&lt;/code&gt;&lt;/i&gt; associated
- *   with the Peer connection.
+ * Function that sets the local session description and sends to Peer.
+ * If trickle ICE is disabled, the local session description will be sent after
+ *   ICE gathering has been completed.
  * @method _setLocalAndSendMessage
- * @param {String} targetMid The Peer ID to send the session description to
- *   after setting into the associated &lt;code&gt;RTCPeerConnection&lt;/code&gt; object.
- * @param {JSON} sessionDescription The &lt;code&gt;OFFER&lt;/code&gt; or an &lt;code&gt;ANSWER&lt;/code&gt;
- *   session description to set to the associated Peer after setting into
- *   the &lt;code&gt;RTCPeerConnection&lt;/code&gt; object.
- * @trigger handshakeProgress
  * @private
- * @component Peer
  * @for Skylink
  * @since 0.5.2
  */
@@ -532,154 +284,61 @@ Skylink.prototype._setLocalAndSendMessage = function(targetMid, sessionDescripti
   var self = this;
   var pc = self._peerConnections[targetMid];
 
-  /*if (sessionDescription.type === self.HANDSHAKE_PROGRESS.ANSWER &amp;&amp; pc.setAnswer) {
-    log.log([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type,
-      &#x27;Ignoring session description. User has already set local answer&#x27;], sessionDescription);
-    return;
-  }
-  if (sessionDescription.type === self.HANDSHAKE_PROGRESS.OFFER &amp;&amp; pc.setOffer) {
-    log.log([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type,
-      &#x27;Ignoring session description. User has already set local offer&#x27;], sessionDescription);
-    return;
-  }*/
-
   // Added checks to ensure that sessionDescription is defined first
   if (!(!!sessionDescription &amp;&amp; !!sessionDescription.sdp)) {
-    log.warn([targetMid, &#x27;RTCSessionDescription&#x27;, null, &#x27;Dropping of setting local unknown sessionDescription &#x27; +
-      &#x27;as received sessionDescription is empty -&gt;&#x27;], sessionDescription);
+    log.warn([targetMid, &#x27;RTCSessionDescription&#x27;, null, &#x27;Local session description is undefined -&gt;&#x27;], sessionDescription);
     return;
   }
 
   // Added checks to ensure that connection object is defined first
   if (!pc) {
-    log.warn([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type, &#x27;Dropping of setting local &quot;&#x27; +
-      sessionDescription.type + &#x27;&quot; as connection does not exists&#x27;]);
-    return;
-  }
-
-  // Added checks to ensure that state is &quot;stable&quot; if setting local &quot;offer&quot;
-  if (sessionDescription.type === self.HANDSHAKE_PROGRESS.OFFER &amp;&amp;
-    pc.signalingState !== self.PEER_CONNECTION_STATE.STABLE) {
     log.warn([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type,
-      &#x27;Dropping of setting local &quot;offer&quot; as signalingState is not &quot;&#x27; +
-      self.PEER_CONNECTION_STATE.STABLE + &#x27;&quot; -&gt;&#x27;], pc.signalingState);
+      &#x27;Local session description will not be set as connection does not exists -&gt;&#x27;], sessionDescription);
+    return;
+
+  } else if (sessionDescription.type === self.HANDSHAKE_PROGRESS.OFFER &amp;&amp;
+    pc.signalingState !== self.PEER_CONNECTION_STATE.STABLE) {
+    log.warn([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type, &#x27;Local session description &#x27; +
+      &#x27;will not be set as signaling state is &quot;&#x27; + pc.signalingState + &#x27;&quot; -&gt;&#x27;], sessionDescription);
     return;
 
   // Added checks to ensure that state is &quot;have-remote-offer&quot; if setting local &quot;answer&quot;
   } else if (sessionDescription.type === self.HANDSHAKE_PROGRESS.ANSWER &amp;&amp;
     pc.signalingState !== self.PEER_CONNECTION_STATE.HAVE_REMOTE_OFFER) {
-    log.warn([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type,
-      &#x27;Dropping of setting local &quot;answer&quot; as signalingState is not &quot;&#x27; +
-      self.PEER_CONNECTION_STATE.HAVE_REMOTE_OFFER + &#x27;&quot; -&gt;&#x27;], pc.signalingState);
+    log.warn([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type, &#x27;Local session description &#x27; +
+      &#x27;will not be set as signaling state is &quot;&#x27; + pc.signalingState + &#x27;&quot; -&gt;&#x27;], sessionDescription);
     return;
-  }
-
-
-  // NOTE ALEX: handle the pc = 0 case, just to be sure
-  var sdpLines = sessionDescription.sdp.split(&#x27;\r\n&#x27;);
-
-  // remove h264 invalid pref
-  sdpLines = self._removeSDPFirefoxH264Pref(sdpLines);
-  // Check if stereo was enabled
-  if (self._streamSettings.hasOwnProperty(&#x27;audio&#x27;)) {
-    if (self._streamSettings.audio.stereo) {
-      self._addSDPStereo(sdpLines);
-    }
-  }
-
-  log.info([targetMid, null, null, &#x27;Requested stereo:&#x27;], (self._streamSettings.audio ?
-    (self._streamSettings.audio.stereo ? self._streamSettings.audio.stereo : false) :
-    false));
-
-  // set sdp bitrate
-  if (self._streamSettings.hasOwnProperty(&#x27;bandwidth&#x27;)) {
-    var peerSettings = (self._peerInformations[targetMid] || {}).settings || {};
-
-    sdpLines = self._setSDPBitrate(sdpLines, peerSettings);
-  }
-
-  // set sdp resolution
-  /*if (self._streamSettings.hasOwnProperty(&#x27;video&#x27;)) {
-    sdpLines = self._setSDPVideoResolution(sdpLines, self._streamSettings.video);
-  }*/
-
-  self._streamSettings.bandwidth = self._streamSettings.bandwidth || {};
-
-  self._streamSettings.video = self._streamSettings.video || false;
-
-  /*log.info([targetMid, null, null, &#x27;Custom bandwidth settings:&#x27;], {
-    audio: (self._streamSettings.bandwidth.audio || &#x27;Not set&#x27;) + &#x27; kB/s&#x27;,
-    video: (self._streamSettings.bandwidth.video || &#x27;Not set&#x27;) + &#x27; kB/s&#x27;,
-    data: (self._streamSettings.bandwidth.data || &#x27;Not set&#x27;) + &#x27; kB/s&#x27;
-  });*/
-
-  /*if (self._streamSettings.video.hasOwnProperty(&#x27;frameRate&#x27;) &amp;&amp;
-    self._streamSettings.video.hasOwnProperty(&#x27;resolution&#x27;)){
-    log.info([targetMid, null, null, &#x27;Custom resolution settings:&#x27;], {
-      frameRate: (self._streamSettings.video.frameRate || &#x27;Not set&#x27;) + &#x27; fps&#x27;,
-      width: (self._streamSettings.video.resolution.width || &#x27;Not set&#x27;) + &#x27; px&#x27;,
-      height: (self._streamSettings.video.resolution.height || &#x27;Not set&#x27;) + &#x27; px&#x27;
-    });
-  }*/
-
-  // set video codec
-  if (self._selectedVideoCodec !== self.VIDEO_CODEC.AUTO) {
-    sdpLines = self._setSDPVideoCodec(sdpLines);
-  } else {
-    log.log([targetMid, null, null, &#x27;Not setting any video codec&#x27;]);
-  }
-
-  // set audio codec
-  if (self._selectedAudioCodec !== self.AUDIO_CODEC.AUTO) {
-    sdpLines = self._setSDPAudioCodec(sdpLines);
-  } else {
-    log.log([targetMid, null, null, &#x27;Not setting any audio codec&#x27;]);
-  }
-
-  sessionDescription.sdp = sdpLines.join(&#x27;\r\n&#x27;);
-
-  // Remove REMB packet for MCU connection consistent video quality
-  // NOTE: This is a temporary solution. This is bad to modify from the client since REMB packet
-  //   is required to control quality based on network conditions.
-  if (self._hasMCU &amp;&amp; [&#x27;chrome&#x27;, &#x27;opera&#x27;, &#x27;safari&#x27;, &#x27;IE&#x27;].indexOf(window.webrtcDetectedBrowser) &gt; -1) {
-    log.warn([targetMid, null, null, &#x27;Removing REMB packet for streaming quality in MCU environment&#x27;]);
-
-    sessionDescription.sdp = sessionDescription.sdp.replace(/a=rtcp-fb:100 goog-remb\r\n/g, &#x27;&#x27;);
-  }
-
-  // Remove rtx or apt= lines that prevent connections for browsers without VP8 or VP9 support
-  // See: https://bugs.chromium.org/p/webrtc/issues/detail?id=3962
-  if ([&#x27;chrome&#x27;, &#x27;opera&#x27;].indexOf(window.webrtcDetectedBrowser) &gt; -1) {
-    log.warn([targetMid, null, null, &#x27;Removing apt= and rtx payload lines causing connectivity issues&#x27;]);
-
-    sessionDescription.sdp = sessionDescription.sdp.replace(/a=rtpmap:\d+ rtx\/\d+\r\n/g, &#x27;&#x27;);
-    sessionDescription.sdp = sessionDescription.sdp.replace(/a=fmtp:\d+ apt=\d+\r\n/g, &#x27;&#x27;);
-  }
-
-  // NOTE ALEX: opus should not be used for mobile
-  // Set Opus as the preferred codec in SDP if Opus is present.
-  //sessionDescription.sdp = preferOpus(sessionDescription.sdp);
-  // limit bandwidth
-  //sessionDescription.sdp = this._limitBandwidth(sessionDescription.sdp);
-  log.log([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type,
-    &#x27;Updated session description:&#x27;], sessionDescription);
 
   // Added checks if there is a current local sessionDescription being processing before processing this one
-  if (pc.processingLocalSDP) {
+  } else if (pc.processingLocalSDP) {
     log.warn([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type,
-      &#x27;Dropping of setting local &#x27; + sessionDescription.type + &#x27; as there is another &#x27; +
-      &#x27;sessionDescription being processed -&gt;&#x27;], sessionDescription);
+      &#x27;Local session description will not be set as another is being processed -&gt;&#x27;], sessionDescription);
     return;
   }
 
   pc.processingLocalSDP = true;
 
+  // Sets and expected receiving codecs etc.
+  //sessionDescription.sdp = self._setSDPOpusConfig(targetMid, sessionDescription);
+  //sessionDescription.sdp = self._setSDPCodec(targetMid, sessionDescription);
+  sessionDescription.sdp = self._removeSDPFirefoxH264Pref(targetMid, sessionDescription);
+  sessionDescription.sdp = self._removeSDPH264VP9AptRtxForOlderPlugin(targetMid, sessionDescription);
+  sessionDescription.sdp = self._removeSDPCodecs(targetMid, sessionDescription);
+  sessionDescription.sdp = self._handleSDPConnectionSettings(targetMid, sessionDescription);
+  //sessionDescription.sdp = self._setSDPBitrate(targetMid, sessionDescription);
+  sessionDescription.sdp = self._removeSDPREMBPackets(targetMid, sessionDescription);
+
+  log.log([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type,
+    &#x27;Local session description updated -&gt;&#x27;], sessionDescription.sdp);
+
   pc.setLocalDescription(sessionDescription, function() {
-    log.debug([targetMid, sessionDescription.type, &#x27;Local description set&#x27;]);
+    log.debug([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type,
+      &#x27;Local session description has been set -&gt;&#x27;], sessionDescription);
 
     pc.processingLocalSDP = false;
 
     self._trigger(&#x27;handshakeProgress&#x27;, sessionDescription.type, targetMid);
+
     if (sessionDescription.type === self.HANDSHAKE_PROGRESS.ANSWER) {
       pc.setAnswer = &#x27;local&#x27;;
     } else {
@@ -688,30 +347,25 @@ Skylink.prototype._setLocalAndSendMessage = function(targetMid, sessionDescripti
 
     if (!self._enableIceTrickle &amp;&amp; !pc.gathered) {
       log.log([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type,
-        &#x27;Waiting for Ice gathering to complete to prevent Ice trickle&#x27;]);
+        &#x27;Local session description sending is halted to complete ICE gathering.&#x27;]);
       return;
-    }
-
-    // make checks for firefox session description
-    if (sessionDescription.type === self.HANDSHAKE_PROGRESS.ANSWER &amp;&amp; window.webrtcDetectedBrowser === &#x27;firefox&#x27;) {
-      sessionDescription.sdp = self._addSDPSsrcFirefoxAnswer(targetMid, sessionDescription.sdp);
     }
 
     self._sendChannelMessage({
       type: sessionDescription.type,
-      sdp: sessionDescription.sdp,
+      sdp: self._addSDPMediaStreamTrackIDs(targetMid, sessionDescription),
       mid: self._user.sid,
       target: targetMid,
-      rid: self._room.id
+      rid: self._room.id,
+      userInfo: self._getUserInfo()
     });
 
   }, function(error) {
-    self._trigger(&#x27;handshakeProgress&#x27;, self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
+    log.error([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type, &#x27;Local description failed setting -&gt;&#x27;], error);
 
     pc.processingLocalSDP = false;
 
-    log.error([targetMid, &#x27;RTCSessionDescription&#x27;, sessionDescription.type,
-      &#x27;Failed setting local description: &#x27;], error);
+    self._trigger(&#x27;handshakeProgress&#x27;, self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
   });
 };
 
