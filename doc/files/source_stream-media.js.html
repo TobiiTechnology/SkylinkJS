@@ -1277,7 +1277,7 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var self = this;
   var enableAudioSettings = {
     stereo: true
@@ -1321,6 +1321,15 @@ Skylink.prototype.shareScreen = function (enableAudio, callback) {
         }
       }
     };
+
+    if (typeof mediaOptions === &#x27;object&#x27;) {
+      mediaOptions.video = mediaOptions.video || {};
+      mediaOptions.video.mediaSource = &#x27;window&#x27;;
+      settings.getUserMediaSettings = mediaOptions;
+    }
+    else if(typeof mediaOptions === &#x27;function&#x27;) {
+      callback = mediaOptions;
+    }
 
     var mediaAccessSuccessFn = function (stream) {
       self.off(&#x27;mediaAccessError&#x27;, mediaAccessErrorFn);
@@ -2100,6 +2109,7 @@ Skylink.prototype._handleEndedStreams = function (peerId, checkStreamId) {
     }
   }
 };
+
     </pre>
 </div>
 
