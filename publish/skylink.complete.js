@@ -1,4 +1,4 @@
-/*! skylinkjs - v0.6.17 - Tue Jan 10 2017 01:58:42 GMT+0800 (SGT) */
+/*! skylinkjs - v0.6.19 - Fri Apr 07 2017 21:09:15 GMT+0800 (SGT) */
 
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.io = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 
@@ -7249,15 +7249,10 @@ module.exports = yeast;
 },{}]},{},[1])(1)
 });
 
-/*! adapterjs - v0.14.0 - 2016-10-03 */
+/*! adapterjs - v0.14.1-6d236da - 2017-02-28 */
 
 // Adapter's interface.
 var AdapterJS = AdapterJS || {};
-
-// Browserify compatibility
-if(typeof exports !== 'undefined') {
-  module.exports = AdapterJS;
-}
 
 AdapterJS.options = AdapterJS.options || {};
 
@@ -7268,7 +7263,7 @@ AdapterJS.options = AdapterJS.options || {};
 // AdapterJS.options.hidePluginInstallPrompt = true;
 
 // AdapterJS version
-AdapterJS.VERSION = '0.14.0';
+AdapterJS.VERSION = '0.14.1-6d236da';
 
 // This function will be called when the WebRTC API is ready to be used
 // Whether it is the native implementation (Chrome, Firefox, Opera) or
@@ -7291,14 +7286,28 @@ AdapterJS._onwebrtcreadies = [];
 // Sets a callback function to be called when the WebRTC interface is ready.
 // The first argument is the function to callback.\
 // Throws an error if the first argument is not a function
-AdapterJS.webRTCReady = function (callback) {
-  if (typeof callback !== 'function') {
+AdapterJS.webRTCReady = function (baseCallback) {
+  if (typeof baseCallback !== 'function') {
     throw new Error('Callback provided is not a function');
   }
 
-  if (true === AdapterJS.onwebrtcreadyDone) {
+  var callback = function () {
+    // Make users having requirejs to use the webRTCReady function to define first
+    // When you set a setTimeout(definePolyfill, 0), it overrides the WebRTC function
+    // This is be more than 0s
+    if (typeof window.require === 'function' &&
+      typeof AdapterJS.defineMediaSourcePolyfill === 'function') {
+      AdapterJS.defineMediaSourcePolyfill();
+    }
+
     // All WebRTC interfaces are ready, just call the callback
-    callback(null !== AdapterJS.WebRTCPlugin.plugin);
+    baseCallback(null !== AdapterJS.WebRTCPlugin.plugin);
+  };
+
+
+
+  if (true === AdapterJS.onwebrtcreadyDone) {
+    callback();
   } else {
     // will be triggered automatically when your browser/plugin is ready.
     AdapterJS._onwebrtcreadies.push(callback);
@@ -7316,12 +7325,12 @@ AdapterJS.WebRTCPlugin.pluginInfo = AdapterJS.WebRTCPlugin.pluginInfo || {
   pluginId : 'plugin0',
   type : 'application/x-temwebrtcplugin',
   onload : '__TemWebRTCReady0',
-  portalLink : 'http://skylink.io/plugin/',
+  portalLink : 'https://skylink.io/plugin/',
   downloadLink : null, //set below
   companyName: 'Temasys',
   downloadLinks : {
-    mac: 'http://bit.ly/webrtcpluginpkg',
-    win: 'http://bit.ly/webrtcpluginmsi'
+    mac: 'https://bit.ly/webrtcpluginpkg',
+    win: 'https://bit.ly/webrtcpluginmsi'
   }
 };
 if(typeof AdapterJS.WebRTCPlugin.pluginInfo.downloadLinks !== "undefined" && AdapterJS.WebRTCPlugin.pluginInfo.downloadLinks !== null) {
@@ -7597,7 +7606,7 @@ AdapterJS.parseWebrtcDetectedBrowser = function () {
 
     webrtcDetectedBrowser   = 'firefox';
     webrtcDetectedVersion   = parseInt(hasMatch[1] || '0', 10);
-    webrtcMinimumVersion    = 31;
+    webrtcMinimumVersion    = 33;
     webrtcDetectedType      = 'moz';
     webrtcDetectedDCSupport = 'SCTP';
 
@@ -7643,7 +7652,7 @@ AdapterJS.addEvent = function(elem, evnt, func) {
   }
 };
 
-AdapterJS.renderNotificationBar = function (text, buttonText, buttonLink, openNewTab, displayRefreshBar) {
+AdapterJS.renderNotificationBar = function (message, buttonText, buttonCallback) {
   // only inject once the page is ready
   if (document.readyState !== 'complete') {
     return;
@@ -7673,44 +7682,21 @@ AdapterJS.renderNotificationBar = function (text, buttonText, buttonLink, openNe
   c.document.open();
   c.document.write('<span style="display: inline-block; font-family: Helvetica, Arial,' +
     'sans-serif; font-size: .9rem; padding: 4px; vertical-align: ' +
-    'middle; cursor: default;">' + text + '</span>');
-  if(buttonText && buttonLink) {
+    'middle; cursor: default;">' + message + '</span>');
+  if(buttonText && typeof buttonCallback === 'function') {
     c.document.write('<button id="okay">' + buttonText + '</button><button id="cancel">Cancel</button>');
     c.document.close();
 
     // On click on okay
-    AdapterJS.addEvent(c.document.getElementById('okay'), 'click', function(e) {
-      if (!!displayRefreshBar) {
-        AdapterJS.renderNotificationBar(AdapterJS.TEXT.EXTENSION ?
-          AdapterJS.TEXT.EXTENSION.REQUIRE_REFRESH : AdapterJS.TEXT.REFRESH.REQUIRE_REFRESH,
-          AdapterJS.TEXT.REFRESH.BUTTON, 'javascript:location.reload()'); // jshint ignore:line
-      }
-      window.open(buttonLink, !!openNewTab ? '_blank' : '_top');
-
+    AdapterJS.addEvent(c.document.getElementById('okay'), 'click', function (e) {
       e.preventDefault();
       try {
         e.cancelBubble = true;
       } catch(error) { }
-
-      var pluginInstallInterval = setInterval(function(){
-        if(! isIE) {
-          navigator.plugins.refresh(false);
-        }
-        AdapterJS.WebRTCPlugin.isPluginInstalled(
-          AdapterJS.WebRTCPlugin.pluginInfo.prefix,
-          AdapterJS.WebRTCPlugin.pluginInfo.plugName,
-          AdapterJS.WebRTCPlugin.pluginInfo.type,
-          function() { // plugin now installed
-            clearInterval(pluginInstallInterval);
-            AdapterJS.WebRTCPlugin.defineWebRTCInterface();
-          },
-          function() {
-            // still no plugin detected, nothing to do
-          });
-      } , 500);
+      buttonCallback(e);
     });
 
-    // On click on Cancel
+    // On click on Cancel - all bars has same logic so keeping it that way for now
     AdapterJS.addEvent(c.document.getElementById('cancel'), 'click', function(e) {
       w.document.body.removeChild(i);
     });
@@ -7851,7 +7837,8 @@ createIceServers = null;
 //------------------------------------------------------------
 
 //The RTCPeerConnection object.
-RTCPeerConnection = null;
+RTCPeerConnection = (typeof RTCPeerConnection === 'function') ?
+  RTCPeerConnection : null;
 
 // Creates RTCSessionDescription object for Plugin Browsers
 RTCSessionDescription = (typeof RTCSessionDescription === 'function') ?
@@ -7892,2150 +7879,2473 @@ if ( (navigator.mozGetUserMedia ||
       (navigator.mediaDevices &&
        navigator.userAgent.match(/Edge\/(\d+).(\d+)$/)))
     && !((navigator.userAgent.match(/android/ig) || []).length === 0 &&
-          (navigator.userAgent.match(/chrome/ig) || []).length === 0 && navigator.userAgent.indexOf('Safari/') > 0)) {
+        (navigator.userAgent.match(/chrome/ig) || []).length === 0 && navigator.userAgent.indexOf('Safari/') > 0)) {
 
   ///////////////////////////////////////////////////////////////////
   // INJECTION OF GOOGLE'S ADAPTER.JS CONTENT
 
 /* jshint ignore:start */
-  (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.adapter = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-   /* eslint-env node */
-  'use strict';
-  
-  // SDP helpers.
-  var SDPUtils = {};
-  
-  // Generate an alphanumeric identifier for cname or mids.
-  // TODO: use UUIDs instead? https://gist.github.com/jed/982883
-  SDPUtils.generateIdentifier = function() {
-    return Math.random().toString(36).substr(2, 10);
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.adapter = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(requirecopy,module,exports){
+ /* eslint-env node */
+'use strict';
+
+// SDP helpers.
+var SDPUtils = {};
+
+// Generate an alphanumeric identifier for cname or mids.
+// TODO: use UUIDs instead? https://gist.github.com/jed/982883
+SDPUtils.generateIdentifier = function() {
+  return Math.random().toString(36).substr(2, 10);
+};
+
+// The RTCP CNAME used by all peerconnections from the same JS.
+SDPUtils.localCName = SDPUtils.generateIdentifier();
+
+// Splits SDP into lines, dealing with both CRLF and LF.
+SDPUtils.splitLines = function(blob) {
+  return blob.trim().split('\n').map(function(line) {
+    return line.trim();
+  });
+};
+// Splits SDP into sessionpart and mediasections. Ensures CRLF.
+SDPUtils.splitSections = function(blob) {
+  var parts = blob.split('\nm=');
+  return parts.map(function(part, index) {
+    return (index > 0 ? 'm=' + part : part).trim() + '\r\n';
+  });
+};
+
+// Returns lines that start with a certain prefix.
+SDPUtils.matchPrefix = function(blob, prefix) {
+  return SDPUtils.splitLines(blob).filter(function(line) {
+    return line.indexOf(prefix) === 0;
+  });
+};
+
+// Parses an ICE candidate line. Sample input:
+// candidate:702786350 2 udp 41819902 8.8.8.8 60769 typ relay raddr 8.8.8.8
+// rport 55996"
+SDPUtils.parseCandidate = function(line) {
+  var parts;
+  // Parse both variants.
+  if (line.indexOf('a=candidate:') === 0) {
+    parts = line.substring(12).split(' ');
+  } else {
+    parts = line.substring(10).split(' ');
+  }
+
+  var candidate = {
+    foundation: parts[0],
+    component: parts[1],
+    protocol: parts[2].toLowerCase(),
+    priority: parseInt(parts[3], 10),
+    ip: parts[4],
+    port: parseInt(parts[5], 10),
+    // skip parts[6] == 'typ'
+    type: parts[7]
   };
-  
-  // The RTCP CNAME used by all peerconnections from the same JS.
-  SDPUtils.localCName = SDPUtils.generateIdentifier();
-  
-  // Splits SDP into lines, dealing with both CRLF and LF.
-  SDPUtils.splitLines = function(blob) {
-    return blob.trim().split('\n').map(function(line) {
-      return line.trim();
-    });
-  };
-  // Splits SDP into sessionpart and mediasections. Ensures CRLF.
-  SDPUtils.splitSections = function(blob) {
-    var parts = blob.split('\nm=');
-    return parts.map(function(part, index) {
-      return (index > 0 ? 'm=' + part : part).trim() + '\r\n';
-    });
-  };
-  
-  // Returns lines that start with a certain prefix.
-  SDPUtils.matchPrefix = function(blob, prefix) {
-    return SDPUtils.splitLines(blob).filter(function(line) {
-      return line.indexOf(prefix) === 0;
-    });
-  };
-  
-  // Parses an ICE candidate line. Sample input:
-  // candidate:702786350 2 udp 41819902 8.8.8.8 60769 typ relay raddr 8.8.8.8
-  // rport 55996"
-  SDPUtils.parseCandidate = function(line) {
-    var parts;
-    // Parse both variants.
-    if (line.indexOf('a=candidate:') === 0) {
-      parts = line.substring(12).split(' ');
-    } else {
-      parts = line.substring(10).split(' ');
+
+  for (var i = 8; i < parts.length; i += 2) {
+    switch (parts[i]) {
+      case 'raddr':
+        candidate.relatedAddress = parts[i + 1];
+        break;
+      case 'rport':
+        candidate.relatedPort = parseInt(parts[i + 1], 10);
+        break;
+      case 'tcptype':
+        candidate.tcpType = parts[i + 1];
+        break;
+      default: // Unknown extensions are silently ignored.
+        break;
     }
-  
-    var candidate = {
-      foundation: parts[0],
-      component: parts[1],
-      protocol: parts[2].toLowerCase(),
-      priority: parseInt(parts[3], 10),
-      ip: parts[4],
-      port: parseInt(parts[5], 10),
-      // skip parts[6] == 'typ'
-      type: parts[7]
-    };
-  
-    for (var i = 8; i < parts.length; i += 2) {
-      switch (parts[i]) {
-        case 'raddr':
-          candidate.relatedAddress = parts[i + 1];
+  }
+  return candidate;
+};
+
+// Translates a candidate object into SDP candidate attribute.
+SDPUtils.writeCandidate = function(candidate) {
+  var sdp = [];
+  sdp.push(candidate.foundation);
+  sdp.push(candidate.component);
+  sdp.push(candidate.protocol.toUpperCase());
+  sdp.push(candidate.priority);
+  sdp.push(candidate.ip);
+  sdp.push(candidate.port);
+
+  var type = candidate.type;
+  sdp.push('typ');
+  sdp.push(type);
+  if (type !== 'host' && candidate.relatedAddress &&
+      candidate.relatedPort) {
+    sdp.push('raddr');
+    sdp.push(candidate.relatedAddress); // was: relAddr
+    sdp.push('rport');
+    sdp.push(candidate.relatedPort); // was: relPort
+  }
+  if (candidate.tcpType && candidate.protocol.toLowerCase() === 'tcp') {
+    sdp.push('tcptype');
+    sdp.push(candidate.tcpType);
+  }
+  return 'candidate:' + sdp.join(' ');
+};
+
+// Parses an rtpmap line, returns RTCRtpCoddecParameters. Sample input:
+// a=rtpmap:111 opus/48000/2
+SDPUtils.parseRtpMap = function(line) {
+  var parts = line.substr(9).split(' ');
+  var parsed = {
+    payloadType: parseInt(parts.shift(), 10) // was: id
+  };
+
+  parts = parts[0].split('/');
+
+  parsed.name = parts[0];
+  parsed.clockRate = parseInt(parts[1], 10); // was: clockrate
+  // was: channels
+  parsed.numChannels = parts.length === 3 ? parseInt(parts[2], 10) : 1;
+  return parsed;
+};
+
+// Generate an a=rtpmap line from RTCRtpCodecCapability or
+// RTCRtpCodecParameters.
+SDPUtils.writeRtpMap = function(codec) {
+  var pt = codec.payloadType;
+  if (codec.preferredPayloadType !== undefined) {
+    pt = codec.preferredPayloadType;
+  }
+  return 'a=rtpmap:' + pt + ' ' + codec.name + '/' + codec.clockRate +
+      (codec.numChannels !== 1 ? '/' + codec.numChannels : '') + '\r\n';
+};
+
+// Parses an a=extmap line (headerextension from RFC 5285). Sample input:
+// a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
+SDPUtils.parseExtmap = function(line) {
+  var parts = line.substr(9).split(' ');
+  return {
+    id: parseInt(parts[0], 10),
+    uri: parts[1]
+  };
+};
+
+// Generates a=extmap line from RTCRtpHeaderExtensionParameters or
+// RTCRtpHeaderExtension.
+SDPUtils.writeExtmap = function(headerExtension) {
+  return 'a=extmap:' + (headerExtension.id || headerExtension.preferredId) +
+       ' ' + headerExtension.uri + '\r\n';
+};
+
+// Parses an ftmp line, returns dictionary. Sample input:
+// a=fmtp:96 vbr=on;cng=on
+// Also deals with vbr=on; cng=on
+SDPUtils.parseFmtp = function(line) {
+  var parsed = {};
+  var kv;
+  var parts = line.substr(line.indexOf(' ') + 1).split(';');
+  for (var j = 0; j < parts.length; j++) {
+    kv = parts[j].trim().split('=');
+    parsed[kv[0].trim()] = kv[1];
+  }
+  return parsed;
+};
+
+// Generates an a=ftmp line from RTCRtpCodecCapability or RTCRtpCodecParameters.
+SDPUtils.writeFmtp = function(codec) {
+  var line = '';
+  var pt = codec.payloadType;
+  if (codec.preferredPayloadType !== undefined) {
+    pt = codec.preferredPayloadType;
+  }
+  if (codec.parameters && Object.keys(codec.parameters).length) {
+    var params = [];
+    Object.keys(codec.parameters).forEach(function(param) {
+      params.push(param + '=' + codec.parameters[param]);
+    });
+    line += 'a=fmtp:' + pt + ' ' + params.join(';') + '\r\n';
+  }
+  return line;
+};
+
+// Parses an rtcp-fb line, returns RTCPRtcpFeedback object. Sample input:
+// a=rtcp-fb:98 nack rpsi
+SDPUtils.parseRtcpFb = function(line) {
+  var parts = line.substr(line.indexOf(' ') + 1).split(' ');
+  return {
+    type: parts.shift(),
+    parameter: parts.join(' ')
+  };
+};
+// Generate a=rtcp-fb lines from RTCRtpCodecCapability or RTCRtpCodecParameters.
+SDPUtils.writeRtcpFb = function(codec) {
+  var lines = '';
+  var pt = codec.payloadType;
+  if (codec.preferredPayloadType !== undefined) {
+    pt = codec.preferredPayloadType;
+  }
+  if (codec.rtcpFeedback && codec.rtcpFeedback.length) {
+    // FIXME: special handling for trr-int?
+    codec.rtcpFeedback.forEach(function(fb) {
+      lines += 'a=rtcp-fb:' + pt + ' ' + fb.type +
+      (fb.parameter && fb.parameter.length ? ' ' + fb.parameter : '') +
+          '\r\n';
+    });
+  }
+  return lines;
+};
+
+// Parses an RFC 5576 ssrc media attribute. Sample input:
+// a=ssrc:3735928559 cname:something
+SDPUtils.parseSsrcMedia = function(line) {
+  var sp = line.indexOf(' ');
+  var parts = {
+    ssrc: parseInt(line.substr(7, sp - 7), 10)
+  };
+  var colon = line.indexOf(':', sp);
+  if (colon > -1) {
+    parts.attribute = line.substr(sp + 1, colon - sp - 1);
+    parts.value = line.substr(colon + 1);
+  } else {
+    parts.attribute = line.substr(sp + 1);
+  }
+  return parts;
+};
+
+// Extracts DTLS parameters from SDP media section or sessionpart.
+// FIXME: for consistency with other functions this should only
+//   get the fingerprint line as input. See also getIceParameters.
+SDPUtils.getDtlsParameters = function(mediaSection, sessionpart) {
+  var lines = SDPUtils.splitLines(mediaSection);
+  // Search in session part, too.
+  lines = lines.concat(SDPUtils.splitLines(sessionpart));
+  var fpLine = lines.filter(function(line) {
+    return line.indexOf('a=fingerprint:') === 0;
+  })[0].substr(14);
+  // Note: a=setup line is ignored since we use the 'auto' role.
+  var dtlsParameters = {
+    role: 'auto',
+    fingerprints: [{
+      algorithm: fpLine.split(' ')[0],
+      value: fpLine.split(' ')[1]
+    }]
+  };
+  return dtlsParameters;
+};
+
+// Serializes DTLS parameters to SDP.
+SDPUtils.writeDtlsParameters = function(params, setupType) {
+  var sdp = 'a=setup:' + setupType + '\r\n';
+  params.fingerprints.forEach(function(fp) {
+    sdp += 'a=fingerprint:' + fp.algorithm + ' ' + fp.value + '\r\n';
+  });
+  return sdp;
+};
+// Parses ICE information from SDP media section or sessionpart.
+// FIXME: for consistency with other functions this should only
+//   get the ice-ufrag and ice-pwd lines as input.
+SDPUtils.getIceParameters = function(mediaSection, sessionpart) {
+  var lines = SDPUtils.splitLines(mediaSection);
+  // Search in session part, too.
+  lines = lines.concat(SDPUtils.splitLines(sessionpart));
+  var iceParameters = {
+    usernameFragment: lines.filter(function(line) {
+      return line.indexOf('a=ice-ufrag:') === 0;
+    })[0].substr(12),
+    password: lines.filter(function(line) {
+      return line.indexOf('a=ice-pwd:') === 0;
+    })[0].substr(10)
+  };
+  return iceParameters;
+};
+
+// Serializes ICE parameters to SDP.
+SDPUtils.writeIceParameters = function(params) {
+  return 'a=ice-ufrag:' + params.usernameFragment + '\r\n' +
+      'a=ice-pwd:' + params.password + '\r\n';
+};
+
+// Parses the SDP media section and returns RTCRtpParameters.
+SDPUtils.parseRtpParameters = function(mediaSection) {
+  var description = {
+    codecs: [],
+    headerExtensions: [],
+    fecMechanisms: [],
+    rtcp: []
+  };
+  var lines = SDPUtils.splitLines(mediaSection);
+  var mline = lines[0].split(' ');
+  for (var i = 3; i < mline.length; i++) { // find all codecs from mline[3..]
+    var pt = mline[i];
+    var rtpmapline = SDPUtils.matchPrefix(
+        mediaSection, 'a=rtpmap:' + pt + ' ')[0];
+    if (rtpmapline) {
+      var codec = SDPUtils.parseRtpMap(rtpmapline);
+      var fmtps = SDPUtils.matchPrefix(
+          mediaSection, 'a=fmtp:' + pt + ' ');
+      // Only the first a=fmtp:<pt> is considered.
+      codec.parameters = fmtps.length ? SDPUtils.parseFmtp(fmtps[0]) : {};
+      codec.rtcpFeedback = SDPUtils.matchPrefix(
+          mediaSection, 'a=rtcp-fb:' + pt + ' ')
+        .map(SDPUtils.parseRtcpFb);
+      description.codecs.push(codec);
+      // parse FEC mechanisms from rtpmap lines.
+      switch (codec.name.toUpperCase()) {
+        case 'RED':
+        case 'ULPFEC':
+          description.fecMechanisms.push(codec.name.toUpperCase());
           break;
-        case 'rport':
-          candidate.relatedPort = parseInt(parts[i + 1], 10);
-          break;
-        case 'tcptype':
-          candidate.tcpType = parts[i + 1];
-          break;
-        default: // Unknown extensions are silently ignored.
+        default: // only RED and ULPFEC are recognized as FEC mechanisms.
           break;
       }
     }
-    return candidate;
-  };
-  
-  // Translates a candidate object into SDP candidate attribute.
-  SDPUtils.writeCandidate = function(candidate) {
-    var sdp = [];
-    sdp.push(candidate.foundation);
-    sdp.push(candidate.component);
-    sdp.push(candidate.protocol.toUpperCase());
-    sdp.push(candidate.priority);
-    sdp.push(candidate.ip);
-    sdp.push(candidate.port);
-  
-    var type = candidate.type;
-    sdp.push('typ');
-    sdp.push(type);
-    if (type !== 'host' && candidate.relatedAddress &&
-        candidate.relatedPort) {
-      sdp.push('raddr');
-      sdp.push(candidate.relatedAddress); // was: relAddr
-      sdp.push('rport');
-      sdp.push(candidate.relatedPort); // was: relPort
-    }
-    if (candidate.tcpType && candidate.protocol.toLowerCase() === 'tcp') {
-      sdp.push('tcptype');
-      sdp.push(candidate.tcpType);
-    }
-    return 'candidate:' + sdp.join(' ');
-  };
-  
-  // Parses an rtpmap line, returns RTCRtpCoddecParameters. Sample input:
-  // a=rtpmap:111 opus/48000/2
-  SDPUtils.parseRtpMap = function(line) {
-    var parts = line.substr(9).split(' ');
-    var parsed = {
-      payloadType: parseInt(parts.shift(), 10) // was: id
-    };
-  
-    parts = parts[0].split('/');
-  
-    parsed.name = parts[0];
-    parsed.clockRate = parseInt(parts[1], 10); // was: clockrate
-    // was: channels
-    parsed.numChannels = parts.length === 3 ? parseInt(parts[2], 10) : 1;
-    return parsed;
-  };
-  
-  // Generate an a=rtpmap line from RTCRtpCodecCapability or
-  // RTCRtpCodecParameters.
-  SDPUtils.writeRtpMap = function(codec) {
-    var pt = codec.payloadType;
+  }
+  SDPUtils.matchPrefix(mediaSection, 'a=extmap:').forEach(function(line) {
+    description.headerExtensions.push(SDPUtils.parseExtmap(line));
+  });
+  // FIXME: parse rtcp.
+  return description;
+};
+
+// Generates parts of the SDP media section describing the capabilities /
+// parameters.
+SDPUtils.writeRtpDescription = function(kind, caps) {
+  var sdp = '';
+
+  // Build the mline.
+  sdp += 'm=' + kind + ' ';
+  sdp += caps.codecs.length > 0 ? '9' : '0'; // reject if no codecs.
+  sdp += ' UDP/TLS/RTP/SAVPF ';
+  sdp += caps.codecs.map(function(codec) {
     if (codec.preferredPayloadType !== undefined) {
-      pt = codec.preferredPayloadType;
+      return codec.preferredPayloadType;
     }
-    return 'a=rtpmap:' + pt + ' ' + codec.name + '/' + codec.clockRate +
-        (codec.numChannels !== 1 ? '/' + codec.numChannels : '') + '\r\n';
-  };
-  
-  // Parses an a=extmap line (headerextension from RFC 5285). Sample input:
-  // a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
-  SDPUtils.parseExtmap = function(line) {
-    var parts = line.substr(9).split(' ');
-    return {
-      id: parseInt(parts[0], 10),
-      uri: parts[1]
-    };
-  };
-  
-  // Generates a=extmap line from RTCRtpHeaderExtensionParameters or
-  // RTCRtpHeaderExtension.
-  SDPUtils.writeExtmap = function(headerExtension) {
-    return 'a=extmap:' + (headerExtension.id || headerExtension.preferredId) +
-         ' ' + headerExtension.uri + '\r\n';
-  };
-  
-  // Parses an ftmp line, returns dictionary. Sample input:
-  // a=fmtp:96 vbr=on;cng=on
-  // Also deals with vbr=on; cng=on
-  SDPUtils.parseFmtp = function(line) {
-    var parsed = {};
-    var kv;
-    var parts = line.substr(line.indexOf(' ') + 1).split(';');
-    for (var j = 0; j < parts.length; j++) {
-      kv = parts[j].trim().split('=');
-      parsed[kv[0].trim()] = kv[1];
+    return codec.payloadType;
+  }).join(' ') + '\r\n';
+
+  sdp += 'c=IN IP4 0.0.0.0\r\n';
+  sdp += 'a=rtcp:9 IN IP4 0.0.0.0\r\n';
+
+  // Add a=rtpmap lines for each codec. Also fmtp and rtcp-fb.
+  caps.codecs.forEach(function(codec) {
+    sdp += SDPUtils.writeRtpMap(codec);
+    sdp += SDPUtils.writeFmtp(codec);
+    sdp += SDPUtils.writeRtcpFb(codec);
+  });
+  var maxptime = 0;
+  caps.codecs.forEach(function(codec) {
+    if (codec.maxptime > maxptime) {
+      maxptime = codec.maxptime;
     }
-    return parsed;
-  };
-  
-  // Generates an a=ftmp line from RTCRtpCodecCapability or RTCRtpCodecParameters.
-  SDPUtils.writeFmtp = function(codec) {
-    var line = '';
-    var pt = codec.payloadType;
-    if (codec.preferredPayloadType !== undefined) {
-      pt = codec.preferredPayloadType;
-    }
-    if (codec.parameters && Object.keys(codec.parameters).length) {
-      var params = [];
-      Object.keys(codec.parameters).forEach(function(param) {
-        params.push(param + '=' + codec.parameters[param]);
-      });
-      line += 'a=fmtp:' + pt + ' ' + params.join(';') + '\r\n';
-    }
-    return line;
-  };
-  
-  // Parses an rtcp-fb line, returns RTCPRtcpFeedback object. Sample input:
-  // a=rtcp-fb:98 nack rpsi
-  SDPUtils.parseRtcpFb = function(line) {
-    var parts = line.substr(line.indexOf(' ') + 1).split(' ');
-    return {
-      type: parts.shift(),
-      parameter: parts.join(' ')
-    };
-  };
-  // Generate a=rtcp-fb lines from RTCRtpCodecCapability or RTCRtpCodecParameters.
-  SDPUtils.writeRtcpFb = function(codec) {
-    var lines = '';
-    var pt = codec.payloadType;
-    if (codec.preferredPayloadType !== undefined) {
-      pt = codec.preferredPayloadType;
-    }
-    if (codec.rtcpFeedback && codec.rtcpFeedback.length) {
-      // FIXME: special handling for trr-int?
-      codec.rtcpFeedback.forEach(function(fb) {
-        lines += 'a=rtcp-fb:' + pt + ' ' + fb.type +
-        (fb.parameter && fb.parameter.length ? ' ' + fb.parameter : '') +
-            '\r\n';
-      });
-    }
-    return lines;
-  };
-  
-  // Parses an RFC 5576 ssrc media attribute. Sample input:
-  // a=ssrc:3735928559 cname:something
-  SDPUtils.parseSsrcMedia = function(line) {
-    var sp = line.indexOf(' ');
-    var parts = {
-      ssrc: parseInt(line.substr(7, sp - 7), 10)
-    };
-    var colon = line.indexOf(':', sp);
-    if (colon > -1) {
-      parts.attribute = line.substr(sp + 1, colon - sp - 1);
-      parts.value = line.substr(colon + 1);
-    } else {
-      parts.attribute = line.substr(sp + 1);
-    }
-    return parts;
-  };
-  
-  // Extracts DTLS parameters from SDP media section or sessionpart.
-  // FIXME: for consistency with other functions this should only
-  //   get the fingerprint line as input. See also getIceParameters.
-  SDPUtils.getDtlsParameters = function(mediaSection, sessionpart) {
-    var lines = SDPUtils.splitLines(mediaSection);
-    // Search in session part, too.
-    lines = lines.concat(SDPUtils.splitLines(sessionpart));
-    var fpLine = lines.filter(function(line) {
-      return line.indexOf('a=fingerprint:') === 0;
-    })[0].substr(14);
-    // Note: a=setup line is ignored since we use the 'auto' role.
-    var dtlsParameters = {
-      role: 'auto',
-      fingerprints: [{
-        algorithm: fpLine.split(' ')[0],
-        value: fpLine.split(' ')[1]
-      }]
-    };
-    return dtlsParameters;
-  };
-  
-  // Serializes DTLS parameters to SDP.
-  SDPUtils.writeDtlsParameters = function(params, setupType) {
-    var sdp = 'a=setup:' + setupType + '\r\n';
-    params.fingerprints.forEach(function(fp) {
-      sdp += 'a=fingerprint:' + fp.algorithm + ' ' + fp.value + '\r\n';
+  });
+  if (maxptime > 0) {
+    sdp += 'a=maxptime:' + maxptime + '\r\n';
+  }
+  sdp += 'a=rtcp-mux\r\n';
+
+  caps.headerExtensions.forEach(function(extension) {
+    sdp += SDPUtils.writeExtmap(extension);
+  });
+  // FIXME: write fecMechanisms.
+  return sdp;
+};
+
+// Parses the SDP media section and returns an array of
+// RTCRtpEncodingParameters.
+SDPUtils.parseRtpEncodingParameters = function(mediaSection) {
+  var encodingParameters = [];
+  var description = SDPUtils.parseRtpParameters(mediaSection);
+  var hasRed = description.fecMechanisms.indexOf('RED') !== -1;
+  var hasUlpfec = description.fecMechanisms.indexOf('ULPFEC') !== -1;
+
+  // filter a=ssrc:... cname:, ignore PlanB-msid
+  var ssrcs = SDPUtils.matchPrefix(mediaSection, 'a=ssrc:')
+  .map(function(line) {
+    return SDPUtils.parseSsrcMedia(line);
+  })
+  .filter(function(parts) {
+    return parts.attribute === 'cname';
+  });
+  var primarySsrc = ssrcs.length > 0 && ssrcs[0].ssrc;
+  var secondarySsrc;
+
+  var flows = SDPUtils.matchPrefix(mediaSection, 'a=ssrc-group:FID')
+  .map(function(line) {
+    var parts = line.split(' ');
+    parts.shift();
+    return parts.map(function(part) {
+      return parseInt(part, 10);
     });
-    return sdp;
-  };
-  // Parses ICE information from SDP media section or sessionpart.
-  // FIXME: for consistency with other functions this should only
-  //   get the ice-ufrag and ice-pwd lines as input.
-  SDPUtils.getIceParameters = function(mediaSection, sessionpart) {
-    var lines = SDPUtils.splitLines(mediaSection);
-    // Search in session part, too.
-    lines = lines.concat(SDPUtils.splitLines(sessionpart));
-    var iceParameters = {
-      usernameFragment: lines.filter(function(line) {
-        return line.indexOf('a=ice-ufrag:') === 0;
-      })[0].substr(12),
-      password: lines.filter(function(line) {
-        return line.indexOf('a=ice-pwd:') === 0;
-      })[0].substr(10)
-    };
-    return iceParameters;
-  };
-  
-  // Serializes ICE parameters to SDP.
-  SDPUtils.writeIceParameters = function(params) {
-    return 'a=ice-ufrag:' + params.usernameFragment + '\r\n' +
-        'a=ice-pwd:' + params.password + '\r\n';
-  };
-  
-  // Parses the SDP media section and returns RTCRtpParameters.
-  SDPUtils.parseRtpParameters = function(mediaSection) {
-    var description = {
-      codecs: [],
-      headerExtensions: [],
-      fecMechanisms: [],
-      rtcp: []
-    };
-    var lines = SDPUtils.splitLines(mediaSection);
-    var mline = lines[0].split(' ');
-    for (var i = 3; i < mline.length; i++) { // find all codecs from mline[3..]
-      var pt = mline[i];
-      var rtpmapline = SDPUtils.matchPrefix(
-          mediaSection, 'a=rtpmap:' + pt + ' ')[0];
-      if (rtpmapline) {
-        var codec = SDPUtils.parseRtpMap(rtpmapline);
-        var fmtps = SDPUtils.matchPrefix(
-            mediaSection, 'a=fmtp:' + pt + ' ');
-        // Only the first a=fmtp:<pt> is considered.
-        codec.parameters = fmtps.length ? SDPUtils.parseFmtp(fmtps[0]) : {};
-        codec.rtcpFeedback = SDPUtils.matchPrefix(
-            mediaSection, 'a=rtcp-fb:' + pt + ' ')
-          .map(SDPUtils.parseRtcpFb);
-        description.codecs.push(codec);
-        // parse FEC mechanisms from rtpmap lines.
-        switch (codec.name.toUpperCase()) {
-          case 'RED':
-          case 'ULPFEC':
-            description.fecMechanisms.push(codec.name.toUpperCase());
-            break;
-          default: // only RED and ULPFEC are recognized as FEC mechanisms.
-            break;
+  });
+  if (flows.length > 0 && flows[0].length > 1 && flows[0][0] === primarySsrc) {
+    secondarySsrc = flows[0][1];
+  }
+
+  description.codecs.forEach(function(codec) {
+    if (codec.name.toUpperCase() === 'RTX' && codec.parameters.apt) {
+      var encParam = {
+        ssrc: primarySsrc,
+        codecPayloadType: parseInt(codec.parameters.apt, 10),
+        rtx: {
+          ssrc: secondarySsrc
         }
-      }
-    }
-    SDPUtils.matchPrefix(mediaSection, 'a=extmap:').forEach(function(line) {
-      description.headerExtensions.push(SDPUtils.parseExtmap(line));
-    });
-    // FIXME: parse rtcp.
-    return description;
-  };
-  
-  // Generates parts of the SDP media section describing the capabilities /
-  // parameters.
-  SDPUtils.writeRtpDescription = function(kind, caps) {
-    var sdp = '';
-  
-    // Build the mline.
-    sdp += 'm=' + kind + ' ';
-    sdp += caps.codecs.length > 0 ? '9' : '0'; // reject if no codecs.
-    sdp += ' UDP/TLS/RTP/SAVPF ';
-    sdp += caps.codecs.map(function(codec) {
-      if (codec.preferredPayloadType !== undefined) {
-        return codec.preferredPayloadType;
-      }
-      return codec.payloadType;
-    }).join(' ') + '\r\n';
-  
-    sdp += 'c=IN IP4 0.0.0.0\r\n';
-    sdp += 'a=rtcp:9 IN IP4 0.0.0.0\r\n';
-  
-    // Add a=rtpmap lines for each codec. Also fmtp and rtcp-fb.
-    caps.codecs.forEach(function(codec) {
-      sdp += SDPUtils.writeRtpMap(codec);
-      sdp += SDPUtils.writeFmtp(codec);
-      sdp += SDPUtils.writeRtcpFb(codec);
-    });
-    // FIXME: add headerExtensions, fecMechanismş and rtcp.
-    sdp += 'a=rtcp-mux\r\n';
-    return sdp;
-  };
-  
-  // Parses the SDP media section and returns an array of
-  // RTCRtpEncodingParameters.
-  SDPUtils.parseRtpEncodingParameters = function(mediaSection) {
-    var encodingParameters = [];
-    var description = SDPUtils.parseRtpParameters(mediaSection);
-    var hasRed = description.fecMechanisms.indexOf('RED') !== -1;
-    var hasUlpfec = description.fecMechanisms.indexOf('ULPFEC') !== -1;
-  
-    // filter a=ssrc:... cname:, ignore PlanB-msid
-    var ssrcs = SDPUtils.matchPrefix(mediaSection, 'a=ssrc:')
-    .map(function(line) {
-      return SDPUtils.parseSsrcMedia(line);
-    })
-    .filter(function(parts) {
-      return parts.attribute === 'cname';
-    });
-    var primarySsrc = ssrcs.length > 0 && ssrcs[0].ssrc;
-    var secondarySsrc;
-  
-    var flows = SDPUtils.matchPrefix(mediaSection, 'a=ssrc-group:FID')
-    .map(function(line) {
-      var parts = line.split(' ');
-      parts.shift();
-      return parts.map(function(part) {
-        return parseInt(part, 10);
-      });
-    });
-    if (flows.length > 0 && flows[0].length > 1 && flows[0][0] === primarySsrc) {
-      secondarySsrc = flows[0][1];
-    }
-  
-    description.codecs.forEach(function(codec) {
-      if (codec.name.toUpperCase() === 'RTX' && codec.parameters.apt) {
-        var encParam = {
-          ssrc: primarySsrc,
-          codecPayloadType: parseInt(codec.parameters.apt, 10),
-          rtx: {
-            payloadType: codec.payloadType,
-            ssrc: secondarySsrc
-          }
+      };
+      encodingParameters.push(encParam);
+      if (hasRed) {
+        encParam = JSON.parse(JSON.stringify(encParam));
+        encParam.fec = {
+          ssrc: secondarySsrc,
+          mechanism: hasUlpfec ? 'red+ulpfec' : 'red'
         };
         encodingParameters.push(encParam);
-        if (hasRed) {
-          encParam = JSON.parse(JSON.stringify(encParam));
-          encParam.fec = {
-            ssrc: secondarySsrc,
-            mechanism: hasUlpfec ? 'red+ulpfec' : 'red'
-          };
-          encodingParameters.push(encParam);
-        }
       }
+    }
+  });
+  if (encodingParameters.length === 0 && primarySsrc) {
+    encodingParameters.push({
+      ssrc: primarySsrc
     });
-    if (encodingParameters.length === 0 && primarySsrc) {
-      encodingParameters.push({
-        ssrc: primarySsrc
-      });
+  }
+
+  // we support both b=AS and b=TIAS but interpret AS as TIAS.
+  var bandwidth = SDPUtils.matchPrefix(mediaSection, 'b=');
+  if (bandwidth.length) {
+    if (bandwidth[0].indexOf('b=TIAS:') === 0) {
+      bandwidth = parseInt(bandwidth[0].substr(7), 10);
+    } else if (bandwidth[0].indexOf('b=AS:') === 0) {
+      bandwidth = parseInt(bandwidth[0].substr(5), 10);
     }
-  
-    // we support both b=AS and b=TIAS but interpret AS as TIAS.
-    var bandwidth = SDPUtils.matchPrefix(mediaSection, 'b=');
-    if (bandwidth.length) {
-      if (bandwidth[0].indexOf('b=TIAS:') === 0) {
-        bandwidth = parseInt(bandwidth[0].substr(7), 10);
-      } else if (bandwidth[0].indexOf('b=AS:') === 0) {
-        bandwidth = parseInt(bandwidth[0].substr(5), 10);
-      }
-      encodingParameters.forEach(function(params) {
-        params.maxBitrate = bandwidth;
-      });
-    }
-    return encodingParameters;
-  };
-  
-  SDPUtils.writeSessionBoilerplate = function() {
-    // FIXME: sess-id should be an NTP timestamp.
-    return 'v=0\r\n' +
-        'o=thisisadapterortc 8169639915646943137 2 IN IP4 127.0.0.1\r\n' +
-        's=-\r\n' +
-        't=0 0\r\n';
-  };
-  
-  SDPUtils.writeMediaSection = function(transceiver, caps, type, stream) {
-    var sdp = SDPUtils.writeRtpDescription(transceiver.kind, caps);
-  
-    // Map ICE parameters (ufrag, pwd) to SDP.
-    sdp += SDPUtils.writeIceParameters(
-        transceiver.iceGatherer.getLocalParameters());
-  
-    // Map DTLS parameters to SDP.
-    sdp += SDPUtils.writeDtlsParameters(
-        transceiver.dtlsTransport.getLocalParameters(),
-        type === 'offer' ? 'actpass' : 'active');
-  
-    sdp += 'a=mid:' + transceiver.mid + '\r\n';
-  
-    if (transceiver.rtpSender && transceiver.rtpReceiver) {
-      sdp += 'a=sendrecv\r\n';
-    } else if (transceiver.rtpSender) {
-      sdp += 'a=sendonly\r\n';
-    } else if (transceiver.rtpReceiver) {
-      sdp += 'a=recvonly\r\n';
-    } else {
-      sdp += 'a=inactive\r\n';
-    }
-  
-    // FIXME: for RTX there might be multiple SSRCs. Not implemented in Edge yet.
-    if (transceiver.rtpSender) {
-      var msid = 'msid:' + stream.id + ' ' +
-          transceiver.rtpSender.track.id + '\r\n';
-      sdp += 'a=' + msid;
-      sdp += 'a=ssrc:' + transceiver.sendEncodingParameters[0].ssrc +
-          ' ' + msid;
-    }
-    // FIXME: this should be written by writeRtpDescription.
+    encodingParameters.forEach(function(params) {
+      params.maxBitrate = bandwidth;
+    });
+  }
+  return encodingParameters;
+};
+
+SDPUtils.writeSessionBoilerplate = function() {
+  // FIXME: sess-id should be an NTP timestamp.
+  return 'v=0\r\n' +
+      'o=thisisadapterortc 8169639915646943137 2 IN IP4 127.0.0.1\r\n' +
+      's=-\r\n' +
+      't=0 0\r\n';
+};
+
+SDPUtils.writeMediaSection = function(transceiver, caps, type, stream) {
+  var sdp = SDPUtils.writeRtpDescription(transceiver.kind, caps);
+
+  // Map ICE parameters (ufrag, pwd) to SDP.
+  sdp += SDPUtils.writeIceParameters(
+      transceiver.iceGatherer.getLocalParameters());
+
+  // Map DTLS parameters to SDP.
+  sdp += SDPUtils.writeDtlsParameters(
+      transceiver.dtlsTransport.getLocalParameters(),
+      type === 'offer' ? 'actpass' : 'active');
+
+  sdp += 'a=mid:' + transceiver.mid + '\r\n';
+
+  if (transceiver.rtpSender && transceiver.rtpReceiver) {
+    sdp += 'a=sendrecv\r\n';
+  } else if (transceiver.rtpSender) {
+    sdp += 'a=sendonly\r\n';
+  } else if (transceiver.rtpReceiver) {
+    sdp += 'a=recvonly\r\n';
+  } else {
+    sdp += 'a=inactive\r\n';
+  }
+
+  // FIXME: for RTX there might be multiple SSRCs. Not implemented in Edge yet.
+  if (transceiver.rtpSender) {
+    var msid = 'msid:' + stream.id + ' ' +
+        transceiver.rtpSender.track.id + '\r\n';
+    sdp += 'a=' + msid;
     sdp += 'a=ssrc:' + transceiver.sendEncodingParameters[0].ssrc +
+        ' ' + msid;
+    if (transceiver.sendEncodingParameters[0].rtx) {
+      sdp += 'a=ssrc:' + transceiver.sendEncodingParameters[0].rtx.ssrc +
+          ' ' + msid;
+      sdp += 'a=ssrc-group:FID ' +
+          transceiver.sendEncodingParameters[0].ssrc + ' ' +
+          transceiver.sendEncodingParameters[0].rtx.ssrc +
+          '\r\n';
+    }
+  }
+  // FIXME: this should be written by writeRtpDescription.
+  sdp += 'a=ssrc:' + transceiver.sendEncodingParameters[0].ssrc +
+      ' cname:' + SDPUtils.localCName + '\r\n';
+  if (transceiver.rtpSender && transceiver.sendEncodingParameters[0].rtx) {
+    sdp += 'a=ssrc:' + transceiver.sendEncodingParameters[0].rtx.ssrc +
         ' cname:' + SDPUtils.localCName + '\r\n';
-    return sdp;
-  };
-  
-  // Gets the direction from the mediaSection or the sessionpart.
-  SDPUtils.getDirection = function(mediaSection, sessionpart) {
-    // Look for sendrecv, sendonly, recvonly, inactive, default to sendrecv.
-    var lines = SDPUtils.splitLines(mediaSection);
-    for (var i = 0; i < lines.length; i++) {
-      switch (lines[i]) {
-        case 'a=sendrecv':
-        case 'a=sendonly':
-        case 'a=recvonly':
-        case 'a=inactive':
-          return lines[i].substr(2);
-        default:
-          // FIXME: What should happen here?
-      }
-    }
-    if (sessionpart) {
-      return SDPUtils.getDirection(sessionpart);
-    }
-    return 'sendrecv';
-  };
-  
-  // Expose public methods.
-  module.exports = SDPUtils;
-  
-  },{}],2:[function(require,module,exports){
-  /*
-   *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
-   *
-   *  Use of this source code is governed by a BSD-style license
-   *  that can be found in the LICENSE file in the root of the source
-   *  tree.
-   */
-   /* eslint-env node */
-  
-  'use strict';
-  
-  // Shimming starts here.
-  (function() {
-    // Utils.
-    var logging = require('./utils').log;
-    var browserDetails = require('./utils').browserDetails;
-    // Export to the adapter global object visible in the browser.
-    module.exports.browserDetails = browserDetails;
-    module.exports.extractVersion = require('./utils').extractVersion;
-    module.exports.disableLog = require('./utils').disableLog;
-  
-    // Uncomment the line below if you want logging to occur, including logging
-    // for the switch statement below. Can also be turned on in the browser via
-    // adapter.disableLog(false), but then logging from the switch statement below
-    // will not appear.
-    // require('./utils').disableLog(false);
-  
-    // Browser shims.
-    var chromeShim = require('./chrome/chrome_shim') || null;
-    var edgeShim = require('./edge/edge_shim') || null;
-    var firefoxShim = require('./firefox/firefox_shim') || null;
-    var safariShim = require('./safari/safari_shim') || null;
-  
-    // Shim browser if found.
-    switch (browserDetails.browser) {
-      case 'opera': // fallthrough as it uses chrome shims
-      case 'chrome':
-        if (!chromeShim || !chromeShim.shimPeerConnection) {
-          logging('Chrome shim is not included in this adapter release.');
-          return;
-        }
-        logging('adapter.js shimming chrome.');
-        // Export to the adapter global object visible in the browser.
-        module.exports.browserShim = chromeShim;
-  
-        chromeShim.shimGetUserMedia();
-        chromeShim.shimMediaStream();
-        chromeShim.shimSourceObject();
-        chromeShim.shimPeerConnection();
-        chromeShim.shimOnTrack();
-        break;
-      case 'firefox':
-        if (!firefoxShim || !firefoxShim.shimPeerConnection) {
-          logging('Firefox shim is not included in this adapter release.');
-          return;
-        }
-        logging('adapter.js shimming firefox.');
-        // Export to the adapter global object visible in the browser.
-        module.exports.browserShim = firefoxShim;
-  
-        firefoxShim.shimGetUserMedia();
-        firefoxShim.shimSourceObject();
-        firefoxShim.shimPeerConnection();
-        firefoxShim.shimOnTrack();
-        break;
-      case 'edge':
-        if (!edgeShim || !edgeShim.shimPeerConnection) {
-          logging('MS edge shim is not included in this adapter release.');
-          return;
-        }
-        logging('adapter.js shimming edge.');
-        // Export to the adapter global object visible in the browser.
-        module.exports.browserShim = edgeShim;
-  
-        edgeShim.shimGetUserMedia();
-        edgeShim.shimPeerConnection();
-        break;
-      case 'safari':
-        if (!safariShim) {
-          logging('Safari shim is not included in this adapter release.');
-          return;
-        }
-        logging('adapter.js shimming safari.');
-        // Export to the adapter global object visible in the browser.
-        module.exports.browserShim = safariShim;
-  
-        safariShim.shimGetUserMedia();
-        break;
+  }
+  return sdp;
+};
+
+// Gets the direction from the mediaSection or the sessionpart.
+SDPUtils.getDirection = function(mediaSection, sessionpart) {
+  // Look for sendrecv, sendonly, recvonly, inactive, default to sendrecv.
+  var lines = SDPUtils.splitLines(mediaSection);
+  for (var i = 0; i < lines.length; i++) {
+    switch (lines[i]) {
+      case 'a=sendrecv':
+      case 'a=sendonly':
+      case 'a=recvonly':
+      case 'a=inactive':
+        return lines[i].substr(2);
       default:
-        logging('Unsupported browser!');
+        // FIXME: What should happen here?
     }
-  })();
-  
-  },{"./chrome/chrome_shim":3,"./edge/edge_shim":5,"./firefox/firefox_shim":7,"./safari/safari_shim":9,"./utils":10}],3:[function(require,module,exports){
-  
-  /*
-   *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
-   *
-   *  Use of this source code is governed by a BSD-style license
-   *  that can be found in the LICENSE file in the root of the source
-   *  tree.
-   */
-   /* eslint-env node */
-  'use strict';
-  var logging = require('../utils.js').log;
-  var browserDetails = require('../utils.js').browserDetails;
-  
-  var chromeShim = {
-    shimMediaStream: function() {
-      window.MediaStream = window.MediaStream || window.webkitMediaStream;
-    },
-  
-    shimOnTrack: function() {
-      if (typeof window === 'object' && window.RTCPeerConnection && !('ontrack' in
-          window.RTCPeerConnection.prototype)) {
-        Object.defineProperty(window.RTCPeerConnection.prototype, 'ontrack', {
-          get: function() {
-            return this._ontrack;
-          },
-          set: function(f) {
-            var self = this;
-            if (this._ontrack) {
-              this.removeEventListener('track', this._ontrack);
-              this.removeEventListener('addstream', this._ontrackpoly);
-            }
-            this.addEventListener('track', this._ontrack = f);
-            this.addEventListener('addstream', this._ontrackpoly = function(e) {
-              // onaddstream does not fire when a track is added to an existing
-              // stream. But stream.onaddtrack is implemented so we use that.
-              e.stream.addEventListener('addtrack', function(te) {
-                var event = new Event('track');
-                event.track = te.track;
-                event.receiver = {track: te.track};
-                event.streams = [e.stream];
-                self.dispatchEvent(event);
-              });
-              e.stream.getTracks().forEach(function(track) {
-                var event = new Event('track');
-                event.track = track;
-                event.receiver = {track: track};
-                event.streams = [e.stream];
-                this.dispatchEvent(event);
-              }.bind(this));
+  }
+  if (sessionpart) {
+    return SDPUtils.getDirection(sessionpart);
+  }
+  return 'sendrecv';
+};
+
+// Expose public methods.
+module.exports = SDPUtils;
+
+},{}],2:[function(requirecopy,module,exports){
+/*
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+ */
+ /* eslint-env node */
+
+'use strict';
+
+// Shimming starts here.
+(function() {
+  // Utils.
+  var logging = requirecopy('./utils').log;
+  var browserDetails = requirecopy('./utils').browserDetails;
+  // Export to the adapter global object visible in the browser.
+  module.exports.browserDetails = browserDetails;
+  module.exports.extractVersion = requirecopy('./utils').extractVersion;
+  module.exports.disableLog = requirecopy('./utils').disableLog;
+
+  // Uncomment the line below if you want logging to occur, including logging
+  // for the switch statement below. Can also be turned on in the browser via
+  // adapter.disableLog(false), but then logging from the switch statement below
+  // will not appear.
+  // requirecopy('./utils').disableLog(false);
+
+  // Browser shims.
+  var chromeShim = requirecopy('./chrome/chrome_shim') || null;
+  var edgeShim = requirecopy('./edge/edge_shim') || null;
+  var firefoxShim = requirecopy('./firefox/firefox_shim') || null;
+  var safariShim = requirecopy('./safari/safari_shim') || null;
+
+  // Shim browser if found.
+  switch (browserDetails.browser) {
+    case 'opera': // fallthrough as it uses chrome shims
+    case 'chrome':
+      if (!chromeShim || !chromeShim.shimPeerConnection) {
+        logging('Chrome shim is not included in this adapter release.');
+        return;
+      }
+      logging('adapter.js shimming chrome.');
+      // Export to the adapter global object visible in the browser.
+      module.exports.browserShim = chromeShim;
+
+      chromeShim.shimGetUserMedia();
+      chromeShim.shimMediaStream();
+      chromeShim.shimSourceObject();
+      chromeShim.shimPeerConnection();
+      chromeShim.shimOnTrack();
+      break;
+    case 'firefox':
+      if (!firefoxShim || !firefoxShim.shimPeerConnection) {
+        logging('Firefox shim is not included in this adapter release.');
+        return;
+      }
+      logging('adapter.js shimming firefox.');
+      // Export to the adapter global object visible in the browser.
+      module.exports.browserShim = firefoxShim;
+
+      firefoxShim.shimGetUserMedia();
+      firefoxShim.shimSourceObject();
+      firefoxShim.shimPeerConnection();
+      firefoxShim.shimOnTrack();
+      break;
+    case 'edge':
+      if (!edgeShim || !edgeShim.shimPeerConnection) {
+        logging('MS edge shim is not included in this adapter release.');
+        return;
+      }
+      logging('adapter.js shimming edge.');
+      // Export to the adapter global object visible in the browser.
+      module.exports.browserShim = edgeShim;
+
+      edgeShim.shimGetUserMedia();
+      edgeShim.shimPeerConnection();
+      break;
+    case 'safari':
+      if (!safariShim) {
+        logging('Safari shim is not included in this adapter release.');
+        return;
+      }
+      logging('adapter.js shimming safari.');
+      // Export to the adapter global object visible in the browser.
+      module.exports.browserShim = safariShim;
+
+      safariShim.shimGetUserMedia();
+      break;
+    default:
+      logging('Unsupported browser!');
+  }
+})();
+
+},{"./chrome/chrome_shim":3,"./edge/edge_shim":5,"./firefox/firefox_shim":7,"./safari/safari_shim":9,"./utils":10}],3:[function(requirecopy,module,exports){
+
+/*
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+ */
+ /* eslint-env node */
+'use strict';
+var logging = requirecopy('../utils.js').log;
+var browserDetails = requirecopy('../utils.js').browserDetails;
+
+var chromeShim = {
+  shimMediaStream: function() {
+    window.MediaStream = window.MediaStream || window.webkitMediaStream;
+  },
+
+  shimOnTrack: function() {
+    if (typeof window === 'object' && window.RTCPeerConnection && !('ontrack' in
+        window.RTCPeerConnection.prototype)) {
+      Object.defineProperty(window.RTCPeerConnection.prototype, 'ontrack', {
+        get: function() {
+          return this._ontrack;
+        },
+        set: function(f) {
+          var self = this;
+          if (this._ontrack) {
+            this.removeEventListener('track', this._ontrack);
+            this.removeEventListener('addstream', this._ontrackpoly);
+          }
+          this.addEventListener('track', this._ontrack = f);
+          this.addEventListener('addstream', this._ontrackpoly = function(e) {
+            // onaddstream does not fire when a track is added to an existing
+            // stream. But stream.onaddtrack is implemented so we use that.
+            e.stream.addEventListener('addtrack', function(te) {
+              var event = new Event('track');
+              event.track = te.track;
+              event.receiver = {track: te.track};
+              event.streams = [e.stream];
+              self.dispatchEvent(event);
+            });
+            e.stream.getTracks().forEach(function(track) {
+              var event = new Event('track');
+              event.track = track;
+              event.receiver = {track: track};
+              event.streams = [e.stream];
+              this.dispatchEvent(event);
             }.bind(this));
+          }.bind(this));
+        }
+      });
+    }
+  },
+
+  shimSourceObject: function() {
+    if (typeof window === 'object') {
+      if (window.HTMLMediaElement &&
+        !('srcObject' in window.HTMLMediaElement.prototype)) {
+        // Shim the srcObject property, once, when HTMLMediaElement is found.
+        Object.defineProperty(window.HTMLMediaElement.prototype, 'srcObject', {
+          get: function() {
+            return this._srcObject;
+          },
+          set: function(stream) {
+            var self = this;
+            // Use _srcObject as a private property for this shim
+            this._srcObject = stream;
+            if (this.src) {
+              URL.revokeObjectURL(this.src);
+            }
+
+            if (!stream) {
+              this.src = '';
+              return;
+            }
+            this.src = URL.createObjectURL(stream);
+            // We need to recreate the blob url when a track is added or
+            // removed. Doing it manually since we want to avoid a recursion.
+            stream.addEventListener('addtrack', function() {
+              if (self.src) {
+                URL.revokeObjectURL(self.src);
+              }
+              self.src = URL.createObjectURL(stream);
+            });
+            stream.addEventListener('removetrack', function() {
+              if (self.src) {
+                URL.revokeObjectURL(self.src);
+              }
+              self.src = URL.createObjectURL(stream);
+            });
           }
         });
       }
-    },
-  
-    shimSourceObject: function() {
-      if (typeof window === 'object') {
-        if (window.HTMLMediaElement &&
-          !('srcObject' in window.HTMLMediaElement.prototype)) {
-          // Shim the srcObject property, once, when HTMLMediaElement is found.
-          Object.defineProperty(window.HTMLMediaElement.prototype, 'srcObject', {
-            get: function() {
-              return this._srcObject;
-            },
-            set: function(stream) {
-              var self = this;
-              // Use _srcObject as a private property for this shim
-              this._srcObject = stream;
-              if (this.src) {
-                URL.revokeObjectURL(this.src);
-              }
-  
-              if (!stream) {
-                this.src = '';
-                return;
-              }
-              this.src = URL.createObjectURL(stream);
-              // We need to recreate the blob url when a track is added or
-              // removed. Doing it manually since we want to avoid a recursion.
-              stream.addEventListener('addtrack', function() {
-                if (self.src) {
-                  URL.revokeObjectURL(self.src);
-                }
-                self.src = URL.createObjectURL(stream);
-              });
-              stream.addEventListener('removetrack', function() {
-                if (self.src) {
-                  URL.revokeObjectURL(self.src);
-                }
-                self.src = URL.createObjectURL(stream);
-              });
-            }
+    }
+  },
+
+  shimPeerConnection: function() {
+    // The RTCPeerConnection object.
+    window.RTCPeerConnection = function(pcConfig, pcConstraints) {
+      // Translate iceTransportPolicy to iceTransports,
+      // see https://code.google.com/p/webrtc/issues/detail?id=4869
+      logging('PeerConnection');
+      if (pcConfig && pcConfig.iceTransportPolicy) {
+        pcConfig.iceTransports = pcConfig.iceTransportPolicy;
+      }
+
+      var pc = new webkitRTCPeerConnection(pcConfig, pcConstraints);
+      var origGetStats = pc.getStats.bind(pc);
+      pc.getStats = function(selector, successCallback, errorCallback) {
+        var self = this;
+        var args = arguments;
+
+        // If selector is a function then we are in the old style stats so just
+        // pass back the original getStats format to avoid breaking old users.
+        if (arguments.length > 0 && typeof selector === 'function') {
+          return origGetStats(selector, successCallback);
+        }
+
+        var fixChromeStats_ = function(response) {
+          var standardReport = {};
+          var reports = response.result();
+          reports.forEach(function(report) {
+            var standardStats = {
+              id: report.id,
+              timestamp: report.timestamp,
+              type: report.type
+            };
+            report.names().forEach(function(name) {
+              standardStats[name] = report.stat(name);
+            });
+            standardReport[standardStats.id] = standardStats;
+          });
+
+          return standardReport;
+        };
+
+        // shim getStats with maplike support
+        var makeMapStats = function(stats, legacyStats) {
+          var map = new Map(Object.keys(stats).map(function(key) {
+            return[key, stats[key]];
+          }));
+          legacyStats = legacyStats || stats;
+          Object.keys(legacyStats).forEach(function(key) {
+            map[key] = legacyStats[key];
+          });
+          return map;
+        };
+
+        if (arguments.length >= 2) {
+          var successCallbackWrapper_ = function(response) {
+            args[1](makeMapStats(fixChromeStats_(response)));
+          };
+
+          return origGetStats.apply(this, [successCallbackWrapper_,
+              arguments[0]]);
+        }
+
+        // promise-support
+        return new Promise(function(resolve, reject) {
+          if (args.length === 1 && typeof selector === 'object') {
+            origGetStats.apply(self, [
+              function(response) {
+                resolve(makeMapStats(fixChromeStats_(response)));
+              }, reject]);
+          } else {
+            // Preserve legacy chrome stats only on legacy access of stats obj
+            origGetStats.apply(self, [
+              function(response) {
+                resolve(makeMapStats(fixChromeStats_(response),
+                    response.result()));
+              }, reject]);
+          }
+        }).then(successCallback, errorCallback);
+      };
+
+      return pc;
+    };
+    window.RTCPeerConnection.prototype = webkitRTCPeerConnection.prototype;
+
+    // wrap static methods. Currently just generateCertificate.
+    if (webkitRTCPeerConnection.generateCertificate) {
+      Object.defineProperty(window.RTCPeerConnection, 'generateCertificate', {
+        get: function() {
+          return webkitRTCPeerConnection.generateCertificate;
+        }
+      });
+    }
+
+    ['createOffer', 'createAnswer'].forEach(function(method) {
+      var nativeMethod = webkitRTCPeerConnection.prototype[method];
+      webkitRTCPeerConnection.prototype[method] = function() {
+        var self = this;
+        if (arguments.length < 1 || (arguments.length === 1 &&
+            typeof arguments[0] === 'object')) {
+          var opts = arguments.length === 1 ? arguments[0] : undefined;
+          return new Promise(function(resolve, reject) {
+            nativeMethod.apply(self, [resolve, reject, opts]);
           });
         }
-      }
-    },
-  
-    shimPeerConnection: function() {
-      // The RTCPeerConnection object.
-      window.RTCPeerConnection = function(pcConfig, pcConstraints) {
-        // Translate iceTransportPolicy to iceTransports,
-        // see https://code.google.com/p/webrtc/issues/detail?id=4869
-        logging('PeerConnection');
-        if (pcConfig && pcConfig.iceTransportPolicy) {
-          pcConfig.iceTransports = pcConfig.iceTransportPolicy;
-        }
-  
-        var pc = new webkitRTCPeerConnection(pcConfig, pcConstraints);
-        var origGetStats = pc.getStats.bind(pc);
-        pc.getStats = function(selector, successCallback, errorCallback) {
-          var self = this;
-          var args = arguments;
-  
-          // If selector is a function then we are in the old style stats so just
-          // pass back the original getStats format to avoid breaking old users.
-          if (arguments.length > 0 && typeof selector === 'function') {
-            return origGetStats(selector, successCallback);
-          }
-  
-          var fixChromeStats_ = function(response) {
-            var standardReport = {};
-            var reports = response.result();
-            reports.forEach(function(report) {
-              var standardStats = {
-                id: report.id,
-                timestamp: report.timestamp,
-                type: report.type
-              };
-              report.names().forEach(function(name) {
-                standardStats[name] = report.stat(name);
-              });
-              standardReport[standardStats.id] = standardStats;
-            });
-  
-            return standardReport;
-          };
-  
-          // shim getStats with maplike support
-          var makeMapStats = function(stats, legacyStats) {
-            var map = new Map(Object.keys(stats).map(function(key) {
-              return[key, stats[key]];
-            }));
-            legacyStats = legacyStats || stats;
-            Object.keys(legacyStats).forEach(function(key) {
-              map[key] = legacyStats[key];
-            });
-            return map;
-          };
-  
-          if (arguments.length >= 2) {
-            var successCallbackWrapper_ = function(response) {
-              args[1](makeMapStats(fixChromeStats_(response)));
-            };
-  
-            return origGetStats.apply(this, [successCallbackWrapper_,
-                arguments[0]]);
-          }
-  
-          // promise-support
-          return new Promise(function(resolve, reject) {
-            if (args.length === 1 && typeof selector === 'object') {
-              origGetStats.apply(self, [
-                function(response) {
-                  resolve(makeMapStats(fixChromeStats_(response)));
-                }, reject]);
-            } else {
-              // Preserve legacy chrome stats only on legacy access of stats obj
-              origGetStats.apply(self, [
-                function(response) {
-                  resolve(makeMapStats(fixChromeStats_(response),
-                      response.result()));
-                }, reject]);
-            }
-          }).then(successCallback, errorCallback);
-        };
-  
-        return pc;
+        return nativeMethod.apply(this, arguments);
       };
-      window.RTCPeerConnection.prototype = webkitRTCPeerConnection.prototype;
-  
-      // wrap static methods. Currently just generateCertificate.
-      if (webkitRTCPeerConnection.generateCertificate) {
-        Object.defineProperty(window.RTCPeerConnection, 'generateCertificate', {
-          get: function() {
-            return webkitRTCPeerConnection.generateCertificate;
-          }
-        });
-      }
-  
-      ['createOffer', 'createAnswer'].forEach(function(method) {
-        var nativeMethod = webkitRTCPeerConnection.prototype[method];
-        webkitRTCPeerConnection.prototype[method] = function() {
-          var self = this;
-          if (arguments.length < 1 || (arguments.length === 1 &&
-              typeof arguments[0] === 'object')) {
-            var opts = arguments.length === 1 ? arguments[0] : undefined;
-            return new Promise(function(resolve, reject) {
-              nativeMethod.apply(self, [resolve, reject, opts]);
-            });
-          }
-          return nativeMethod.apply(this, arguments);
-        };
-      });
-  
-      // add promise support -- natively available in Chrome 51
-      if (browserDetails.version < 51) {
-        ['setLocalDescription', 'setRemoteDescription', 'addIceCandidate']
-            .forEach(function(method) {
-              var nativeMethod = webkitRTCPeerConnection.prototype[method];
-              webkitRTCPeerConnection.prototype[method] = function() {
-                var args = arguments;
-                var self = this;
-                var promise = new Promise(function(resolve, reject) {
-                  nativeMethod.apply(self, [args[0], resolve, reject]);
-                });
-                if (args.length < 2) {
-                  return promise;
-                }
-                return promise.then(function() {
-                  args[1].apply(null, []);
-                },
-                function(err) {
-                  if (args.length >= 3) {
-                    args[2].apply(null, [err]);
-                  }
-                });
-              };
-            });
-      }
-  
-      // shim implicit creation of RTCSessionDescription/RTCIceCandidate
+    });
+
+    // add promise support -- natively available in Chrome 51
+    if (browserDetails.version < 51) {
       ['setLocalDescription', 'setRemoteDescription', 'addIceCandidate']
           .forEach(function(method) {
             var nativeMethod = webkitRTCPeerConnection.prototype[method];
             webkitRTCPeerConnection.prototype[method] = function() {
-              arguments[0] = new ((method === 'addIceCandidate') ?
-                  RTCIceCandidate : RTCSessionDescription)(arguments[0]);
-              return nativeMethod.apply(this, arguments);
+              var args = arguments;
+              var self = this;
+              var promise = new Promise(function(resolve, reject) {
+                nativeMethod.apply(self, [args[0], resolve, reject]);
+              });
+              if (args.length < 2) {
+                return promise;
+              }
+              return promise.then(function() {
+                args[1].apply(null, []);
+              },
+              function(err) {
+                if (args.length >= 3) {
+                  args[2].apply(null, [err]);
+                }
+              });
             };
           });
-  
-      // support for addIceCandidate(null)
-      var nativeAddIceCandidate =
-          RTCPeerConnection.prototype.addIceCandidate;
-      RTCPeerConnection.prototype.addIceCandidate = function() {
-        return arguments[0] === null ? Promise.resolve()
-            : nativeAddIceCandidate.apply(this, arguments);
-      };
     }
-  };
-  
-  
-  // Expose public methods.
-  module.exports = {
-    shimMediaStream: chromeShim.shimMediaStream,
-    shimOnTrack: chromeShim.shimOnTrack,
-    shimSourceObject: chromeShim.shimSourceObject,
-    shimPeerConnection: chromeShim.shimPeerConnection,
-    shimGetUserMedia: require('./getusermedia')
-  };
-  
-  },{"../utils.js":10,"./getusermedia":4}],4:[function(require,module,exports){
-  /*
-   *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
-   *
-   *  Use of this source code is governed by a BSD-style license
-   *  that can be found in the LICENSE file in the root of the source
-   *  tree.
-   */
-   /* eslint-env node */
-  'use strict';
-  var logging = require('../utils.js').log;
-  
-  // Expose public methods.
-  module.exports = function() {
-    var constraintsToChrome_ = function(c) {
-      if (typeof c !== 'object' || c.mandatory || c.optional) {
-        return c;
+
+    // shim implicit creation of RTCSessionDescription/RTCIceCandidate
+    ['setLocalDescription', 'setRemoteDescription', 'addIceCandidate']
+        .forEach(function(method) {
+          var nativeMethod = webkitRTCPeerConnection.prototype[method];
+          webkitRTCPeerConnection.prototype[method] = function() {
+            arguments[0] = new ((method === 'addIceCandidate') ?
+                RTCIceCandidate : RTCSessionDescription)(arguments[0]);
+            return nativeMethod.apply(this, arguments);
+          };
+        });
+
+    // support for addIceCandidate(null)
+    var nativeAddIceCandidate =
+        RTCPeerConnection.prototype.addIceCandidate;
+    RTCPeerConnection.prototype.addIceCandidate = function() {
+      return arguments[0] === null ? Promise.resolve()
+          : nativeAddIceCandidate.apply(this, arguments);
+    };
+  }
+};
+
+
+// Expose public methods.
+module.exports = {
+  shimMediaStream: chromeShim.shimMediaStream,
+  shimOnTrack: chromeShim.shimOnTrack,
+  shimSourceObject: chromeShim.shimSourceObject,
+  shimPeerConnection: chromeShim.shimPeerConnection,
+  shimGetUserMedia: requirecopy('./getusermedia')
+};
+
+},{"../utils.js":10,"./getusermedia":4}],4:[function(requirecopy,module,exports){
+/*
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+ */
+ /* eslint-env node */
+'use strict';
+var logging = requirecopy('../utils.js').log;
+
+// Expose public methods.
+module.exports = function() {
+  var constraintsToChrome_ = function(c) {
+    if (typeof c !== 'object' || c.mandatory || c.optional) {
+      return c;
+    }
+    var cc = {};
+    Object.keys(c).forEach(function(key) {
+      if (key === 'require' || key === 'advanced' || key === 'mediaSource') {
+        return;
       }
-      var cc = {};
-      Object.keys(c).forEach(function(key) {
-        if (key === 'require' || key === 'advanced' || key === 'mediaSource') {
-          return;
+      var r = (typeof c[key] === 'object') ? c[key] : {ideal: c[key]};
+      if (r.exact !== undefined && typeof r.exact === 'number') {
+        r.min = r.max = r.exact;
+      }
+      var oldname_ = function(prefix, name) {
+        if (prefix) {
+          return prefix + name.charAt(0).toUpperCase() + name.slice(1);
         }
-        var r = (typeof c[key] === 'object') ? c[key] : {ideal: c[key]};
-        if (r.exact !== undefined && typeof r.exact === 'number') {
-          r.min = r.max = r.exact;
-        }
-        var oldname_ = function(prefix, name) {
-          if (prefix) {
-            return prefix + name.charAt(0).toUpperCase() + name.slice(1);
-          }
-          return (name === 'deviceId') ? 'sourceId' : name;
-        };
-        if (r.ideal !== undefined) {
-          cc.optional = cc.optional || [];
-          var oc = {};
-          if (typeof r.ideal === 'number') {
-            oc[oldname_('min', key)] = r.ideal;
-            cc.optional.push(oc);
-            oc = {};
-            oc[oldname_('max', key)] = r.ideal;
-            cc.optional.push(oc);
-          } else {
-            oc[oldname_('', key)] = r.ideal;
-            cc.optional.push(oc);
-          }
-        }
-        if (r.exact !== undefined && typeof r.exact !== 'number') {
-          cc.mandatory = cc.mandatory || {};
-          cc.mandatory[oldname_('', key)] = r.exact;
+        return (name === 'deviceId') ? 'sourceId' : name;
+      };
+      if (r.ideal !== undefined) {
+        cc.optional = cc.optional || [];
+        var oc = {};
+        if (typeof r.ideal === 'number') {
+          oc[oldname_('min', key)] = r.ideal;
+          cc.optional.push(oc);
+          oc = {};
+          oc[oldname_('max', key)] = r.ideal;
+          cc.optional.push(oc);
         } else {
-          ['min', 'max'].forEach(function(mix) {
-            if (r[mix] !== undefined) {
-              cc.mandatory = cc.mandatory || {};
-              cc.mandatory[oldname_(mix, key)] = r[mix];
-            }
-          });
+          oc[oldname_('', key)] = r.ideal;
+          cc.optional.push(oc);
         }
-      });
-      if (c.advanced) {
-        cc.optional = (cc.optional || []).concat(c.advanced);
       }
-      return cc;
-    };
-  
-    var shimConstraints_ = function(constraints, func) {
-      constraints = JSON.parse(JSON.stringify(constraints));
-      if (constraints && constraints.audio) {
-        constraints.audio = constraintsToChrome_(constraints.audio);
-      }
-      if (constraints && typeof constraints.video === 'object') {
-        // Shim facingMode for mobile, where it defaults to "user".
-        var face = constraints.video.facingMode;
-        face = face && ((typeof face === 'object') ? face : {ideal: face});
-  
-        if ((face && (face.exact === 'user' || face.exact === 'environment' ||
-                      face.ideal === 'user' || face.ideal === 'environment')) &&
-            !(navigator.mediaDevices.getSupportedConstraints &&
-              navigator.mediaDevices.getSupportedConstraints().facingMode)) {
-          delete constraints.video.facingMode;
-          if (face.exact === 'environment' || face.ideal === 'environment') {
-            // Look for "back" in label, or use last cam (typically back cam).
-            return navigator.mediaDevices.enumerateDevices()
-            .then(function(devices) {
-              devices = devices.filter(function(d) {
-                return d.kind === 'videoinput';
-              });
-              var back = devices.find(function(d) {
-                return d.label.toLowerCase().indexOf('back') !== -1;
-              }) || (devices.length && devices[devices.length - 1]);
-              if (back) {
-                constraints.video.deviceId = face.exact ? {exact: back.deviceId} :
-                                                          {ideal: back.deviceId};
-              }
-              constraints.video = constraintsToChrome_(constraints.video);
-              logging('chrome: ' + JSON.stringify(constraints));
-              return func(constraints);
-            });
+      if (r.exact !== undefined && typeof r.exact !== 'number') {
+        cc.mandatory = cc.mandatory || {};
+        cc.mandatory[oldname_('', key)] = r.exact;
+      } else {
+        ['min', 'max'].forEach(function(mix) {
+          if (r[mix] !== undefined) {
+            cc.mandatory = cc.mandatory || {};
+            cc.mandatory[oldname_(mix, key)] = r[mix];
           }
-        }
-        constraints.video = constraintsToChrome_(constraints.video);
+        });
       }
-      logging('chrome: ' + JSON.stringify(constraints));
-      return func(constraints);
-    };
-  
-    var shimError_ = function(e) {
-      return {
-        name: {
-          PermissionDeniedError: 'NotAllowedError',
-          ConstraintNotSatisfiedError: 'OverconstrainedError'
-        }[e.name] || e.name,
-        message: e.message,
-        constraint: e.constraintName,
-        toString: function() {
-          return this.name + (this.message && ': ') + this.message;
-        }
-      };
-    };
-  
-    var getUserMedia_ = function(constraints, onSuccess, onError) {
-      shimConstraints_(constraints, function(c) {
-        navigator.webkitGetUserMedia(c, onSuccess, function(e) {
-          onError(shimError_(e));
-        });
-      });
-    };
-  
-    navigator.getUserMedia = getUserMedia_;
-  
-    // Returns the result of getUserMedia as a Promise.
-    var getUserMediaPromise_ = function(constraints) {
-      return new Promise(function(resolve, reject) {
-        navigator.getUserMedia(constraints, resolve, reject);
-      });
-    };
-  
-    if (!navigator.mediaDevices) {
-      navigator.mediaDevices = {
-        getUserMedia: getUserMediaPromise_,
-        enumerateDevices: function() {
-          return new Promise(function(resolve) {
-            var kinds = {audio: 'audioinput', video: 'videoinput'};
-            return MediaStreamTrack.getSources(function(devices) {
-              resolve(devices.map(function(device) {
-                return {label: device.label,
-                        kind: kinds[device.kind],
-                        deviceId: device.id,
-                        groupId: ''};
-              }));
-            });
-          });
-        }
-      };
+    });
+    if (c.advanced) {
+      cc.optional = (cc.optional || []).concat(c.advanced);
     }
-  
-    // A shim for getUserMedia method on the mediaDevices object.
-    // TODO(KaptenJansson) remove once implemented in Chrome stable.
-    if (!navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia = function(constraints) {
-        return getUserMediaPromise_(constraints);
-      };
-    } else {
-      // Even though Chrome 45 has navigator.mediaDevices and a getUserMedia
-      // function which returns a Promise, it does not accept spec-style
-      // constraints.
-      var origGetUserMedia = navigator.mediaDevices.getUserMedia.
-          bind(navigator.mediaDevices);
-      navigator.mediaDevices.getUserMedia = function(cs) {
-        return shimConstraints_(cs, function(c) {
-          return origGetUserMedia(c).catch(function(e) {
-            return Promise.reject(shimError_(e));
-          });
-        });
-      };
-    }
-  
-    // Dummy devicechange event methods.
-    // TODO(KaptenJansson) remove once implemented in Chrome stable.
-    if (typeof navigator.mediaDevices.addEventListener === 'undefined') {
-      navigator.mediaDevices.addEventListener = function() {
-        logging('Dummy mediaDevices.addEventListener called.');
-      };
-    }
-    if (typeof navigator.mediaDevices.removeEventListener === 'undefined') {
-      navigator.mediaDevices.removeEventListener = function() {
-        logging('Dummy mediaDevices.removeEventListener called.');
-      };
-    }
+    return cc;
   };
-  
-  },{"../utils.js":10}],5:[function(require,module,exports){
-  /*
-   *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
-   *
-   *  Use of this source code is governed by a BSD-style license
-   *  that can be found in the LICENSE file in the root of the source
-   *  tree.
-   */
-   /* eslint-env node */
-  'use strict';
-  
-  var SDPUtils = require('sdp');
-  var browserDetails = require('../utils').browserDetails;
-  
-  var edgeShim = {
-    shimPeerConnection: function() {
-      if (window.RTCIceGatherer) {
-        // ORTC defines an RTCIceCandidate object but no constructor.
-        // Not implemented in Edge.
-        if (!window.RTCIceCandidate) {
-          window.RTCIceCandidate = function(args) {
-            return args;
-          };
-        }
-        // ORTC does not have a session description object but
-        // other browsers (i.e. Chrome) that will support both PC and ORTC
-        // in the future might have this defined already.
-        if (!window.RTCSessionDescription) {
-          window.RTCSessionDescription = function(args) {
-            return args;
-          };
-        }
-      }
-  
-      window.RTCPeerConnection = function(config) {
-        var self = this;
-  
-        var _eventTarget = document.createDocumentFragment();
-        ['addEventListener', 'removeEventListener', 'dispatchEvent']
-            .forEach(function(method) {
-              self[method] = _eventTarget[method].bind(_eventTarget);
+
+  var shimConstraints_ = function(constraints, func) {
+    constraints = JSON.parse(JSON.stringify(constraints));
+    if (constraints && constraints.audio) {
+      constraints.audio = constraintsToChrome_(constraints.audio);
+    }
+    if (constraints && typeof constraints.video === 'object') {
+      // Shim facingMode for mobile, where it defaults to "user".
+      var face = constraints.video.facingMode;
+      face = face && ((typeof face === 'object') ? face : {ideal: face});
+
+      if ((face && (face.exact === 'user' || face.exact === 'environment' ||
+                    face.ideal === 'user' || face.ideal === 'environment')) &&
+          !(navigator.mediaDevices.getSupportedConstraints &&
+            navigator.mediaDevices.getSupportedConstraints().facingMode)) {
+        delete constraints.video.facingMode;
+        if (face.exact === 'environment' || face.ideal === 'environment') {
+          // Look for "back" in label, or use last cam (typically back cam).
+          return navigator.mediaDevices.enumerateDevices()
+          .then(function(devices) {
+            devices = devices.filter(function(d) {
+              return d.kind === 'videoinput';
             });
-  
-        this.onicecandidate = null;
-        this.onaddstream = null;
-        this.ontrack = null;
-        this.onremovestream = null;
-        this.onsignalingstatechange = null;
-        this.oniceconnectionstatechange = null;
-        this.onnegotiationneeded = null;
-        this.ondatachannel = null;
-  
-        this.localStreams = [];
-        this.remoteStreams = [];
-        this.getLocalStreams = function() {
-          return self.localStreams;
-        };
-        this.getRemoteStreams = function() {
-          return self.remoteStreams;
-        };
-  
-        this.localDescription = new RTCSessionDescription({
-          type: '',
-          sdp: ''
-        });
-        this.remoteDescription = new RTCSessionDescription({
-          type: '',
-          sdp: ''
-        });
-        this.signalingState = 'stable';
-        this.iceConnectionState = 'new';
-        this.iceGatheringState = 'new';
-  
-        this.iceOptions = {
-          gatherPolicy: 'all',
-          iceServers: []
-        };
-        if (config && config.iceTransportPolicy) {
-          switch (config.iceTransportPolicy) {
-            case 'all':
-            case 'relay':
-              this.iceOptions.gatherPolicy = config.iceTransportPolicy;
-              break;
-            case 'none':
-              // FIXME: remove once implementation and spec have added this.
-              throw new TypeError('iceTransportPolicy "none" not supported');
-            default:
-              // don't set iceTransportPolicy.
-              break;
-          }
-        }
-        this.usingBundle = config && config.bundlePolicy === 'max-bundle';
-  
-        if (config && config.iceServers) {
-          // Edge does not like
-          // 1) stun:
-          // 2) turn: that does not have all of turn:host:port?transport=udp
-          // 3) turn: with ipv6 addresses
-          var iceServers = JSON.parse(JSON.stringify(config.iceServers));
-          this.iceOptions.iceServers = iceServers.filter(function(server) {
-            if (server && server.urls) {
-              var urls = server.urls;
-              if (typeof urls === 'string') {
-                urls = [urls];
-              }
-              urls = urls.filter(function(url) {
-                return (url.indexOf('turn:') === 0 &&
-                    url.indexOf('transport=udp') !== -1 &&
-                    url.indexOf('turn:[') === -1) ||
-                    (url.indexOf('stun:') === 0 &&
-                      browserDetails.version >= 14393);
-              })[0];
-              return !!urls;
+            var back = devices.find(function(d) {
+              return d.label.toLowerCase().indexOf('back') !== -1;
+            }) || (devices.length && devices[devices.length - 1]);
+            if (back) {
+              constraints.video.deviceId = face.exact ? {exact: back.deviceId} :
+                                                        {ideal: back.deviceId};
             }
-            return false;
+            constraints.video = constraintsToChrome_(constraints.video);
+            logging('chrome: ' + JSON.stringify(constraints));
+            return func(constraints);
           });
         }
-  
-        // per-track iceGathers, iceTransports, dtlsTransports, rtpSenders, ...
-        // everything that is needed to describe a SDP m-line.
-        this.transceivers = [];
-  
-        // since the iceGatherer is currently created in createOffer but we
-        // must not emit candidates until after setLocalDescription we buffer
-        // them in this array.
-        this._localIceCandidatesBuffer = [];
+      }
+      constraints.video = constraintsToChrome_(constraints.video);
+    }
+    logging('chrome: ' + JSON.stringify(constraints));
+    return func(constraints);
+  };
+
+  var shimError_ = function(e) {
+    return {
+      name: {
+        PermissionDeniedError: 'NotAllowedError',
+        ConstraintNotSatisfiedError: 'OverconstrainedError'
+      }[e.name] || e.name,
+      message: e.message,
+      constraint: e.constraintName,
+      toString: function() {
+        return this.name + (this.message && ': ') + this.message;
+      }
+    };
+  };
+
+  var getUserMedia_ = function(constraints, onSuccess, onError) {
+    shimConstraints_(constraints, function(c) {
+      navigator.webkitGetUserMedia(c, onSuccess, function(e) {
+        onError(shimError_(e));
+      });
+    });
+  };
+
+  navigator.getUserMedia = getUserMedia_;
+
+  // Returns the result of getUserMedia as a Promise.
+  var getUserMediaPromise_ = function(constraints) {
+    return new Promise(function(resolve, reject) {
+      navigator.getUserMedia(constraints, resolve, reject);
+    });
+  };
+
+  if (!navigator.mediaDevices) {
+    navigator.mediaDevices = {
+      getUserMedia: getUserMediaPromise_,
+      enumerateDevices: function() {
+        return new Promise(function(resolve) {
+          var kinds = {audio: 'audioinput', video: 'videoinput'};
+          return MediaStreamTrack.getSources(function(devices) {
+            resolve(devices.map(function(device) {
+              return {label: device.label,
+                      kind: kinds[device.kind],
+                      deviceId: device.id,
+                      groupId: ''};
+            }));
+          });
+        });
+      }
+    };
+  }
+
+  // A shim for getUserMedia method on the mediaDevices object.
+  // TODO(KaptenJansson) remove once implemented in Chrome stable.
+  if (!navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia = function(constraints) {
+      return getUserMediaPromise_(constraints);
+    };
+  } else {
+    // Even though Chrome 45 has navigator.mediaDevices and a getUserMedia
+    // function which returns a Promise, it does not accept spec-style
+    // constraints.
+    var origGetUserMedia = navigator.mediaDevices.getUserMedia.
+        bind(navigator.mediaDevices);
+    navigator.mediaDevices.getUserMedia = function(cs) {
+      return shimConstraints_(cs, function(c) {
+        return origGetUserMedia(c).catch(function(e) {
+          return Promise.reject(shimError_(e));
+        });
+      });
+    };
+  }
+
+  // Dummy devicechange event methods.
+  // TODO(KaptenJansson) remove once implemented in Chrome stable.
+  if (typeof navigator.mediaDevices.addEventListener === 'undefined') {
+    navigator.mediaDevices.addEventListener = function() {
+      logging('Dummy mediaDevices.addEventListener called.');
+    };
+  }
+  if (typeof navigator.mediaDevices.removeEventListener === 'undefined') {
+    navigator.mediaDevices.removeEventListener = function() {
+      logging('Dummy mediaDevices.removeEventListener called.');
+    };
+  }
+};
+
+},{"../utils.js":10}],5:[function(requirecopy,module,exports){
+/*
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+ */
+ /* eslint-env node */
+'use strict';
+
+var SDPUtils = requirecopy('sdp');
+var browserDetails = requirecopy('../utils').browserDetails;
+
+var edgeShim = {
+  shimPeerConnection: function() {
+    if (window.RTCIceGatherer) {
+      // ORTC defines an RTCIceCandidate object but no constructor.
+      // Not implemented in Edge.
+      if (!window.RTCIceCandidate) {
+        window.RTCIceCandidate = function(args) {
+          return args;
+        };
+      }
+      // ORTC does not have a session description object but
+      // other browsers (i.e. Chrome) that will support both PC and ORTC
+      // in the future might have this defined already.
+      if (!window.RTCSessionDescription) {
+        window.RTCSessionDescription = function(args) {
+          return args;
+        };
+      }
+    }
+
+    window.RTCPeerConnection = function(config) {
+      var self = this;
+
+      var _eventTarget = document.createDocumentFragment();
+      ['addEventListener', 'removeEventListener', 'dispatchEvent']
+          .forEach(function(method) {
+            self[method] = _eventTarget[method].bind(_eventTarget);
+          });
+
+      this.onicecandidate = null;
+      this.onaddstream = null;
+      this.ontrack = null;
+      this.onremovestream = null;
+      this.onsignalingstatechange = null;
+      this.oniceconnectionstatechange = null;
+      this.onnegotiationneeded = null;
+      this.ondatachannel = null;
+
+      this.localStreams = [];
+      this.remoteStreams = [];
+      this.getLocalStreams = function() {
+        return self.localStreams;
       };
-  
-      window.RTCPeerConnection.prototype._emitBufferedCandidates = function() {
-        var self = this;
-        var sections = SDPUtils.splitSections(self.localDescription.sdp);
-        // FIXME: need to apply ice candidates in a way which is async but
-        // in-order
-        this._localIceCandidatesBuffer.forEach(function(event) {
-          var end = !event.candidate || Object.keys(event.candidate).length === 0;
-          if (end) {
-            for (var j = 1; j < sections.length; j++) {
-              if (sections[j].indexOf('\r\na=end-of-candidates\r\n') === -1) {
-                sections[j] += 'a=end-of-candidates\r\n';
+      this.getRemoteStreams = function() {
+        return self.remoteStreams;
+      };
+
+      this.localDescription = new RTCSessionDescription({
+        type: '',
+        sdp: ''
+      });
+      this.remoteDescription = new RTCSessionDescription({
+        type: '',
+        sdp: ''
+      });
+      this.signalingState = 'stable';
+      this.iceConnectionState = 'new';
+      this.iceGatheringState = 'new';
+
+      this.iceOptions = {
+        gatherPolicy: 'all',
+        iceServers: []
+      };
+      if (config && config.iceTransportPolicy) {
+        switch (config.iceTransportPolicy) {
+          case 'all':
+          case 'relay':
+            this.iceOptions.gatherPolicy = config.iceTransportPolicy;
+            break;
+          case 'none':
+            // FIXME: remove once implementation and spec have added this.
+            throw new TypeError('iceTransportPolicy "none" not supported');
+          default:
+            // don't set iceTransportPolicy.
+            break;
+        }
+      }
+      this.usingBundle = config && config.bundlePolicy === 'max-bundle';
+
+      if (config && config.iceServers) {
+        // Edge does not like
+        // 1) stun:
+        // 2) turn: that does not have all of turn:host:port?transport=udp
+        // 3) turn: with ipv6 addresses
+        var iceServers = JSON.parse(JSON.stringify(config.iceServers));
+        this.iceOptions.iceServers = iceServers.filter(function(server) {
+          if (server && server.urls) {
+            var urls = server.urls;
+            if (typeof urls === 'string') {
+              urls = [urls];
+            }
+            urls = urls.filter(function(url) {
+              return (url.indexOf('turn:') === 0 &&
+                  url.indexOf('transport=udp') !== -1 &&
+                  url.indexOf('turn:[') === -1) ||
+                  (url.indexOf('stun:') === 0 &&
+                    browserDetails.version >= 14393);
+            })[0];
+            return !!urls;
+          }
+          return false;
+        });
+      }
+
+      // per-track iceGathers, iceTransports, dtlsTransports, rtpSenders, ...
+      // everything that is needed to describe a SDP m-line.
+      this.transceivers = [];
+
+      // since the iceGatherer is currently created in createOffer but we
+      // must not emit candidates until after setLocalDescription we buffer
+      // them in this array.
+      this._localIceCandidatesBuffer = [];
+    };
+
+    window.RTCPeerConnection.prototype._emitBufferedCandidates = function() {
+      var self = this;
+      var sections = SDPUtils.splitSections(self.localDescription.sdp);
+      // FIXME: need to apply ice candidates in a way which is async but
+      // in-order
+      this._localIceCandidatesBuffer.forEach(function(event) {
+        var end = !event.candidate || Object.keys(event.candidate).length === 0;
+        if (end) {
+          for (var j = 1; j < sections.length; j++) {
+            if (sections[j].indexOf('\r\na=end-of-candidates\r\n') === -1) {
+              sections[j] += 'a=end-of-candidates\r\n';
+            }
+          }
+        } else if (event.candidate.candidate.indexOf('typ endOfCandidates')
+            === -1) {
+          sections[event.candidate.sdpMLineIndex + 1] +=
+              'a=' + event.candidate.candidate + '\r\n';
+        }
+        self.localDescription.sdp = sections.join('');
+        self.dispatchEvent(event);
+        if (self.onicecandidate !== null) {
+          self.onicecandidate(event);
+        }
+        if (!event.candidate && self.iceGatheringState !== 'complete') {
+          var complete = self.transceivers.every(function(transceiver) {
+            return transceiver.iceGatherer &&
+                transceiver.iceGatherer.state === 'completed';
+          });
+          if (complete) {
+            self.iceGatheringState = 'complete';
+          }
+        }
+      });
+      this._localIceCandidatesBuffer = [];
+    };
+
+    window.RTCPeerConnection.prototype.addStream = function(stream) {
+      // Clone is necessary for local demos mostly, attaching directly
+      // to two different senders does not work (build 10547).
+      this.localStreams.push(stream.clone());
+      this._maybeFireNegotiationNeeded();
+    };
+
+    window.RTCPeerConnection.prototype.removeStream = function(stream) {
+      var idx = this.localStreams.indexOf(stream);
+      if (idx > -1) {
+        this.localStreams.splice(idx, 1);
+        this._maybeFireNegotiationNeeded();
+      }
+    };
+
+    window.RTCPeerConnection.prototype.getSenders = function() {
+      return this.transceivers.filter(function(transceiver) {
+        return !!transceiver.rtpSender;
+      })
+      .map(function(transceiver) {
+        return transceiver.rtpSender;
+      });
+    };
+
+    window.RTCPeerConnection.prototype.getReceivers = function() {
+      return this.transceivers.filter(function(transceiver) {
+        return !!transceiver.rtpReceiver;
+      })
+      .map(function(transceiver) {
+        return transceiver.rtpReceiver;
+      });
+    };
+
+    // Determines the intersection of local and remote capabilities.
+    window.RTCPeerConnection.prototype._getCommonCapabilities =
+        function(localCapabilities, remoteCapabilities) {
+          var commonCapabilities = {
+            codecs: [],
+            headerExtensions: [],
+            fecMechanisms: []
+          };
+          localCapabilities.codecs.forEach(function(lCodec) {
+            for (var i = 0; i < remoteCapabilities.codecs.length; i++) {
+              var rCodec = remoteCapabilities.codecs[i];
+              if (lCodec.name.toLowerCase() === rCodec.name.toLowerCase() &&
+                  lCodec.clockRate === rCodec.clockRate &&
+                  lCodec.numChannels === rCodec.numChannels) {
+                // push rCodec so we reply with offerer payload type
+                commonCapabilities.codecs.push(rCodec);
+
+                // determine common feedback mechanisms
+                rCodec.rtcpFeedback = rCodec.rtcpFeedback.filter(function(fb) {
+                  for (var j = 0; j < lCodec.rtcpFeedback.length; j++) {
+                    if (lCodec.rtcpFeedback[j].type === fb.type &&
+                        lCodec.rtcpFeedback[j].parameter === fb.parameter) {
+                      return true;
+                    }
+                  }
+                  return false;
+                });
+                // FIXME: also need to determine .parameters
+                //  see https://github.com/openpeer/ortc/issues/569
+                break;
               }
             }
-          } else if (event.candidate.candidate.indexOf('typ endOfCandidates')
-              === -1) {
-            sections[event.candidate.sdpMLineIndex + 1] +=
-                'a=' + event.candidate.candidate + '\r\n';
-          }
-          self.localDescription.sdp = sections.join('');
-          self.dispatchEvent(event);
-          if (self.onicecandidate !== null) {
-            self.onicecandidate(event);
-          }
-          if (!event.candidate && self.iceGatheringState !== 'complete') {
+          });
+
+          localCapabilities.headerExtensions
+              .forEach(function(lHeaderExtension) {
+                for (var i = 0; i < remoteCapabilities.headerExtensions.length;
+                     i++) {
+                  var rHeaderExtension = remoteCapabilities.headerExtensions[i];
+                  if (lHeaderExtension.uri === rHeaderExtension.uri) {
+                    commonCapabilities.headerExtensions.push(rHeaderExtension);
+                    break;
+                  }
+                }
+              });
+
+          // FIXME: fecMechanisms
+          return commonCapabilities;
+        };
+
+    // Create ICE gatherer, ICE transport and DTLS transport.
+    window.RTCPeerConnection.prototype._createIceAndDtlsTransports =
+        function(mid, sdpMLineIndex) {
+          var self = this;
+          var iceGatherer = new RTCIceGatherer(self.iceOptions);
+          var iceTransport = new RTCIceTransport(iceGatherer);
+          iceGatherer.onlocalcandidate = function(evt) {
+            var event = new Event('icecandidate');
+            event.candidate = {sdpMid: mid, sdpMLineIndex: sdpMLineIndex};
+
+            var cand = evt.candidate;
+            var end = !cand || Object.keys(cand).length === 0;
+            // Edge emits an empty object for RTCIceCandidateComplete‥
+            if (end) {
+              // polyfill since RTCIceGatherer.state is not implemented in
+              // Edge 10547 yet.
+              if (iceGatherer.state === undefined) {
+                iceGatherer.state = 'completed';
+              }
+
+              // Emit a candidate with type endOfCandidates to make the samples
+              // work. Edge requires addIceCandidate with this empty candidate
+              // to start checking. The real solution is to signal
+              // end-of-candidates to the other side when getting the null
+              // candidate but some apps (like the samples) don't do that.
+              event.candidate.candidate =
+                  'candidate:1 1 udp 1 0.0.0.0 9 typ endOfCandidates';
+            } else {
+              // RTCIceCandidate doesn't have a component, needs to be added
+              cand.component = iceTransport.component === 'RTCP' ? 2 : 1;
+              event.candidate.candidate = SDPUtils.writeCandidate(cand);
+            }
+
+            // update local description.
+            var sections = SDPUtils.splitSections(self.localDescription.sdp);
+            if (event.candidate.candidate.indexOf('typ endOfCandidates')
+                === -1) {
+              sections[event.candidate.sdpMLineIndex + 1] +=
+                  'a=' + event.candidate.candidate + '\r\n';
+            } else {
+              sections[event.candidate.sdpMLineIndex + 1] +=
+                  'a=end-of-candidates\r\n';
+            }
+            self.localDescription.sdp = sections.join('');
+
             var complete = self.transceivers.every(function(transceiver) {
               return transceiver.iceGatherer &&
                   transceiver.iceGatherer.state === 'completed';
             });
-            if (complete) {
-              self.iceGatheringState = 'complete';
-            }
-          }
-        });
-        this._localIceCandidatesBuffer = [];
-      };
-  
-      window.RTCPeerConnection.prototype.addStream = function(stream) {
-        // Clone is necessary for local demos mostly, attaching directly
-        // to two different senders does not work (build 10547).
-        this.localStreams.push(stream.clone());
-        this._maybeFireNegotiationNeeded();
-      };
-  
-      window.RTCPeerConnection.prototype.removeStream = function(stream) {
-        var idx = this.localStreams.indexOf(stream);
-        if (idx > -1) {
-          this.localStreams.splice(idx, 1);
-          this._maybeFireNegotiationNeeded();
-        }
-      };
-  
-      window.RTCPeerConnection.prototype.getSenders = function() {
-        return this.transceivers.filter(function(transceiver) {
-          return !!transceiver.rtpSender;
-        })
-        .map(function(transceiver) {
-          return transceiver.rtpSender;
-        });
-      };
-  
-      window.RTCPeerConnection.prototype.getReceivers = function() {
-        return this.transceivers.filter(function(transceiver) {
-          return !!transceiver.rtpReceiver;
-        })
-        .map(function(transceiver) {
-          return transceiver.rtpReceiver;
-        });
-      };
-  
-      // Determines the intersection of local and remote capabilities.
-      window.RTCPeerConnection.prototype._getCommonCapabilities =
-          function(localCapabilities, remoteCapabilities) {
-            var commonCapabilities = {
-              codecs: [],
-              headerExtensions: [],
-              fecMechanisms: []
-            };
-            localCapabilities.codecs.forEach(function(lCodec) {
-              for (var i = 0; i < remoteCapabilities.codecs.length; i++) {
-                var rCodec = remoteCapabilities.codecs[i];
-                if (lCodec.name.toLowerCase() === rCodec.name.toLowerCase() &&
-                    lCodec.clockRate === rCodec.clockRate &&
-                    lCodec.numChannels === rCodec.numChannels) {
-                  // push rCodec so we reply with offerer payload type
-                  commonCapabilities.codecs.push(rCodec);
-  
-                  // determine common feedback mechanisms
-                  rCodec.rtcpFeedback = rCodec.rtcpFeedback.filter(function(fb) {
-                    for (var j = 0; j < lCodec.rtcpFeedback.length; j++) {
-                      if (lCodec.rtcpFeedback[j].type === fb.type &&
-                          lCodec.rtcpFeedback[j].parameter === fb.parameter) {
-                        return true;
-                      }
-                    }
-                    return false;
-                  });
-                  // FIXME: also need to determine .parameters
-                  //  see https://github.com/openpeer/ortc/issues/569
-                  break;
+
+            // Emit candidate if localDescription is set.
+            // Also emits null candidate when all gatherers are complete.
+            switch (self.iceGatheringState) {
+              case 'new':
+                self._localIceCandidatesBuffer.push(event);
+                if (end && complete) {
+                  self._localIceCandidatesBuffer.push(
+                      new Event('icecandidate'));
                 }
-              }
-            });
-  
-            localCapabilities.headerExtensions
-                .forEach(function(lHeaderExtension) {
-                  for (var i = 0; i < remoteCapabilities.headerExtensions.length;
-                       i++) {
-                    var rHeaderExtension = remoteCapabilities.headerExtensions[i];
-                    if (lHeaderExtension.uri === rHeaderExtension.uri) {
-                      commonCapabilities.headerExtensions.push(rHeaderExtension);
-                      break;
-                    }
-                  }
-                });
-  
-            // FIXME: fecMechanisms
-            return commonCapabilities;
-          };
-  
-      // Create ICE gatherer, ICE transport and DTLS transport.
-      window.RTCPeerConnection.prototype._createIceAndDtlsTransports =
-          function(mid, sdpMLineIndex) {
-            var self = this;
-            var iceGatherer = new RTCIceGatherer(self.iceOptions);
-            var iceTransport = new RTCIceTransport(iceGatherer);
-            iceGatherer.onlocalcandidate = function(evt) {
-              var event = new Event('icecandidate');
-              event.candidate = {sdpMid: mid, sdpMLineIndex: sdpMLineIndex};
-  
-              var cand = evt.candidate;
-              var end = !cand || Object.keys(cand).length === 0;
-              // Edge emits an empty object for RTCIceCandidateComplete‥
-              if (end) {
-                // polyfill since RTCIceGatherer.state is not implemented in
-                // Edge 10547 yet.
-                if (iceGatherer.state === undefined) {
-                  iceGatherer.state = 'completed';
-                }
-  
-                // Emit a candidate with type endOfCandidates to make the samples
-                // work. Edge requires addIceCandidate with this empty candidate
-                // to start checking. The real solution is to signal
-                // end-of-candidates to the other side when getting the null
-                // candidate but some apps (like the samples) don't do that.
-                event.candidate.candidate =
-                    'candidate:1 1 udp 1 0.0.0.0 9 typ endOfCandidates';
-              } else {
-                // RTCIceCandidate doesn't have a component, needs to be added
-                cand.component = iceTransport.component === 'RTCP' ? 2 : 1;
-                event.candidate.candidate = SDPUtils.writeCandidate(cand);
-              }
-  
-              // update local description.
-              var sections = SDPUtils.splitSections(self.localDescription.sdp);
-              if (event.candidate.candidate.indexOf('typ endOfCandidates')
-                  === -1) {
-                sections[event.candidate.sdpMLineIndex + 1] +=
-                    'a=' + event.candidate.candidate + '\r\n';
-              } else {
-                sections[event.candidate.sdpMLineIndex + 1] +=
-                    'a=end-of-candidates\r\n';
-              }
-              self.localDescription.sdp = sections.join('');
-  
-              var complete = self.transceivers.every(function(transceiver) {
-                return transceiver.iceGatherer &&
-                    transceiver.iceGatherer.state === 'completed';
-              });
-  
-              // Emit candidate if localDescription is set.
-              // Also emits null candidate when all gatherers are complete.
-              switch (self.iceGatheringState) {
-                case 'new':
-                  self._localIceCandidatesBuffer.push(event);
-                  if (end && complete) {
-                    self._localIceCandidatesBuffer.push(
-                        new Event('icecandidate'));
-                  }
-                  break;
-                case 'gathering':
-                  self._emitBufferedCandidates();
-                  self.dispatchEvent(event);
-                  if (self.onicecandidate !== null) {
-                    self.onicecandidate(event);
-                  }
-                  if (complete) {
-                    self.dispatchEvent(new Event('icecandidate'));
-                    if (self.onicecandidate !== null) {
-                      self.onicecandidate(new Event('icecandidate'));
-                    }
-                    self.iceGatheringState = 'complete';
-                  }
-                  break;
-                case 'complete':
-                  // should not happen... currently!
-                  break;
-                default: // no-op.
-                  break;
-              }
-            };
-            iceTransport.onicestatechange = function() {
-              self._updateConnectionState();
-            };
-  
-            var dtlsTransport = new RTCDtlsTransport(iceTransport);
-            dtlsTransport.ondtlsstatechange = function() {
-              self._updateConnectionState();
-            };
-            dtlsTransport.onerror = function() {
-              // onerror does not set state to failed by itself.
-              dtlsTransport.state = 'failed';
-              self._updateConnectionState();
-            };
-  
-            return {
-              iceGatherer: iceGatherer,
-              iceTransport: iceTransport,
-              dtlsTransport: dtlsTransport
-            };
-          };
-  
-      // Start the RTP Sender and Receiver for a transceiver.
-      window.RTCPeerConnection.prototype._transceive = function(transceiver,
-          send, recv) {
-        var params = this._getCommonCapabilities(transceiver.localCapabilities,
-            transceiver.remoteCapabilities);
-        if (send && transceiver.rtpSender) {
-          params.encodings = transceiver.sendEncodingParameters;
-          params.rtcp = {
-            cname: SDPUtils.localCName
-          };
-          if (transceiver.recvEncodingParameters.length) {
-            params.rtcp.ssrc = transceiver.recvEncodingParameters[0].ssrc;
-          }
-          transceiver.rtpSender.send(params);
-        }
-        if (recv && transceiver.rtpReceiver) {
-          params.encodings = transceiver.recvEncodingParameters;
-          params.rtcp = {
-            cname: transceiver.cname
-          };
-          if (transceiver.sendEncodingParameters.length) {
-            params.rtcp.ssrc = transceiver.sendEncodingParameters[0].ssrc;
-          }
-          transceiver.rtpReceiver.receive(params);
-        }
-      };
-  
-      window.RTCPeerConnection.prototype.setLocalDescription =
-          function(description) {
-            var self = this;
-            var sections;
-            var sessionpart;
-            if (description.type === 'offer') {
-              // FIXME: What was the purpose of this empty if statement?
-              // if (!this._pendingOffer) {
-              // } else {
-              if (this._pendingOffer) {
-                // VERY limited support for SDP munging. Limited to:
-                // * changing the order of codecs
-                sections = SDPUtils.splitSections(description.sdp);
-                sessionpart = sections.shift();
-                sections.forEach(function(mediaSection, sdpMLineIndex) {
-                  var caps = SDPUtils.parseRtpParameters(mediaSection);
-                  self._pendingOffer[sdpMLineIndex].localCapabilities = caps;
-                });
-                this.transceivers = this._pendingOffer;
-                delete this._pendingOffer;
-              }
-            } else if (description.type === 'answer') {
-              sections = SDPUtils.splitSections(self.remoteDescription.sdp);
-              sessionpart = sections.shift();
-              var isIceLite = SDPUtils.matchPrefix(sessionpart,
-                  'a=ice-lite').length > 0;
-              sections.forEach(function(mediaSection, sdpMLineIndex) {
-                var transceiver = self.transceivers[sdpMLineIndex];
-                var iceGatherer = transceiver.iceGatherer;
-                var iceTransport = transceiver.iceTransport;
-                var dtlsTransport = transceiver.dtlsTransport;
-                var localCapabilities = transceiver.localCapabilities;
-                var remoteCapabilities = transceiver.remoteCapabilities;
-  
-                var rejected = mediaSection.split('\n', 1)[0]
-                    .split(' ', 2)[1] === '0';
-  
-                if (!rejected && !transceiver.isDatachannel) {
-                  var remoteIceParameters = SDPUtils.getIceParameters(
-                      mediaSection, sessionpart);
-                  if (isIceLite) {
-                    var cands = SDPUtils.matchPrefix(mediaSection, 'a=candidate:')
-                    .map(function(cand) {
-                      return SDPUtils.parseCandidate(cand);
-                    })
-                    .filter(function(cand) {
-                      return cand.component === '1';
-                    });
-                    // ice-lite only includes host candidates in the SDP so we can
-                    // use setRemoteCandidates (which implies an
-                    // RTCIceCandidateComplete)
-                    if (cands.length) {
-                      iceTransport.setRemoteCandidates(cands);
-                    }
-                  }
-                  var remoteDtlsParameters = SDPUtils.getDtlsParameters(
-                      mediaSection, sessionpart);
-                  if (isIceLite) {
-                    remoteDtlsParameters.role = 'server';
-                  }
-  
-                  if (!self.usingBundle || sdpMLineIndex === 0) {
-                    iceTransport.start(iceGatherer, remoteIceParameters,
-                        isIceLite ? 'controlling' : 'controlled');
-                    dtlsTransport.start(remoteDtlsParameters);
-                  }
-  
-                  // Calculate intersection of capabilities.
-                  var params = self._getCommonCapabilities(localCapabilities,
-                      remoteCapabilities);
-  
-                  // Start the RTCRtpSender. The RTCRtpReceiver for this
-                  // transceiver has already been started in setRemoteDescription.
-                  self._transceive(transceiver,
-                      params.codecs.length > 0,
-                      false);
-                }
-              });
-            }
-  
-            this.localDescription = {
-              type: description.type,
-              sdp: description.sdp
-            };
-            switch (description.type) {
-              case 'offer':
-                this._updateSignalingState('have-local-offer');
                 break;
-              case 'answer':
-                this._updateSignalingState('stable');
-                break;
-              default:
-                throw new TypeError('unsupported type "' + description.type +
-                    '"');
-            }
-  
-            // If a success callback was provided, emit ICE candidates after it
-            // has been executed. Otherwise, emit callback after the Promise is
-            // resolved.
-            var hasCallback = arguments.length > 1 &&
-              typeof arguments[1] === 'function';
-            if (hasCallback) {
-              var cb = arguments[1];
-              window.setTimeout(function() {
-                cb();
-                if (self.iceGatheringState === 'new') {
-                  self.iceGatheringState = 'gathering';
-                }
+              case 'gathering':
                 self._emitBufferedCandidates();
-              }, 0);
-            }
-            var p = Promise.resolve();
-            p.then(function() {
-              if (!hasCallback) {
-                if (self.iceGatheringState === 'new') {
-                  self.iceGatheringState = 'gathering';
+                self.dispatchEvent(event);
+                if (self.onicecandidate !== null) {
+                  self.onicecandidate(event);
                 }
-                // Usually candidates will be emitted earlier.
-                window.setTimeout(self._emitBufferedCandidates.bind(self), 500);
-              }
-            });
-            return p;
+                if (complete) {
+                  self.dispatchEvent(new Event('icecandidate'));
+                  if (self.onicecandidate !== null) {
+                    self.onicecandidate(new Event('icecandidate'));
+                  }
+                  self.iceGatheringState = 'complete';
+                }
+                break;
+              case 'complete':
+                // should not happen... currently!
+                break;
+              default: // no-op.
+                break;
+            }
           };
-  
-      window.RTCPeerConnection.prototype.setRemoteDescription =
-          function(description) {
-            var self = this;
-            var stream = new MediaStream();
-            var receiverList = [];
-            var sections = SDPUtils.splitSections(description.sdp);
-            var sessionpart = sections.shift();
+          iceTransport.onicestatechange = function() {
+            self._updateConnectionState();
+          };
+
+          var dtlsTransport = new RTCDtlsTransport(iceTransport);
+          dtlsTransport.ondtlsstatechange = function() {
+            self._updateConnectionState();
+          };
+          dtlsTransport.onerror = function() {
+            // onerror does not set state to failed by itself.
+            dtlsTransport.state = 'failed';
+            self._updateConnectionState();
+          };
+
+          return {
+            iceGatherer: iceGatherer,
+            iceTransport: iceTransport,
+            dtlsTransport: dtlsTransport
+          };
+        };
+
+    // Start the RTP Sender and Receiver for a transceiver.
+    window.RTCPeerConnection.prototype._transceive = function(transceiver,
+        send, recv) {
+      var params = this._getCommonCapabilities(transceiver.localCapabilities,
+          transceiver.remoteCapabilities);
+      if (send && transceiver.rtpSender) {
+        params.encodings = transceiver.sendEncodingParameters;
+        params.rtcp = {
+          cname: SDPUtils.localCName
+        };
+        if (transceiver.recvEncodingParameters.length) {
+          params.rtcp.ssrc = transceiver.recvEncodingParameters[0].ssrc;
+        }
+        transceiver.rtpSender.send(params);
+      }
+      if (recv && transceiver.rtpReceiver) {
+        params.encodings = transceiver.recvEncodingParameters;
+        params.rtcp = {
+          cname: transceiver.cname
+        };
+        if (transceiver.sendEncodingParameters.length) {
+          params.rtcp.ssrc = transceiver.sendEncodingParameters[0].ssrc;
+        }
+        transceiver.rtpReceiver.receive(params);
+      }
+    };
+
+    window.RTCPeerConnection.prototype.setLocalDescription =
+        function(description) {
+          var self = this;
+          var sections;
+          var sessionpart;
+          if (description.type === 'offer') {
+            // FIXME: What was the purpose of this empty if statement?
+            // if (!this._pendingOffer) {
+            // } else {
+            if (this._pendingOffer) {
+              // VERY limited support for SDP munging. Limited to:
+              // * changing the order of codecs
+              sections = SDPUtils.splitSections(description.sdp);
+              sessionpart = sections.shift();
+              sections.forEach(function(mediaSection, sdpMLineIndex) {
+                var caps = SDPUtils.parseRtpParameters(mediaSection);
+                self._pendingOffer[sdpMLineIndex].localCapabilities = caps;
+              });
+              this.transceivers = this._pendingOffer;
+              delete this._pendingOffer;
+            }
+          } else if (description.type === 'answer') {
+            sections = SDPUtils.splitSections(self.remoteDescription.sdp);
+            sessionpart = sections.shift();
             var isIceLite = SDPUtils.matchPrefix(sessionpart,
                 'a=ice-lite').length > 0;
-            this.usingBundle = SDPUtils.matchPrefix(sessionpart,
-                'a=group:BUNDLE ').length > 0;
             sections.forEach(function(mediaSection, sdpMLineIndex) {
-              var lines = SDPUtils.splitLines(mediaSection);
-              var mline = lines[0].substr(2).split(' ');
-              var kind = mline[0];
-              var rejected = mline[1] === '0';
-              var direction = SDPUtils.getDirection(mediaSection, sessionpart);
-  
-              var mid = SDPUtils.matchPrefix(mediaSection, 'a=mid:');
-              if (mid.length) {
-                mid = mid[0].substr(6);
-              } else {
-                mid = SDPUtils.generateIdentifier();
-              }
-  
-              // Reject datachannels which are not implemented yet.
-              if (kind === 'application' && mline[2] === 'DTLS/SCTP') {
-                self.transceivers[sdpMLineIndex] = {
-                  mid: mid,
-                  isDatachannel: true
-                };
-                return;
-              }
-  
-              var transceiver;
-              var iceGatherer;
-              var iceTransport;
-              var dtlsTransport;
-              var rtpSender;
-              var rtpReceiver;
-              var sendEncodingParameters;
-              var recvEncodingParameters;
-              var localCapabilities;
-  
-              var track;
-              // FIXME: ensure the mediaSection has rtcp-mux set.
-              var remoteCapabilities = SDPUtils.parseRtpParameters(mediaSection);
-              var remoteIceParameters;
-              var remoteDtlsParameters;
-              if (!rejected) {
-                remoteIceParameters = SDPUtils.getIceParameters(mediaSection,
-                    sessionpart);
-                remoteDtlsParameters = SDPUtils.getDtlsParameters(mediaSection,
-                    sessionpart);
-                remoteDtlsParameters.role = 'client';
-              }
-              recvEncodingParameters =
-                  SDPUtils.parseRtpEncodingParameters(mediaSection);
-  
-              var cname;
-              // Gets the first SSRC. Note that with RTX there might be multiple
-              // SSRCs.
-              var remoteSsrc = SDPUtils.matchPrefix(mediaSection, 'a=ssrc:')
-                  .map(function(line) {
-                    return SDPUtils.parseSsrcMedia(line);
-                  })
-                  .filter(function(obj) {
-                    return obj.attribute === 'cname';
-                  })[0];
-              if (remoteSsrc) {
-                cname = remoteSsrc.value;
-              }
-  
-              var isComplete = SDPUtils.matchPrefix(mediaSection,
-                  'a=end-of-candidates', sessionpart).length > 0;
-              var cands = SDPUtils.matchPrefix(mediaSection, 'a=candidate:')
+              var transceiver = self.transceivers[sdpMLineIndex];
+              var iceGatherer = transceiver.iceGatherer;
+              var iceTransport = transceiver.iceTransport;
+              var dtlsTransport = transceiver.dtlsTransport;
+              var localCapabilities = transceiver.localCapabilities;
+              var remoteCapabilities = transceiver.remoteCapabilities;
+
+              var rejected = mediaSection.split('\n', 1)[0]
+                  .split(' ', 2)[1] === '0';
+
+              if (!rejected && !transceiver.isDatachannel) {
+                var remoteIceParameters = SDPUtils.getIceParameters(
+                    mediaSection, sessionpart);
+                if (isIceLite) {
+                  var cands = SDPUtils.matchPrefix(mediaSection, 'a=candidate:')
                   .map(function(cand) {
                     return SDPUtils.parseCandidate(cand);
                   })
                   .filter(function(cand) {
                     return cand.component === '1';
                   });
-              if (description.type === 'offer' && !rejected) {
-                var transports = self.usingBundle && sdpMLineIndex > 0 ? {
-                  iceGatherer: self.transceivers[0].iceGatherer,
-                  iceTransport: self.transceivers[0].iceTransport,
-                  dtlsTransport: self.transceivers[0].dtlsTransport
-                } : self._createIceAndDtlsTransports(mid, sdpMLineIndex);
-  
-                if (isComplete) {
-                  transports.iceTransport.setRemoteCandidates(cands);
-                }
-  
-                localCapabilities = RTCRtpReceiver.getCapabilities(kind);
-                sendEncodingParameters = [{
-                  ssrc: (2 * sdpMLineIndex + 2) * 1001
-                }];
-  
-                rtpReceiver = new RTCRtpReceiver(transports.dtlsTransport, kind);
-  
-                track = rtpReceiver.track;
-                receiverList.push([track, rtpReceiver]);
-                // FIXME: not correct when there are multiple streams but that is
-                // not currently supported in this shim.
-                stream.addTrack(track);
-  
-                // FIXME: look at direction.
-                if (self.localStreams.length > 0 &&
-                    self.localStreams[0].getTracks().length >= sdpMLineIndex) {
-                  var localTrack;
-                  if (kind === 'audio') {
-                    localTrack = self.localStreams[0].getAudioTracks()[0];
-                  } else if (kind === 'video') {
-                    localTrack = self.localStreams[0].getVideoTracks()[0];
-                  }
-                  if (localTrack) {
-                    rtpSender = new RTCRtpSender(localTrack,
-                        transports.dtlsTransport);
+                  // ice-lite only includes host candidates in the SDP so we can
+                  // use setRemoteCandidates (which implies an
+                  // RTCIceCandidateComplete)
+                  if (cands.length) {
+                    iceTransport.setRemoteCandidates(cands);
                   }
                 }
-  
-                self.transceivers[sdpMLineIndex] = {
-                  iceGatherer: transports.iceGatherer,
-                  iceTransport: transports.iceTransport,
-                  dtlsTransport: transports.dtlsTransport,
-                  localCapabilities: localCapabilities,
-                  remoteCapabilities: remoteCapabilities,
-                  rtpSender: rtpSender,
-                  rtpReceiver: rtpReceiver,
-                  kind: kind,
-                  mid: mid,
-                  cname: cname,
-                  sendEncodingParameters: sendEncodingParameters,
-                  recvEncodingParameters: recvEncodingParameters
-                };
-                // Start the RTCRtpReceiver now. The RTPSender is started in
-                // setLocalDescription.
-                self._transceive(self.transceivers[sdpMLineIndex],
-                    false,
-                    direction === 'sendrecv' || direction === 'sendonly');
-              } else if (description.type === 'answer' && !rejected) {
-                transceiver = self.transceivers[sdpMLineIndex];
-                iceGatherer = transceiver.iceGatherer;
-                iceTransport = transceiver.iceTransport;
-                dtlsTransport = transceiver.dtlsTransport;
-                rtpSender = transceiver.rtpSender;
-                rtpReceiver = transceiver.rtpReceiver;
-                sendEncodingParameters = transceiver.sendEncodingParameters;
-                localCapabilities = transceiver.localCapabilities;
-  
-                self.transceivers[sdpMLineIndex].recvEncodingParameters =
-                    recvEncodingParameters;
-                self.transceivers[sdpMLineIndex].remoteCapabilities =
-                    remoteCapabilities;
-                self.transceivers[sdpMLineIndex].cname = cname;
-  
-                if ((isIceLite || isComplete) && cands.length) {
-                  iceTransport.setRemoteCandidates(cands);
+                var remoteDtlsParameters = SDPUtils.getDtlsParameters(
+                    mediaSection, sessionpart);
+                if (isIceLite) {
+                  remoteDtlsParameters.role = 'server';
                 }
+
                 if (!self.usingBundle || sdpMLineIndex === 0) {
                   iceTransport.start(iceGatherer, remoteIceParameters,
-                      'controlling');
+                      isIceLite ? 'controlling' : 'controlled');
                   dtlsTransport.start(remoteDtlsParameters);
                 }
-  
+
+                // Calculate intersection of capabilities.
+                var params = self._getCommonCapabilities(localCapabilities,
+                    remoteCapabilities);
+
+                // Start the RTCRtpSender. The RTCRtpReceiver for this
+                // transceiver has already been started in setRemoteDescription.
                 self._transceive(transceiver,
-                    direction === 'sendrecv' || direction === 'recvonly',
-                    direction === 'sendrecv' || direction === 'sendonly');
-  
-                if (rtpReceiver &&
-                    (direction === 'sendrecv' || direction === 'sendonly')) {
-                  track = rtpReceiver.track;
-                  receiverList.push([track, rtpReceiver]);
-                  stream.addTrack(track);
-                } else {
-                  // FIXME: actually the receiver should be created later.
-                  delete transceiver.rtpReceiver;
-                }
+                    params.codecs.length > 0,
+                    false);
               }
             });
-  
-            this.remoteDescription = {
-              type: description.type,
-              sdp: description.sdp
-            };
-            switch (description.type) {
-              case 'offer':
-                this._updateSignalingState('have-remote-offer');
-                break;
-              case 'answer':
-                this._updateSignalingState('stable');
-                break;
-              default:
-                throw new TypeError('unsupported type "' + description.type +
-                    '"');
+          }
+
+          this.localDescription = {
+            type: description.type,
+            sdp: description.sdp
+          };
+          switch (description.type) {
+            case 'offer':
+              this._updateSignalingState('have-local-offer');
+              break;
+            case 'answer':
+              this._updateSignalingState('stable');
+              break;
+            default:
+              throw new TypeError('unsupported type "' + description.type +
+                  '"');
+          }
+
+          // If a success callback was provided, emit ICE candidates after it
+          // has been executed. Otherwise, emit callback after the Promise is
+          // resolved.
+          var hasCallback = arguments.length > 1 &&
+            typeof arguments[1] === 'function';
+          if (hasCallback) {
+            var cb = arguments[1];
+            window.setTimeout(function() {
+              cb();
+              if (self.iceGatheringState === 'new') {
+                self.iceGatheringState = 'gathering';
+              }
+              self._emitBufferedCandidates();
+            }, 0);
+          }
+          var p = Promise.resolve();
+          p.then(function() {
+            if (!hasCallback) {
+              if (self.iceGatheringState === 'new') {
+                self.iceGatheringState = 'gathering';
+              }
+              // Usually candidates will be emitted earlier.
+              window.setTimeout(self._emitBufferedCandidates.bind(self), 500);
             }
-            if (stream.getTracks().length) {
-              self.remoteStreams.push(stream);
-              window.setTimeout(function() {
-                var event = new Event('addstream');
-                event.stream = stream;
+          });
+          return p;
+        };
+
+    window.RTCPeerConnection.prototype.setRemoteDescription =
+        function(description) {
+          var self = this;
+          var stream = new MediaStream();
+          var receiverList = [];
+          var sections = SDPUtils.splitSections(description.sdp);
+          var sessionpart = sections.shift();
+          var isIceLite = SDPUtils.matchPrefix(sessionpart,
+              'a=ice-lite').length > 0;
+          this.usingBundle = SDPUtils.matchPrefix(sessionpart,
+              'a=group:BUNDLE ').length > 0;
+          sections.forEach(function(mediaSection, sdpMLineIndex) {
+            var lines = SDPUtils.splitLines(mediaSection);
+            var mline = lines[0].substr(2).split(' ');
+            var kind = mline[0];
+            var rejected = mline[1] === '0';
+            var direction = SDPUtils.getDirection(mediaSection, sessionpart);
+
+            var mid = SDPUtils.matchPrefix(mediaSection, 'a=mid:');
+            if (mid.length) {
+              mid = mid[0].substr(6);
+            } else {
+              mid = SDPUtils.generateIdentifier();
+            }
+
+            // Reject datachannels which are not implemented yet.
+            if (kind === 'application' && mline[2] === 'DTLS/SCTP') {
+              self.transceivers[sdpMLineIndex] = {
+                mid: mid,
+                isDatachannel: true
+              };
+              return;
+            }
+
+            var transceiver;
+            var iceGatherer;
+            var iceTransport;
+            var dtlsTransport;
+            var rtpSender;
+            var rtpReceiver;
+            var sendEncodingParameters;
+            var recvEncodingParameters;
+            var localCapabilities;
+
+            var track;
+            // FIXME: ensure the mediaSection has rtcp-mux set.
+            var remoteCapabilities = SDPUtils.parseRtpParameters(mediaSection);
+            var remoteIceParameters;
+            var remoteDtlsParameters;
+            if (!rejected) {
+              remoteIceParameters = SDPUtils.getIceParameters(mediaSection,
+                  sessionpart);
+              remoteDtlsParameters = SDPUtils.getDtlsParameters(mediaSection,
+                  sessionpart);
+              remoteDtlsParameters.role = 'client';
+            }
+            recvEncodingParameters =
+                SDPUtils.parseRtpEncodingParameters(mediaSection);
+
+            var cname;
+            // Gets the first SSRC. Note that with RTX there might be multiple
+            // SSRCs.
+            var remoteSsrc = SDPUtils.matchPrefix(mediaSection, 'a=ssrc:')
+                .map(function(line) {
+                  return SDPUtils.parseSsrcMedia(line);
+                })
+                .filter(function(obj) {
+                  return obj.attribute === 'cname';
+                })[0];
+            if (remoteSsrc) {
+              cname = remoteSsrc.value;
+            }
+
+            var isComplete = SDPUtils.matchPrefix(mediaSection,
+                'a=end-of-candidates', sessionpart).length > 0;
+            var cands = SDPUtils.matchPrefix(mediaSection, 'a=candidate:')
+                .map(function(cand) {
+                  return SDPUtils.parseCandidate(cand);
+                })
+                .filter(function(cand) {
+                  return cand.component === '1';
+                });
+            if (description.type === 'offer' && !rejected) {
+              var transports = self.usingBundle && sdpMLineIndex > 0 ? {
+                iceGatherer: self.transceivers[0].iceGatherer,
+                iceTransport: self.transceivers[0].iceTransport,
+                dtlsTransport: self.transceivers[0].dtlsTransport
+              } : self._createIceAndDtlsTransports(mid, sdpMLineIndex);
+
+              if (isComplete) {
+                transports.iceTransport.setRemoteCandidates(cands);
+              }
+
+              localCapabilities = RTCRtpReceiver.getCapabilities(kind);
+              sendEncodingParameters = [{
+                ssrc: (2 * sdpMLineIndex + 2) * 1001
+              }];
+
+              rtpReceiver = new RTCRtpReceiver(transports.dtlsTransport, kind);
+
+              track = rtpReceiver.track;
+              receiverList.push([track, rtpReceiver]);
+              // FIXME: not correct when there are multiple streams but that is
+              // not currently supported in this shim.
+              stream.addTrack(track);
+
+              // FIXME: look at direction.
+              if (self.localStreams.length > 0 &&
+                  self.localStreams[0].getTracks().length >= sdpMLineIndex) {
+                var localTrack;
+                if (kind === 'audio') {
+                  localTrack = self.localStreams[0].getAudioTracks()[0];
+                } else if (kind === 'video') {
+                  localTrack = self.localStreams[0].getVideoTracks()[0];
+                }
+                if (localTrack) {
+                  rtpSender = new RTCRtpSender(localTrack,
+                      transports.dtlsTransport);
+                }
+              }
+
+              self.transceivers[sdpMLineIndex] = {
+                iceGatherer: transports.iceGatherer,
+                iceTransport: transports.iceTransport,
+                dtlsTransport: transports.dtlsTransport,
+                localCapabilities: localCapabilities,
+                remoteCapabilities: remoteCapabilities,
+                rtpSender: rtpSender,
+                rtpReceiver: rtpReceiver,
+                kind: kind,
+                mid: mid,
+                cname: cname,
+                sendEncodingParameters: sendEncodingParameters,
+                recvEncodingParameters: recvEncodingParameters
+              };
+              // Start the RTCRtpReceiver now. The RTPSender is started in
+              // setLocalDescription.
+              self._transceive(self.transceivers[sdpMLineIndex],
+                  false,
+                  direction === 'sendrecv' || direction === 'sendonly');
+            } else if (description.type === 'answer' && !rejected) {
+              transceiver = self.transceivers[sdpMLineIndex];
+              iceGatherer = transceiver.iceGatherer;
+              iceTransport = transceiver.iceTransport;
+              dtlsTransport = transceiver.dtlsTransport;
+              rtpSender = transceiver.rtpSender;
+              rtpReceiver = transceiver.rtpReceiver;
+              sendEncodingParameters = transceiver.sendEncodingParameters;
+              localCapabilities = transceiver.localCapabilities;
+
+              self.transceivers[sdpMLineIndex].recvEncodingParameters =
+                  recvEncodingParameters;
+              self.transceivers[sdpMLineIndex].remoteCapabilities =
+                  remoteCapabilities;
+              self.transceivers[sdpMLineIndex].cname = cname;
+
+              if ((isIceLite || isComplete) && cands.length) {
+                iceTransport.setRemoteCandidates(cands);
+              }
+              if (!self.usingBundle || sdpMLineIndex === 0) {
+                iceTransport.start(iceGatherer, remoteIceParameters,
+                    'controlling');
+                dtlsTransport.start(remoteDtlsParameters);
+              }
+
+              self._transceive(transceiver,
+                  direction === 'sendrecv' || direction === 'recvonly',
+                  direction === 'sendrecv' || direction === 'sendonly');
+
+              if (rtpReceiver &&
+                  (direction === 'sendrecv' || direction === 'sendonly')) {
+                track = rtpReceiver.track;
+                receiverList.push([track, rtpReceiver]);
+                stream.addTrack(track);
+              } else {
+                // FIXME: actually the receiver should be created later.
+                delete transceiver.rtpReceiver;
+              }
+            }
+          });
+
+          this.remoteDescription = {
+            type: description.type,
+            sdp: description.sdp
+          };
+          switch (description.type) {
+            case 'offer':
+              this._updateSignalingState('have-remote-offer');
+              break;
+            case 'answer':
+              this._updateSignalingState('stable');
+              break;
+            default:
+              throw new TypeError('unsupported type "' + description.type +
+                  '"');
+          }
+          if (stream.getTracks().length) {
+            self.remoteStreams.push(stream);
+            window.setTimeout(function() {
+              var event = new Event('addstream');
+              event.stream = stream;
+              self.dispatchEvent(event);
+              if (self.onaddstream !== null) {
+                window.setTimeout(function() {
+                  self.onaddstream(event);
+                }, 0);
+              }
+
+              receiverList.forEach(function(item) {
+                var track = item[0];
+                var receiver = item[1];
+                var trackEvent = new Event('track');
+                trackEvent.track = track;
+                trackEvent.receiver = receiver;
+                trackEvent.streams = [stream];
                 self.dispatchEvent(event);
-                if (self.onaddstream !== null) {
+                if (self.ontrack !== null) {
                   window.setTimeout(function() {
-                    self.onaddstream(event);
+                    self.ontrack(trackEvent);
                   }, 0);
                 }
-  
-                receiverList.forEach(function(item) {
-                  var track = item[0];
-                  var receiver = item[1];
-                  var trackEvent = new Event('track');
-                  trackEvent.track = track;
-                  trackEvent.receiver = receiver;
-                  trackEvent.streams = [stream];
-                  self.dispatchEvent(event);
-                  if (self.ontrack !== null) {
-                    window.setTimeout(function() {
-                      self.ontrack(trackEvent);
-                    }, 0);
-                  }
-                });
-              }, 0);
-            }
-            if (arguments.length > 1 && typeof arguments[1] === 'function') {
-              window.setTimeout(arguments[1], 0);
-            }
-            return Promise.resolve();
-          };
-  
-      window.RTCPeerConnection.prototype.close = function() {
-        this.transceivers.forEach(function(transceiver) {
-          /* not yet
-          if (transceiver.iceGatherer) {
-            transceiver.iceGatherer.close();
+              });
+            }, 0);
           }
-          */
-          if (transceiver.iceTransport) {
-            transceiver.iceTransport.stop();
+          if (arguments.length > 1 && typeof arguments[1] === 'function') {
+            window.setTimeout(arguments[1], 0);
           }
-          if (transceiver.dtlsTransport) {
-            transceiver.dtlsTransport.stop();
-          }
-          if (transceiver.rtpSender) {
-            transceiver.rtpSender.stop();
-          }
-          if (transceiver.rtpReceiver) {
-            transceiver.rtpReceiver.stop();
-          }
-        });
-        // FIXME: clean up tracks, local streams, remote streams, etc
-        this._updateSignalingState('closed');
-      };
-  
-      // Update the signaling state.
-      window.RTCPeerConnection.prototype._updateSignalingState =
-          function(newState) {
-            this.signalingState = newState;
-            var event = new Event('signalingstatechange');
-            this.dispatchEvent(event);
-            if (this.onsignalingstatechange !== null) {
-              this.onsignalingstatechange(event);
-            }
-          };
-  
-      // Determine whether to fire the negotiationneeded event.
-      window.RTCPeerConnection.prototype._maybeFireNegotiationNeeded =
-          function() {
-            // Fire away (for now).
-            var event = new Event('negotiationneeded');
-            this.dispatchEvent(event);
-            if (this.onnegotiationneeded !== null) {
-              this.onnegotiationneeded(event);
-            }
-          };
-  
-      // Update the connection state.
-      window.RTCPeerConnection.prototype._updateConnectionState = function() {
-        var self = this;
-        var newState;
-        var states = {
-          'new': 0,
-          closed: 0,
-          connecting: 0,
-          checking: 0,
-          connected: 0,
-          completed: 0,
-          failed: 0
+          return Promise.resolve();
         };
-        this.transceivers.forEach(function(transceiver) {
-          states[transceiver.iceTransport.state]++;
-          states[transceiver.dtlsTransport.state]++;
-        });
-        // ICETransport.completed and connected are the same for this purpose.
-        states.connected += states.completed;
-  
-        newState = 'new';
-        if (states.failed > 0) {
-          newState = 'failed';
-        } else if (states.connecting > 0 || states.checking > 0) {
-          newState = 'connecting';
-        } else if (states.disconnected > 0) {
-          newState = 'disconnected';
-        } else if (states.new > 0) {
-          newState = 'new';
-        } else if (states.connected > 0 || states.completed > 0) {
-          newState = 'connected';
+
+    window.RTCPeerConnection.prototype.close = function() {
+      this.transceivers.forEach(function(transceiver) {
+        /* not yet
+        if (transceiver.iceGatherer) {
+          transceiver.iceGatherer.close();
         }
-  
-        if (newState !== self.iceConnectionState) {
-          self.iceConnectionState = newState;
-          var event = new Event('iceconnectionstatechange');
+        */
+        if (transceiver.iceTransport) {
+          transceiver.iceTransport.stop();
+        }
+        if (transceiver.dtlsTransport) {
+          transceiver.dtlsTransport.stop();
+        }
+        if (transceiver.rtpSender) {
+          transceiver.rtpSender.stop();
+        }
+        if (transceiver.rtpReceiver) {
+          transceiver.rtpReceiver.stop();
+        }
+      });
+      // FIXME: clean up tracks, local streams, remote streams, etc
+      this._updateSignalingState('closed');
+    };
+
+    // Update the signaling state.
+    window.RTCPeerConnection.prototype._updateSignalingState =
+        function(newState) {
+          this.signalingState = newState;
+          var event = new Event('signalingstatechange');
           this.dispatchEvent(event);
-          if (this.oniceconnectionstatechange !== null) {
-            this.oniceconnectionstatechange(event);
+          if (this.onsignalingstatechange !== null) {
+            this.onsignalingstatechange(event);
           }
-        }
+        };
+
+    // Determine whether to fire the negotiationneeded event.
+    window.RTCPeerConnection.prototype._maybeFireNegotiationNeeded =
+        function() {
+          // Fire away (for now).
+          var event = new Event('negotiationneeded');
+          this.dispatchEvent(event);
+          if (this.onnegotiationneeded !== null) {
+            this.onnegotiationneeded(event);
+          }
+        };
+
+    // Update the connection state.
+    window.RTCPeerConnection.prototype._updateConnectionState = function() {
+      var self = this;
+      var newState;
+      var states = {
+        'new': 0,
+        closed: 0,
+        connecting: 0,
+        checking: 0,
+        connected: 0,
+        completed: 0,
+        failed: 0
       };
-  
-      window.RTCPeerConnection.prototype.createOffer = function() {
-        var self = this;
-        if (this._pendingOffer) {
-          throw new Error('createOffer called while there is a pending offer.');
+      this.transceivers.forEach(function(transceiver) {
+        states[transceiver.iceTransport.state]++;
+        states[transceiver.dtlsTransport.state]++;
+      });
+      // ICETransport.completed and connected are the same for this purpose.
+      states.connected += states.completed;
+
+      newState = 'new';
+      if (states.failed > 0) {
+        newState = 'failed';
+      } else if (states.connecting > 0 || states.checking > 0) {
+        newState = 'connecting';
+      } else if (states.disconnected > 0) {
+        newState = 'disconnected';
+      } else if (states.new > 0) {
+        newState = 'new';
+      } else if (states.connected > 0 || states.completed > 0) {
+        newState = 'connected';
+      }
+
+      if (newState !== self.iceConnectionState) {
+        self.iceConnectionState = newState;
+        var event = new Event('iceconnectionstatechange');
+        this.dispatchEvent(event);
+        if (this.oniceconnectionstatechange !== null) {
+          this.oniceconnectionstatechange(event);
         }
-        var offerOptions;
-        if (arguments.length === 1 && typeof arguments[0] !== 'function') {
-          offerOptions = arguments[0];
-        } else if (arguments.length === 3) {
-          offerOptions = arguments[2];
+      }
+    };
+
+    window.RTCPeerConnection.prototype.createOffer = function() {
+      var self = this;
+      if (this._pendingOffer) {
+        throw new Error('createOffer called while there is a pending offer.');
+      }
+      var offerOptions;
+      if (arguments.length === 1 && typeof arguments[0] !== 'function') {
+        offerOptions = arguments[0];
+      } else if (arguments.length === 3) {
+        offerOptions = arguments[2];
+      }
+
+      var tracks = [];
+      var numAudioTracks = 0;
+      var numVideoTracks = 0;
+      // Default to sendrecv.
+      if (this.localStreams.length) {
+        numAudioTracks = this.localStreams[0].getAudioTracks().length;
+        numVideoTracks = this.localStreams[0].getVideoTracks().length;
+      }
+      // Determine number of audio and video tracks we need to send/recv.
+      if (offerOptions) {
+        // Reject Chrome legacy constraints.
+        if (offerOptions.mandatory || offerOptions.optional) {
+          throw new TypeError(
+              'Legacy mandatory/optional constraints not supported.');
         }
-  
-        var tracks = [];
-        var numAudioTracks = 0;
-        var numVideoTracks = 0;
-        // Default to sendrecv.
-        if (this.localStreams.length) {
-          numAudioTracks = this.localStreams[0].getAudioTracks().length;
-          numVideoTracks = this.localStreams[0].getVideoTracks().length;
+        if (offerOptions.offerToReceiveAudio !== undefined) {
+          numAudioTracks = offerOptions.offerToReceiveAudio;
         }
-        // Determine number of audio and video tracks we need to send/recv.
-        if (offerOptions) {
-          // Reject Chrome legacy constraints.
-          if (offerOptions.mandatory || offerOptions.optional) {
-            throw new TypeError(
-                'Legacy mandatory/optional constraints not supported.');
-          }
-          if (offerOptions.offerToReceiveAudio !== undefined) {
-            numAudioTracks = offerOptions.offerToReceiveAudio;
-          }
-          if (offerOptions.offerToReceiveVideo !== undefined) {
-            numVideoTracks = offerOptions.offerToReceiveVideo;
-          }
+        if (offerOptions.offerToReceiveVideo !== undefined) {
+          numVideoTracks = offerOptions.offerToReceiveVideo;
         }
-        if (this.localStreams.length) {
-          // Push local streams.
-          this.localStreams[0].getTracks().forEach(function(track) {
-            tracks.push({
-              kind: track.kind,
-              track: track,
-              wantReceive: track.kind === 'audio' ?
-                  numAudioTracks > 0 : numVideoTracks > 0
-            });
-            if (track.kind === 'audio') {
-              numAudioTracks--;
-            } else if (track.kind === 'video') {
-              numVideoTracks--;
-            }
+      }
+      if (this.localStreams.length) {
+        // Push local streams.
+        this.localStreams[0].getTracks().forEach(function(track) {
+          tracks.push({
+            kind: track.kind,
+            track: track,
+            wantReceive: track.kind === 'audio' ?
+                numAudioTracks > 0 : numVideoTracks > 0
           });
-        }
-        // Create M-lines for recvonly streams.
-        while (numAudioTracks > 0 || numVideoTracks > 0) {
-          if (numAudioTracks > 0) {
-            tracks.push({
-              kind: 'audio',
-              wantReceive: true
-            });
+          if (track.kind === 'audio') {
             numAudioTracks--;
-          }
-          if (numVideoTracks > 0) {
-            tracks.push({
-              kind: 'video',
-              wantReceive: true
-            });
+          } else if (track.kind === 'video') {
             numVideoTracks--;
           }
-        }
-  
-        var sdp = SDPUtils.writeSessionBoilerplate();
-        var transceivers = [];
-        tracks.forEach(function(mline, sdpMLineIndex) {
-          // For each track, create an ice gatherer, ice transport,
-          // dtls transport, potentially rtpsender and rtpreceiver.
-          var track = mline.track;
-          var kind = mline.kind;
-          var mid = SDPUtils.generateIdentifier();
-  
-          var transports = self.usingBundle && sdpMLineIndex > 0 ? {
-            iceGatherer: transceivers[0].iceGatherer,
-            iceTransport: transceivers[0].iceTransport,
-            dtlsTransport: transceivers[0].dtlsTransport
-          } : self._createIceAndDtlsTransports(mid, sdpMLineIndex);
-  
-          var localCapabilities = RTCRtpSender.getCapabilities(kind);
-          var rtpSender;
-          var rtpReceiver;
-  
-          // generate an ssrc now, to be used later in rtpSender.send
-          var sendEncodingParameters = [{
-            ssrc: (2 * sdpMLineIndex + 1) * 1001
-          }];
-          if (track) {
-            rtpSender = new RTCRtpSender(track, transports.dtlsTransport);
-          }
-  
-          if (mline.wantReceive) {
-            rtpReceiver = new RTCRtpReceiver(transports.dtlsTransport, kind);
-          }
-  
-          transceivers[sdpMLineIndex] = {
-            iceGatherer: transports.iceGatherer,
-            iceTransport: transports.iceTransport,
-            dtlsTransport: transports.dtlsTransport,
-            localCapabilities: localCapabilities,
-            remoteCapabilities: null,
-            rtpSender: rtpSender,
-            rtpReceiver: rtpReceiver,
-            kind: kind,
-            mid: mid,
-            sendEncodingParameters: sendEncodingParameters,
-            recvEncodingParameters: null
-          };
         });
-        if (this.usingBundle) {
-          sdp += 'a=group:BUNDLE ' + transceivers.map(function(t) {
-            return t.mid;
-          }).join(' ') + '\r\n';
+      }
+      // Create M-lines for recvonly streams.
+      while (numAudioTracks > 0 || numVideoTracks > 0) {
+        if (numAudioTracks > 0) {
+          tracks.push({
+            kind: 'audio',
+            wantReceive: true
+          });
+          numAudioTracks--;
         }
-        tracks.forEach(function(mline, sdpMLineIndex) {
-          var transceiver = transceivers[sdpMLineIndex];
-          sdp += SDPUtils.writeMediaSection(transceiver,
-              transceiver.localCapabilities, 'offer', self.localStreams[0]);
-        });
-  
-        this._pendingOffer = transceivers;
-        var desc = new RTCSessionDescription({
-          type: 'offer',
-          sdp: sdp
-        });
-        if (arguments.length && typeof arguments[0] === 'function') {
-          window.setTimeout(arguments[0], 0, desc);
+        if (numVideoTracks > 0) {
+          tracks.push({
+            kind: 'video',
+            wantReceive: true
+          });
+          numVideoTracks--;
         }
-        return Promise.resolve(desc);
-      };
-  
-      window.RTCPeerConnection.prototype.createAnswer = function() {
-        var self = this;
-  
-        var sdp = SDPUtils.writeSessionBoilerplate();
-        if (this.usingBundle) {
-          sdp += 'a=group:BUNDLE ' + this.transceivers.map(function(t) {
-            return t.mid;
-          }).join(' ') + '\r\n';
+      }
+
+      var sdp = SDPUtils.writeSessionBoilerplate();
+      var transceivers = [];
+      tracks.forEach(function(mline, sdpMLineIndex) {
+        // For each track, create an ice gatherer, ice transport,
+        // dtls transport, potentially rtpsender and rtpreceiver.
+        var track = mline.track;
+        var kind = mline.kind;
+        var mid = SDPUtils.generateIdentifier();
+
+        var transports = self.usingBundle && sdpMLineIndex > 0 ? {
+          iceGatherer: transceivers[0].iceGatherer,
+          iceTransport: transceivers[0].iceTransport,
+          dtlsTransport: transceivers[0].dtlsTransport
+        } : self._createIceAndDtlsTransports(mid, sdpMLineIndex);
+
+        var localCapabilities = RTCRtpSender.getCapabilities(kind);
+        var rtpSender;
+        var rtpReceiver;
+
+        // generate an ssrc now, to be used later in rtpSender.send
+        var sendEncodingParameters = [{
+          ssrc: (2 * sdpMLineIndex + 1) * 1001
+        }];
+        if (track) {
+          rtpSender = new RTCRtpSender(track, transports.dtlsTransport);
         }
+
+        if (mline.wantReceive) {
+          rtpReceiver = new RTCRtpReceiver(transports.dtlsTransport, kind);
+        }
+
+        transceivers[sdpMLineIndex] = {
+          iceGatherer: transports.iceGatherer,
+          iceTransport: transports.iceTransport,
+          dtlsTransport: transports.dtlsTransport,
+          localCapabilities: localCapabilities,
+          remoteCapabilities: null,
+          rtpSender: rtpSender,
+          rtpReceiver: rtpReceiver,
+          kind: kind,
+          mid: mid,
+          sendEncodingParameters: sendEncodingParameters,
+          recvEncodingParameters: null
+        };
+      });
+      if (this.usingBundle) {
+        sdp += 'a=group:BUNDLE ' + transceivers.map(function(t) {
+          return t.mid;
+        }).join(' ') + '\r\n';
+      }
+      tracks.forEach(function(mline, sdpMLineIndex) {
+        var transceiver = transceivers[sdpMLineIndex];
+        sdp += SDPUtils.writeMediaSection(transceiver,
+            transceiver.localCapabilities, 'offer', self.localStreams[0]);
+      });
+
+      this._pendingOffer = transceivers;
+      var desc = new RTCSessionDescription({
+        type: 'offer',
+        sdp: sdp
+      });
+      if (arguments.length && typeof arguments[0] === 'function') {
+        window.setTimeout(arguments[0], 0, desc);
+      }
+      return Promise.resolve(desc);
+    };
+
+    window.RTCPeerConnection.prototype.createAnswer = function() {
+      var self = this;
+
+      var sdp = SDPUtils.writeSessionBoilerplate();
+      if (this.usingBundle) {
+        sdp += 'a=group:BUNDLE ' + this.transceivers.map(function(t) {
+          return t.mid;
+        }).join(' ') + '\r\n';
+      }
+      this.transceivers.forEach(function(transceiver) {
+        if (transceiver.isDatachannel) {
+          sdp += 'm=application 0 DTLS/SCTP 5000\r\n' +
+              'c=IN IP4 0.0.0.0\r\n' +
+              'a=mid:' + transceiver.mid + '\r\n';
+          return;
+        }
+        // Calculate intersection of capabilities.
+        var commonCapabilities = self._getCommonCapabilities(
+            transceiver.localCapabilities,
+            transceiver.remoteCapabilities);
+
+        sdp += SDPUtils.writeMediaSection(transceiver, commonCapabilities,
+            'answer', self.localStreams[0]);
+      });
+
+      var desc = new RTCSessionDescription({
+        type: 'answer',
+        sdp: sdp
+      });
+      if (arguments.length && typeof arguments[0] === 'function') {
+        window.setTimeout(arguments[0], 0, desc);
+      }
+      return Promise.resolve(desc);
+    };
+
+    window.RTCPeerConnection.prototype.addIceCandidate = function(candidate) {
+      if (candidate === null) {
         this.transceivers.forEach(function(transceiver) {
-          if (transceiver.isDatachannel) {
-            sdp += 'm=application 0 DTLS/SCTP 5000\r\n' +
-                'c=IN IP4 0.0.0.0\r\n' +
-                'a=mid:' + transceiver.mid + '\r\n';
+          transceiver.iceTransport.addRemoteCandidate({});
+        });
+      } else {
+        var mLineIndex = candidate.sdpMLineIndex;
+        if (candidate.sdpMid) {
+          for (var i = 0; i < this.transceivers.length; i++) {
+            if (this.transceivers[i].mid === candidate.sdpMid) {
+              mLineIndex = i;
+              break;
+            }
+          }
+        }
+        var transceiver = this.transceivers[mLineIndex];
+        if (transceiver) {
+          var cand = Object.keys(candidate.candidate).length > 0 ?
+              SDPUtils.parseCandidate(candidate.candidate) : {};
+          // Ignore Chrome's invalid candidates since Edge does not like them.
+          if (cand.protocol === 'tcp' && (cand.port === 0 || cand.port === 9)) {
             return;
           }
-          // Calculate intersection of capabilities.
-          var commonCapabilities = self._getCommonCapabilities(
-              transceiver.localCapabilities,
-              transceiver.remoteCapabilities);
-  
-          sdp += SDPUtils.writeMediaSection(transceiver, commonCapabilities,
-              'answer', self.localStreams[0]);
-        });
-  
-        var desc = new RTCSessionDescription({
-          type: 'answer',
-          sdp: sdp
-        });
-        if (arguments.length && typeof arguments[0] === 'function') {
-          window.setTimeout(arguments[0], 0, desc);
+          // Ignore RTCP candidates, we assume RTCP-MUX.
+          if (cand.component !== '1') {
+            return;
+          }
+          // A dirty hack to make samples work.
+          if (cand.type === 'endOfCandidates') {
+            cand = {};
+          }
+          transceiver.iceTransport.addRemoteCandidate(cand);
+
+          // update the remoteDescription.
+          var sections = SDPUtils.splitSections(this.remoteDescription.sdp);
+          sections[mLineIndex + 1] += (cand.type ? candidate.candidate.trim()
+              : 'a=end-of-candidates') + '\r\n';
+          this.remoteDescription.sdp = sections.join('');
         }
-        return Promise.resolve(desc);
-      };
-  
-      window.RTCPeerConnection.prototype.addIceCandidate = function(candidate) {
-        if (candidate === null) {
-          this.transceivers.forEach(function(transceiver) {
-            transceiver.iceTransport.addRemoteCandidate({});
+      }
+      if (arguments.length > 1 && typeof arguments[1] === 'function') {
+        window.setTimeout(arguments[1], 0);
+      }
+      return Promise.resolve();
+    };
+
+    window.RTCPeerConnection.prototype.getStats = function() {
+      var promises = [];
+      this.transceivers.forEach(function(transceiver) {
+        ['rtpSender', 'rtpReceiver', 'iceGatherer', 'iceTransport',
+            'dtlsTransport'].forEach(function(method) {
+              if (transceiver[method]) {
+                promises.push(transceiver[method].getStats());
+              }
+            });
+      });
+      var cb = arguments.length > 1 && typeof arguments[1] === 'function' &&
+          arguments[1];
+      return new Promise(function(resolve) {
+        // shim getStats with maplike support
+        var results = new Map();
+        Promise.all(promises).then(function(res) {
+          res.forEach(function(result) {
+            Object.keys(result).forEach(function(id) {
+              results.set(id, result[id]);
+              results[id] = result[id];
+            });
           });
-        } else {
-          var mLineIndex = candidate.sdpMLineIndex;
-          if (candidate.sdpMid) {
-            for (var i = 0; i < this.transceivers.length; i++) {
-              if (this.transceivers[i].mid === candidate.sdpMid) {
-                mLineIndex = i;
-                break;
+          if (cb) {
+            window.setTimeout(cb, 0, results);
+          }
+          resolve(results);
+        });
+      });
+    };
+  }
+};
+
+// Expose public methods.
+module.exports = {
+  shimPeerConnection: edgeShim.shimPeerConnection,
+  shimGetUserMedia: requirecopy('./getusermedia')
+};
+
+},{"../utils":10,"./getusermedia":6,"sdp":1}],6:[function(requirecopy,module,exports){
+/*
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+ */
+ /* eslint-env node */
+'use strict';
+
+// Expose public methods.
+module.exports = function() {
+  var shimError_ = function(e) {
+    return {
+      name: {PermissionDeniedError: 'NotAllowedError'}[e.name] || e.name,
+      message: e.message,
+      constraint: e.constraint,
+      toString: function() {
+        return this.name;
+      }
+    };
+  };
+
+  // getUserMedia error shim.
+  var origGetUserMedia = navigator.mediaDevices.getUserMedia.
+      bind(navigator.mediaDevices);
+  navigator.mediaDevices.getUserMedia = function(c) {
+    return origGetUserMedia(c).catch(function(e) {
+      return Promise.reject(shimError_(e));
+    });
+  };
+};
+
+},{}],7:[function(requirecopy,module,exports){
+/*
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+ */
+ /* eslint-env node */
+'use strict';
+
+var browserDetails = requirecopy('../utils').browserDetails;
+
+var firefoxShim = {
+  shimOnTrack: function() {
+    if (typeof window === 'object' && window.RTCPeerConnection && !('ontrack' in
+        window.RTCPeerConnection.prototype)) {
+      Object.defineProperty(window.RTCPeerConnection.prototype, 'ontrack', {
+        get: function() {
+          return this._ontrack;
+        },
+        set: function(f) {
+          if (this._ontrack) {
+            this.removeEventListener('track', this._ontrack);
+            this.removeEventListener('addstream', this._ontrackpoly);
+          }
+          this.addEventListener('track', this._ontrack = f);
+          this.addEventListener('addstream', this._ontrackpoly = function(e) {
+            e.stream.getTracks().forEach(function(track) {
+              var event = new Event('track');
+              event.track = track;
+              event.receiver = {track: track};
+              event.streams = [e.stream];
+              this.dispatchEvent(event);
+            }.bind(this));
+          }.bind(this));
+        }
+      });
+    }
+  },
+
+  shimSourceObject: function() {
+    // Firefox has supported mozSrcObject since FF22, unprefixed in 42.
+    if (typeof window === 'object') {
+      if (window.HTMLMediaElement &&
+        !('srcObject' in window.HTMLMediaElement.prototype)) {
+        // Shim the srcObject property, once, when HTMLMediaElement is found.
+        Object.defineProperty(window.HTMLMediaElement.prototype, 'srcObject', {
+          get: function() {
+            return this.mozSrcObject;
+          },
+          set: function(stream) {
+            this.mozSrcObject = stream;
+          }
+        });
+      }
+    }
+  },
+
+  shimPeerConnection: function() {
+    if (typeof window !== 'object' || !(window.RTCPeerConnection ||
+        window.mozRTCPeerConnection)) {
+      return; // probably media.peerconnection.enabled=false in about:config
+    }
+    // The RTCPeerConnection object.
+    if (!window.RTCPeerConnection) {
+      window.RTCPeerConnection = function(pcConfig, pcConstraints) {
+        if (browserDetails.version < 38) {
+          // .urls is not supported in FF < 38.
+          // create RTCIceServers with a single url.
+          if (pcConfig && pcConfig.iceServers) {
+            var newIceServers = [];
+            for (var i = 0; i < pcConfig.iceServers.length; i++) {
+              var server = pcConfig.iceServers[i];
+              if (server.hasOwnProperty('urls')) {
+                for (var j = 0; j < server.urls.length; j++) {
+                  var newServer = {
+                    url: server.urls[j]
+                  };
+                  if (server.urls[j].indexOf('turn') === 0) {
+                    newServer.username = server.username;
+                    newServer.credential = server.credential;
+                  }
+                  newIceServers.push(newServer);
+                }
+              } else {
+                newIceServers.push(pcConfig.iceServers[i]);
               }
             }
-          }
-          var transceiver = this.transceivers[mLineIndex];
-          if (transceiver) {
-            var cand = Object.keys(candidate.candidate).length > 0 ?
-                SDPUtils.parseCandidate(candidate.candidate) : {};
-            // Ignore Chrome's invalid candidates since Edge does not like them.
-            if (cand.protocol === 'tcp' && (cand.port === 0 || cand.port === 9)) {
-              return;
-            }
-            // Ignore RTCP candidates, we assume RTCP-MUX.
-            if (cand.component !== '1') {
-              return;
-            }
-            // A dirty hack to make samples work.
-            if (cand.type === 'endOfCandidates') {
-              cand = {};
-            }
-            transceiver.iceTransport.addRemoteCandidate(cand);
-  
-            // update the remoteDescription.
-            var sections = SDPUtils.splitSections(this.remoteDescription.sdp);
-            sections[mLineIndex + 1] += (cand.type ? candidate.candidate.trim()
-                : 'a=end-of-candidates') + '\r\n';
-            this.remoteDescription.sdp = sections.join('');
+            pcConfig.iceServers = newIceServers;
           }
         }
-        if (arguments.length > 1 && typeof arguments[1] === 'function') {
-          window.setTimeout(arguments[1], 0);
-        }
-        return Promise.resolve();
+        return new mozRTCPeerConnection(pcConfig, pcConstraints);
       };
-  
-      window.RTCPeerConnection.prototype.getStats = function() {
-        var promises = [];
-        this.transceivers.forEach(function(transceiver) {
-          ['rtpSender', 'rtpReceiver', 'iceGatherer', 'iceTransport',
-              'dtlsTransport'].forEach(function(method) {
-                if (transceiver[method]) {
-                  promises.push(transceiver[method].getStats());
-                }
-              });
+      window.RTCPeerConnection.prototype = mozRTCPeerConnection.prototype;
+
+      // wrap static methods. Currently just generateCertificate.
+      if (mozRTCPeerConnection.generateCertificate) {
+        Object.defineProperty(window.RTCPeerConnection, 'generateCertificate', {
+          get: function() {
+            return mozRTCPeerConnection.generateCertificate;
+          }
         });
-        var cb = arguments.length > 1 && typeof arguments[1] === 'function' &&
-            arguments[1];
-        return new Promise(function(resolve) {
-          // shim getStats with maplike support
-          var results = new Map();
-          Promise.all(promises).then(function(res) {
-            res.forEach(function(result) {
-              Object.keys(result).forEach(function(id) {
-                results.set(id, result[id]);
-                results[id] = result[id];
-              });
-            });
-            if (cb) {
-              window.setTimeout(cb, 0, results);
-            }
-            resolve(results);
-          });
-        });
-      };
+      }
+
+      window.RTCSessionDescription = mozRTCSessionDescription;
+      window.RTCIceCandidate = mozRTCIceCandidate;
     }
-  };
-  
-  // Expose public methods.
-  module.exports = {
-    shimPeerConnection: edgeShim.shimPeerConnection,
-    shimGetUserMedia: require('./getusermedia')
-  };
-  
-  },{"../utils":10,"./getusermedia":6,"sdp":1}],6:[function(require,module,exports){
-  /*
-   *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
-   *
-   *  Use of this source code is governed by a BSD-style license
-   *  that can be found in the LICENSE file in the root of the source
-   *  tree.
-   */
-   /* eslint-env node */
-  'use strict';
-  
-  // Expose public methods.
-  module.exports = function() {
-    var shimError_ = function(e) {
-      return {
-        name: {PermissionDeniedError: 'NotAllowedError'}[e.name] || e.name,
-        message: e.message,
-        constraint: e.constraint,
-        toString: function() {
-          return this.name;
-        }
-      };
+
+    // shim away need for obsolete RTCIceCandidate/RTCSessionDescription.
+    ['setLocalDescription', 'setRemoteDescription', 'addIceCandidate']
+        .forEach(function(method) {
+          var nativeMethod = RTCPeerConnection.prototype[method];
+          RTCPeerConnection.prototype[method] = function() {
+            arguments[0] = new ((method === 'addIceCandidate') ?
+                RTCIceCandidate : RTCSessionDescription)(arguments[0]);
+            return nativeMethod.apply(this, arguments);
+          };
+        });
+
+    // support for addIceCandidate(null)
+    var nativeAddIceCandidate =
+        RTCPeerConnection.prototype.addIceCandidate;
+    RTCPeerConnection.prototype.addIceCandidate = function() {
+      return arguments[0] === null ? Promise.resolve()
+          : nativeAddIceCandidate.apply(this, arguments);
     };
-  
-    // getUserMedia error shim.
+
+    // shim getStats with maplike support
+    var makeMapStats = function(stats) {
+      var map = new Map();
+      Object.keys(stats).forEach(function(key) {
+        map.set(key, stats[key]);
+        map[key] = stats[key];
+      });
+      return map;
+    };
+
+    var nativeGetStats = RTCPeerConnection.prototype.getStats;
+    RTCPeerConnection.prototype.getStats = function(selector, onSucc, onErr) {
+      return nativeGetStats.apply(this, [selector || null])
+        .then(function(stats) {
+          return makeMapStats(stats);
+        })
+        .then(onSucc, onErr);
+    };
+  }
+};
+
+// Expose public methods.
+module.exports = {
+  shimOnTrack: firefoxShim.shimOnTrack,
+  shimSourceObject: firefoxShim.shimSourceObject,
+  shimPeerConnection: firefoxShim.shimPeerConnection,
+  shimGetUserMedia: requirecopy('./getusermedia')
+};
+
+},{"../utils":10,"./getusermedia":8}],8:[function(requirecopy,module,exports){
+/*
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+ */
+ /* eslint-env node */
+'use strict';
+
+var logging = requirecopy('../utils').log;
+var browserDetails = requirecopy('../utils').browserDetails;
+
+// Expose public methods.
+module.exports = function() {
+  var shimError_ = function(e) {
+    return {
+      name: {
+        SecurityError: 'NotAllowedError',
+        PermissionDeniedError: 'NotAllowedError'
+      }[e.name] || e.name,
+      message: {
+        'The operation is insecure.': 'The request is not allowed by the ' +
+        'user agent or the platform in the current context.'
+      }[e.message] || e.message,
+      constraint: e.constraint,
+      toString: function() {
+        return this.name + (this.message && ': ') + this.message;
+      }
+    };
+  };
+
+  // getUserMedia constraints shim.
+  var getUserMedia_ = function(constraints, onSuccess, onError) {
+    var constraintsToFF37_ = function(c) {
+      if (typeof c !== 'object' || c.require) {
+        return c;
+      }
+      var require = [];
+      Object.keys(c).forEach(function(key) {
+        if (key === 'require' || key === 'advanced' || key === 'mediaSource') {
+          return;
+        }
+        var r = c[key] = (typeof c[key] === 'object') ?
+            c[key] : {ideal: c[key]};
+        if (r.min !== undefined ||
+            r.max !== undefined || r.exact !== undefined) {
+          require.push(key);
+        }
+        if (r.exact !== undefined) {
+          if (typeof r.exact === 'number') {
+            r. min = r.max = r.exact;
+          } else {
+            c[key] = r.exact;
+          }
+          delete r.exact;
+        }
+        if (r.ideal !== undefined) {
+          c.advanced = c.advanced || [];
+          var oc = {};
+          if (typeof r.ideal === 'number') {
+            oc[key] = {min: r.ideal, max: r.ideal};
+          } else {
+            oc[key] = r.ideal;
+          }
+          c.advanced.push(oc);
+          delete r.ideal;
+          if (!Object.keys(r).length) {
+            delete c[key];
+          }
+        }
+      });
+      if (require.length) {
+        c.require = require;
+      }
+      return c;
+    };
+    constraints = JSON.parse(JSON.stringify(constraints));
+    if (browserDetails.version < 38) {
+      logging('spec: ' + JSON.stringify(constraints));
+      if (constraints.audio) {
+        constraints.audio = constraintsToFF37_(constraints.audio);
+      }
+      if (constraints.video) {
+        constraints.video = constraintsToFF37_(constraints.video);
+      }
+      logging('ff37: ' + JSON.stringify(constraints));
+    }
+    return navigator.mozGetUserMedia(constraints, onSuccess, function(e) {
+      onError(shimError_(e));
+    });
+  };
+
+  // Returns the result of getUserMedia as a Promise.
+  var getUserMediaPromise_ = function(constraints) {
+    return new Promise(function(resolve, reject) {
+      getUserMedia_(constraints, resolve, reject);
+    });
+  };
+
+  // Shim for mediaDevices on older versions.
+  if (!navigator.mediaDevices) {
+    navigator.mediaDevices = {getUserMedia: getUserMediaPromise_,
+      addEventListener: function() { },
+      removeEventListener: function() { }
+    };
+  }
+  navigator.mediaDevices.enumerateDevices =
+      navigator.mediaDevices.enumerateDevices || function() {
+        return new Promise(function(resolve) {
+          var infos = [
+            {kind: 'audioinput', deviceId: 'default', label: '', groupId: ''},
+            {kind: 'videoinput', deviceId: 'default', label: '', groupId: ''}
+          ];
+          resolve(infos);
+        });
+      };
+
+  if (browserDetails.version < 41) {
+    // Work around http://bugzil.la/1169665
+    var orgEnumerateDevices =
+        navigator.mediaDevices.enumerateDevices.bind(navigator.mediaDevices);
+    navigator.mediaDevices.enumerateDevices = function() {
+      return orgEnumerateDevices().then(undefined, function(e) {
+        if (e.name === 'NotFoundError') {
+          return [];
+        }
+        throw e;
+      });
+    };
+  }
+  if (browserDetails.version < 49) {
     var origGetUserMedia = navigator.mediaDevices.getUserMedia.
         bind(navigator.mediaDevices);
     navigator.mediaDevices.getUserMedia = function(c) {
@@ -10043,481 +10353,182 @@ if ( (navigator.mozGetUserMedia ||
         return Promise.reject(shimError_(e));
       });
     };
+  }
+  navigator.getUserMedia = function(constraints, onSuccess, onError) {
+    if (browserDetails.version < 44) {
+      return getUserMedia_(constraints, onSuccess, onError);
+    }
+    // Replace Firefox 44+'s deprecation warning with unprefixed version.
+    console.warn('navigator.getUserMedia has been replaced by ' +
+                 'navigator.mediaDevices.getUserMedia');
+    navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
   };
-  
-  },{}],7:[function(require,module,exports){
-  /*
-   *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+};
+
+},{"../utils":10}],9:[function(requirecopy,module,exports){
+/*
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+ */
+'use strict';
+var safariShim = {
+  // TODO: DrAlex, should be here, double check against LayoutTests
+  // shimOnTrack: function() { },
+
+  // TODO: once the back-end for the mac port is done, add.
+  // TODO: check for webkitGTK+
+  // shimPeerConnection: function() { },
+
+  shimGetUserMedia: function() {
+    navigator.getUserMedia = navigator.webkitGetUserMedia;
+  }
+};
+
+// Expose public methods.
+module.exports = {
+  shimGetUserMedia: safariShim.shimGetUserMedia
+  // TODO
+  // shimOnTrack: safariShim.shimOnTrack,
+  // shimPeerConnection: safariShim.shimPeerConnection
+};
+
+},{}],10:[function(requirecopy,module,exports){
+/*
+ *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+ */
+ /* eslint-env node */
+'use strict';
+
+var logDisabled_ = true;
+
+// Utility methods.
+var utils = {
+  disableLog: function(bool) {
+    if (typeof bool !== 'boolean') {
+      return new Error('Argument type: ' + typeof bool +
+          '. Please use a boolean.');
+    }
+    logDisabled_ = bool;
+    return (bool) ? 'adapter.js logging disabled' :
+        'adapter.js logging enabled';
+  },
+
+  log: function() {
+    if (typeof window === 'object') {
+      if (logDisabled_) {
+        return;
+      }
+      if (typeof console !== 'undefined' && typeof console.log === 'function') {
+        console.log.apply(console, arguments);
+      }
+    }
+  },
+
+  /**
+   * Extract browser version out of the provided user agent string.
    *
-   *  Use of this source code is governed by a BSD-style license
-   *  that can be found in the LICENSE file in the root of the source
-   *  tree.
+   * @param {!string} uastring userAgent string.
+   * @param {!string} expr Regular expression used as match criteria.
+   * @param {!number} pos position in the version string to be returned.
+   * @return {!number} browser version.
    */
-   /* eslint-env node */
-  'use strict';
-  
-  var browserDetails = require('../utils').browserDetails;
-  
-  var firefoxShim = {
-    shimOnTrack: function() {
-      if (typeof window === 'object' && window.RTCPeerConnection && !('ontrack' in
-          window.RTCPeerConnection.prototype)) {
-        Object.defineProperty(window.RTCPeerConnection.prototype, 'ontrack', {
-          get: function() {
-            return this._ontrack;
-          },
-          set: function(f) {
-            if (this._ontrack) {
-              this.removeEventListener('track', this._ontrack);
-              this.removeEventListener('addstream', this._ontrackpoly);
-            }
-            this.addEventListener('track', this._ontrack = f);
-            this.addEventListener('addstream', this._ontrackpoly = function(e) {
-              e.stream.getTracks().forEach(function(track) {
-                var event = new Event('track');
-                event.track = track;
-                event.receiver = {track: track};
-                event.streams = [e.stream];
-                this.dispatchEvent(event);
-              }.bind(this));
-            }.bind(this));
-          }
-        });
-      }
-    },
-  
-    shimSourceObject: function() {
-      // Firefox has supported mozSrcObject since FF22, unprefixed in 42.
-      if (typeof window === 'object') {
-        if (window.HTMLMediaElement &&
-          !('srcObject' in window.HTMLMediaElement.prototype)) {
-          // Shim the srcObject property, once, when HTMLMediaElement is found.
-          Object.defineProperty(window.HTMLMediaElement.prototype, 'srcObject', {
-            get: function() {
-              return this.mozSrcObject;
-            },
-            set: function(stream) {
-              this.mozSrcObject = stream;
-            }
-          });
-        }
-      }
-    },
-  
-    shimPeerConnection: function() {
-      if (typeof window !== 'object' || !(window.RTCPeerConnection ||
-          window.mozRTCPeerConnection)) {
-        return; // probably media.peerconnection.enabled=false in about:config
-      }
-      // The RTCPeerConnection object.
-      if (!window.RTCPeerConnection) {
-        window.RTCPeerConnection = function(pcConfig, pcConstraints) {
-          if (browserDetails.version < 38) {
-            // .urls is not supported in FF < 38.
-            // create RTCIceServers with a single url.
-            if (pcConfig && pcConfig.iceServers) {
-              var newIceServers = [];
-              for (var i = 0; i < pcConfig.iceServers.length; i++) {
-                var server = pcConfig.iceServers[i];
-                if (server.hasOwnProperty('urls')) {
-                  for (var j = 0; j < server.urls.length; j++) {
-                    var newServer = {
-                      url: server.urls[j]
-                    };
-                    if (server.urls[j].indexOf('turn') === 0) {
-                      newServer.username = server.username;
-                      newServer.credential = server.credential;
-                    }
-                    newIceServers.push(newServer);
-                  }
-                } else {
-                  newIceServers.push(pcConfig.iceServers[i]);
-                }
-              }
-              pcConfig.iceServers = newIceServers;
-            }
-          }
-          return new mozRTCPeerConnection(pcConfig, pcConstraints);
-        };
-        window.RTCPeerConnection.prototype = mozRTCPeerConnection.prototype;
-  
-        // wrap static methods. Currently just generateCertificate.
-        if (mozRTCPeerConnection.generateCertificate) {
-          Object.defineProperty(window.RTCPeerConnection, 'generateCertificate', {
-            get: function() {
-              return mozRTCPeerConnection.generateCertificate;
-            }
-          });
-        }
-  
-        window.RTCSessionDescription = mozRTCSessionDescription;
-        window.RTCIceCandidate = mozRTCIceCandidate;
-      }
-  
-      // shim away need for obsolete RTCIceCandidate/RTCSessionDescription.
-      ['setLocalDescription', 'setRemoteDescription', 'addIceCandidate']
-          .forEach(function(method) {
-            var nativeMethod = RTCPeerConnection.prototype[method];
-            RTCPeerConnection.prototype[method] = function() {
-              arguments[0] = new ((method === 'addIceCandidate') ?
-                  RTCIceCandidate : RTCSessionDescription)(arguments[0]);
-              return nativeMethod.apply(this, arguments);
-            };
-          });
-  
-      // support for addIceCandidate(null)
-      var nativeAddIceCandidate =
-          RTCPeerConnection.prototype.addIceCandidate;
-      RTCPeerConnection.prototype.addIceCandidate = function() {
-        return arguments[0] === null ? Promise.resolve()
-            : nativeAddIceCandidate.apply(this, arguments);
-      };
-  
-      // shim getStats with maplike support
-      var makeMapStats = function(stats) {
-        var map = new Map();
-        Object.keys(stats).forEach(function(key) {
-          map.set(key, stats[key]);
-          map[key] = stats[key];
-        });
-        return map;
-      };
-  
-      var nativeGetStats = RTCPeerConnection.prototype.getStats;
-      RTCPeerConnection.prototype.getStats = function(selector, onSucc, onErr) {
-        return nativeGetStats.apply(this, [selector || null])
-          .then(function(stats) {
-            return makeMapStats(stats);
-          })
-          .then(onSucc, onErr);
-      };
-    }
-  };
-  
-  // Expose public methods.
-  module.exports = {
-    shimOnTrack: firefoxShim.shimOnTrack,
-    shimSourceObject: firefoxShim.shimSourceObject,
-    shimPeerConnection: firefoxShim.shimPeerConnection,
-    shimGetUserMedia: require('./getusermedia')
-  };
-  
-  },{"../utils":10,"./getusermedia":8}],8:[function(require,module,exports){
-  /*
-   *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
+  extractVersion: function(uastring, expr, pos) {
+    var match = uastring.match(expr);
+    return match && match.length >= pos && parseInt(match[pos], 10);
+  },
+
+  /**
+   * Browser detector.
    *
-   *  Use of this source code is governed by a BSD-style license
-   *  that can be found in the LICENSE file in the root of the source
-   *  tree.
+   * @return {object} result containing browser and version
+   *     properties.
    */
-   /* eslint-env node */
-  'use strict';
-  
-  var logging = require('../utils').log;
-  var browserDetails = require('../utils').browserDetails;
-  
-  // Expose public methods.
-  module.exports = function() {
-    var shimError_ = function(e) {
-      return {
-        name: {
-          SecurityError: 'NotAllowedError',
-          PermissionDeniedError: 'NotAllowedError'
-        }[e.name] || e.name,
-        message: {
-          'The operation is insecure.': 'The request is not allowed by the ' +
-          'user agent or the platform in the current context.'
-        }[e.message] || e.message,
-        constraint: e.constraint,
-        toString: function() {
-          return this.name + (this.message && ': ') + this.message;
-        }
-      };
-    };
-  
-    // getUserMedia constraints shim.
-    var getUserMedia_ = function(constraints, onSuccess, onError) {
-      var constraintsToFF37_ = function(c) {
-        if (typeof c !== 'object' || c.require) {
-          return c;
-        }
-        var require = [];
-        Object.keys(c).forEach(function(key) {
-          if (key === 'require' || key === 'advanced' || key === 'mediaSource') {
-            return;
-          }
-          var r = c[key] = (typeof c[key] === 'object') ?
-              c[key] : {ideal: c[key]};
-          if (r.min !== undefined ||
-              r.max !== undefined || r.exact !== undefined) {
-            require.push(key);
-          }
-          if (r.exact !== undefined) {
-            if (typeof r.exact === 'number') {
-              r. min = r.max = r.exact;
-            } else {
-              c[key] = r.exact;
-            }
-            delete r.exact;
-          }
-          if (r.ideal !== undefined) {
-            c.advanced = c.advanced || [];
-            var oc = {};
-            if (typeof r.ideal === 'number') {
-              oc[key] = {min: r.ideal, max: r.ideal};
-            } else {
-              oc[key] = r.ideal;
-            }
-            c.advanced.push(oc);
-            delete r.ideal;
-            if (!Object.keys(r).length) {
-              delete c[key];
-            }
-          }
-        });
-        if (require.length) {
-          c.require = require;
-        }
-        return c;
-      };
-      constraints = JSON.parse(JSON.stringify(constraints));
-      if (browserDetails.version < 38) {
-        logging('spec: ' + JSON.stringify(constraints));
-        if (constraints.audio) {
-          constraints.audio = constraintsToFF37_(constraints.audio);
-        }
-        if (constraints.video) {
-          constraints.video = constraintsToFF37_(constraints.video);
-        }
-        logging('ff37: ' + JSON.stringify(constraints));
-      }
-      return navigator.mozGetUserMedia(constraints, onSuccess, function(e) {
-        onError(shimError_(e));
-      });
-    };
-  
-    // Returns the result of getUserMedia as a Promise.
-    var getUserMediaPromise_ = function(constraints) {
-      return new Promise(function(resolve, reject) {
-        getUserMedia_(constraints, resolve, reject);
-      });
-    };
-  
-    // Shim for mediaDevices on older versions.
-    if (!navigator.mediaDevices) {
-      navigator.mediaDevices = {getUserMedia: getUserMediaPromise_,
-        addEventListener: function() { },
-        removeEventListener: function() { }
-      };
-    }
-    navigator.mediaDevices.enumerateDevices =
-        navigator.mediaDevices.enumerateDevices || function() {
-          return new Promise(function(resolve) {
-            var infos = [
-              {kind: 'audioinput', deviceId: 'default', label: '', groupId: ''},
-              {kind: 'videoinput', deviceId: 'default', label: '', groupId: ''}
-            ];
-            resolve(infos);
-          });
-        };
-  
-    if (browserDetails.version < 41) {
-      // Work around http://bugzil.la/1169665
-      var orgEnumerateDevices =
-          navigator.mediaDevices.enumerateDevices.bind(navigator.mediaDevices);
-      navigator.mediaDevices.enumerateDevices = function() {
-        return orgEnumerateDevices().then(undefined, function(e) {
-          if (e.name === 'NotFoundError') {
-            return [];
-          }
-          throw e;
-        });
-      };
-    }
-    if (browserDetails.version < 49) {
-      var origGetUserMedia = navigator.mediaDevices.getUserMedia.
-          bind(navigator.mediaDevices);
-      navigator.mediaDevices.getUserMedia = function(c) {
-        return origGetUserMedia(c).catch(function(e) {
-          return Promise.reject(shimError_(e));
-        });
-      };
-    }
-    navigator.getUserMedia = function(constraints, onSuccess, onError) {
-      if (browserDetails.version < 44) {
-        return getUserMedia_(constraints, onSuccess, onError);
-      }
-      // Replace Firefox 44+'s deprecation warning with unprefixed version.
-      console.warn('navigator.getUserMedia has been replaced by ' +
-                   'navigator.mediaDevices.getUserMedia');
-      navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
-    };
-  };
-  
-  },{"../utils":10}],9:[function(require,module,exports){
-  /*
-   *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
-   *
-   *  Use of this source code is governed by a BSD-style license
-   *  that can be found in the LICENSE file in the root of the source
-   *  tree.
-   */
-  'use strict';
-  var safariShim = {
-    // TODO: DrAlex, should be here, double check against LayoutTests
-    // shimOnTrack: function() { },
-  
-    // TODO: once the back-end for the mac port is done, add.
-    // TODO: check for webkitGTK+
-    // shimPeerConnection: function() { },
-  
-    shimGetUserMedia: function() {
-      navigator.getUserMedia = navigator.webkitGetUserMedia;
-    }
-  };
-  
-  // Expose public methods.
-  module.exports = {
-    shimGetUserMedia: safariShim.shimGetUserMedia
-    // TODO
-    // shimOnTrack: safariShim.shimOnTrack,
-    // shimPeerConnection: safariShim.shimPeerConnection
-  };
-  
-  },{}],10:[function(require,module,exports){
-  /*
-   *  Copyright (c) 2016 The WebRTC project authors. All Rights Reserved.
-   *
-   *  Use of this source code is governed by a BSD-style license
-   *  that can be found in the LICENSE file in the root of the source
-   *  tree.
-   */
-   /* eslint-env node */
-  'use strict';
-  
-  var logDisabled_ = true;
-  
-  // Utility methods.
-  var utils = {
-    disableLog: function(bool) {
-      if (typeof bool !== 'boolean') {
-        return new Error('Argument type: ' + typeof bool +
-            '. Please use a boolean.');
-      }
-      logDisabled_ = bool;
-      return (bool) ? 'adapter.js logging disabled' :
-          'adapter.js logging enabled';
-    },
-  
-    log: function() {
-      if (typeof window === 'object') {
-        if (logDisabled_) {
-          return;
-        }
-        if (typeof console !== 'undefined' && typeof console.log === 'function') {
-          console.log.apply(console, arguments);
-        }
-      }
-    },
-  
-    /**
-     * Extract browser version out of the provided user agent string.
-     *
-     * @param {!string} uastring userAgent string.
-     * @param {!string} expr Regular expression used as match criteria.
-     * @param {!number} pos position in the version string to be returned.
-     * @return {!number} browser version.
-     */
-    extractVersion: function(uastring, expr, pos) {
-      var match = uastring.match(expr);
-      return match && match.length >= pos && parseInt(match[pos], 10);
-    },
-  
-    /**
-     * Browser detector.
-     *
-     * @return {object} result containing browser and version
-     *     properties.
-     */
-    detectBrowser: function() {
-      // Returned result object.
-      var result = {};
-      result.browser = null;
-      result.version = null;
-  
-      // Fail early if it's not a browser
-      if (typeof window === 'undefined' || !window.navigator) {
-        result.browser = 'Not a browser.';
-        return result;
-      }
-  
-      // Firefox.
-      if (navigator.mozGetUserMedia) {
-        result.browser = 'firefox';
-        result.version = this.extractVersion(navigator.userAgent,
-            /Firefox\/([0-9]+)\./, 1);
-  
-      // all webkit-based browsers
-      } else if (navigator.webkitGetUserMedia) {
-        // Chrome, Chromium, Webview, Opera, all use the chrome shim for now
-        if (window.webkitRTCPeerConnection) {
-          result.browser = 'chrome';
-          result.version = this.extractVersion(navigator.userAgent,
-            /Chrom(e|ium)\/([0-9]+)\./, 2);
-  
-        // Safari or unknown webkit-based
-        // for the time being Safari has support for MediaStreams but not webRTC
-        } else {
-          // Safari UA substrings of interest for reference:
-          // - webkit version:           AppleWebKit/602.1.25 (also used in Op,Cr)
-          // - safari UI version:        Version/9.0.3 (unique to Safari)
-          // - safari UI webkit version: Safari/601.4.4 (also used in Op,Cr)
-          //
-          // if the webkit version and safari UI webkit versions are equals,
-          // ... this is a stable version.
-          //
-          // only the internal webkit version is important today to know if
-          // media streams are supported
-          //
-          if (navigator.userAgent.match(/Version\/(\d+).(\d+)/)) {
-            result.browser = 'safari';
-            result.version = this.extractVersion(navigator.userAgent,
-              /AppleWebKit\/([0-9]+)\./, 1);
-  
-          // unknown webkit-based browser
-          } else {
-            result.browser = 'Unsupported webkit-based browser ' +
-                'with GUM support but no WebRTC support.';
-            return result;
-          }
-        }
-  
-      // Edge.
-      } else if (navigator.mediaDevices &&
-          navigator.userAgent.match(/Edge\/(\d+).(\d+)$/)) {
-        result.browser = 'edge';
-        result.version = this.extractVersion(navigator.userAgent,
-            /Edge\/(\d+).(\d+)$/, 2);
-  
-      // Default fallthrough: not supported.
-      } else {
-        result.browser = 'Not a supported browser.';
-        return result;
-      }
-  
+  detectBrowser: function() {
+    // Returned result object.
+    var result = {};
+    result.browser = null;
+    result.version = null;
+
+    // Fail early if it's not a browser
+    if (typeof window === 'undefined' || !window.navigator) {
+      result.browser = 'Not a browser.';
       return result;
     }
-  };
-  
-  // Export.
-  module.exports = {
-    log: utils.log,
-    disableLog: utils.disableLog,
-    browserDetails: utils.detectBrowser(),
-    extractVersion: utils.extractVersion
-  };
-  
-  },{}]},{},[2])(2)
+
+    // Firefox.
+    if (navigator.mozGetUserMedia) {
+      result.browser = 'firefox';
+      result.version = this.extractVersion(navigator.userAgent,
+          /Firefox\/([0-9]+)\./, 1);
+
+    // all webkit-based browsers
+    } else if (navigator.webkitGetUserMedia) {
+      // Chrome, Chromium, Webview, Opera, all use the chrome shim for now
+      if (window.webkitRTCPeerConnection) {
+        result.browser = 'chrome';
+        result.version = this.extractVersion(navigator.userAgent,
+          /Chrom(e|ium)\/([0-9]+)\./, 2);
+
+      // Safari or unknown webkit-based
+      // for the time being Safari has support for MediaStreams but not webRTC
+      } else {
+        // Safari UA substrings of interest for reference:
+        // - webkit version:           AppleWebKit/602.1.25 (also used in Op,Cr)
+        // - safari UI version:        Version/9.0.3 (unique to Safari)
+        // - safari UI webkit version: Safari/601.4.4 (also used in Op,Cr)
+        //
+        // if the webkit version and safari UI webkit versions are equals,
+        // ... this is a stable version.
+        //
+        // only the internal webkit version is important today to know if
+        // media streams are supported
+        //
+        if (navigator.userAgent.match(/Version\/(\d+).(\d+)/)) {
+          result.browser = 'safari';
+          result.version = this.extractVersion(navigator.userAgent,
+            /AppleWebKit\/([0-9]+)\./, 1);
+
+        // unknown webkit-based browser
+        } else {
+          result.browser = 'Unsupported webkit-based browser ' +
+              'with GUM support but no WebRTC support.';
+          return result;
+        }
+      }
+
+    // Edge.
+    } else if (navigator.mediaDevices &&
+        navigator.userAgent.match(/Edge\/(\d+).(\d+)$/)) {
+      result.browser = 'edge';
+      result.version = this.extractVersion(navigator.userAgent,
+          /Edge\/(\d+).(\d+)$/, 2);
+
+    // Default fallthrough: not supported.
+    } else {
+      result.browser = 'Not a supported browser.';
+      return result;
+    }
+
+    return result;
+  }
+};
+
+// Export.
+module.exports = {
+  log: utils.log,
+  disableLog: utils.disableLog,
+  browserDetails: utils.detectBrowser(),
+  extractVersion: utils.extractVersion
+};
+
+},{}]},{},[2])(2)
 });
 /* jshint ignore:end */
 
@@ -11214,10 +11225,10 @@ if ( (navigator.mozGetUserMedia ||
     AdapterJS.getUserMedia        = getUserMedia;
 
     AdapterJS.forwardEventHandlers = function (destElem, srcElem, prototype) {
-      properties = Object.getOwnPropertyNames( prototype );
+      var properties = Object.getOwnPropertyNames( prototype );
       for(var prop in properties) {
         if (prop) {
-          propName = properties[prop];
+          var propName = properties[prop];
 
           if (typeof propName.slice === 'function' &&
               propName.slice(0,2) === 'on' &&
@@ -11276,7 +11287,26 @@ if ( (navigator.mozGetUserMedia ||
        popupString = AdapterJS.TEXT.PLUGIN.REQUIRE_INSTALLATION;
       }
 
-      AdapterJS.renderNotificationBar(popupString, AdapterJS.TEXT.PLUGIN.BUTTON, downloadLink);
+      AdapterJS.renderNotificationBar(popupString, AdapterJS.TEXT.PLUGIN.BUTTON, function () {
+        window.open(downloadLink, '_top');
+
+        var pluginInstallInterval = setInterval(function(){
+          if(! isIE) {
+            navigator.plugins.refresh(false);
+          }
+          AdapterJS.WebRTCPlugin.isPluginInstalled(
+            AdapterJS.WebRTCPlugin.pluginInfo.prefix,
+            AdapterJS.WebRTCPlugin.pluginInfo.plugName,
+            AdapterJS.WebRTCPlugin.pluginInfo.type,
+            function() { // plugin now installed
+              clearInterval(pluginInstallInterval);
+              AdapterJS.WebRTCPlugin.defineWebRTCInterface();
+            },
+            function() {
+              // still no plugin detected, nothing to do
+            });
+        } , 500);
+      });
     } else { // no download link, just print a generic explanation
       AdapterJS.renderNotificationBar(AdapterJS.TEXT.PLUGIN.NOT_SUPPORTED);
     }
@@ -11295,19 +11325,23 @@ if ( (navigator.mozGetUserMedia ||
   ///////////////////////////////////////////////////////////////////
 }
 
-(function () {
+// Placed it here so that the module.exports from the browserified
+//   adapterjs will not override our AdapterJS exports
+// Browserify compatibility
+if(typeof exports !== 'undefined') {
+  module.exports = AdapterJS;
+}
 
-  'use strict';
+AdapterJS.TEXT.EXTENSION = {
+  REQUIRE_INSTALLATION_FF: 'To enable screensharing you need to install the Skylink WebRTC tools Firefox Add-on.',
+  REQUIRE_INSTALLATION_CHROME: 'To enable screensharing you need to install the Skylink WebRTC tools Chrome Extension.',
+  REQUIRE_REFRESH: 'Please refresh this page after the Skylink WebRTC tools extension has been installed.',
+  BUTTON_FF: 'Install Now',
+  BUTTON_CHROME: 'Go to Chrome Web Store'
+};
 
+AdapterJS.defineMediaSourcePolyfill = function () {
   var baseGetUserMedia = null;
-
-  AdapterJS.TEXT.EXTENSION = {
-    REQUIRE_INSTALLATION_FF: 'To enable screensharing you need to install the Skylink WebRTC tools Firefox Add-on.',
-    REQUIRE_INSTALLATION_CHROME: 'To enable screensharing you need to install the Skylink WebRTC tools Chrome Extension.',
-    REQUIRE_REFRESH: 'Please refresh this page after the Skylink WebRTC tools extension has been installed.',
-    BUTTON_FF: 'Install Now',
-    BUTTON_CHROME: 'Go to Chrome Web Store'
-  };
 
   var clone = function(obj) {
     if (null === obj || 'object' !== typeof obj) {
@@ -11348,10 +11382,21 @@ if ( (navigator.mozGetUserMedia ||
             clearInterval(checkIfReady);
 
             baseGetUserMedia(updatedConstraints, successCb, function (error) {
-              if (['PermissionDeniedError', 'SecurityError'].indexOf(error.name) > -1 && window.parent.location.protocol === 'https:') {
+              if (['NotAllowedError', 'PermissionDeniedError', 'SecurityError', 'NotAllowedError'].indexOf(error.name) > -1 && window.parent.location.protocol === 'https:') {
                 AdapterJS.renderNotificationBar(AdapterJS.TEXT.EXTENSION.REQUIRE_INSTALLATION_FF,
-                  AdapterJS.TEXT.EXTENSION.BUTTON_FF,
-                  'https://addons.mozilla.org/en-US/firefox/addon/skylink-webrtc-tools/', true, true);
+                  AdapterJS.TEXT.EXTENSION.BUTTON_FF, function (e) {
+                  window.open('https://addons.mozilla.org/en-US/firefox/addon/skylink-webrtc-tools/', '_blank');
+                  if (e.target && e.target.parentElement && e.target.nextElementSibling &&
+                    e.target.nextElementSibling.click) {
+                    e.target.nextElementSibling.click();
+                  }
+                  // Trigger refresh bar
+                  AdapterJS.renderNotificationBar(AdapterJS.TEXT.EXTENSION ?
+                    AdapterJS.TEXT.EXTENSION.REQUIRE_REFRESH : AdapterJS.TEXT.REFRESH.REQUIRE_REFRESH,
+                    AdapterJS.TEXT.REFRESH.BUTTON, function () {
+                    window.open('javascript:location.reload()', '_top');
+                  }); // jshint ignore:line
+                });
               } else {
                 failureCb(error);
               }
@@ -11405,7 +11450,7 @@ if ( (navigator.mozGetUserMedia ||
             if (error === 'permission-denied') {
               failureCb(new Error('Permission denied for screen retrieval'));
             } else {
-              // NOTE(J-O): I don't think we ever pass in here. 
+              // NOTE(J-O): I don't think we ever pass in here.
               // A failure to capture the screen does not lead here.
               failureCb(new Error('Failed retrieving selected screen'));
             }
@@ -11428,8 +11473,19 @@ if ( (navigator.mozGetUserMedia ||
           if (event.data.chromeExtensionStatus) {
             if (event.data.chromeExtensionStatus === 'not-installed') {
               AdapterJS.renderNotificationBar(AdapterJS.TEXT.EXTENSION.REQUIRE_INSTALLATION_CHROME,
-                AdapterJS.TEXT.EXTENSION.BUTTON_CHROME,
-                event.data.data, true, true);
+                AdapterJS.TEXT.EXTENSION.BUTTON_CHROME, function (e) {
+                window.open(event.data.data, '_blank');
+                if (e.target && e.target.parentElement && e.target.nextElementSibling &&
+                  e.target.nextElementSibling.click) {
+                  e.target.nextElementSibling.click();
+                }
+                // Trigger refresh bar
+                AdapterJS.renderNotificationBar(AdapterJS.TEXT.EXTENSION ?
+                  AdapterJS.TEXT.EXTENSION.REQUIRE_REFRESH : AdapterJS.TEXT.REFRESH.REQUIRE_REFRESH,
+                  AdapterJS.TEXT.REFRESH.BUTTON, function () {
+                  window.open('javascript:location.reload()', '_top');
+                }); // jshint ignore:line
+              });
             } else {
               chromeCallback(event.data.chromeExtensionStatus, null);
             }
@@ -11492,7 +11548,7 @@ if ( (navigator.mozGetUserMedia ||
       }
     };
 
-    AdapterJS.getUserMedia = getUserMedia = 
+    AdapterJS.getUserMedia = getUserMedia =
        window.getUserMedia = navigator.getUserMedia;
     if ( navigator.mediaDevices &&
       typeof Promise !== 'undefined') {
@@ -11530,111 +11586,32 @@ if ( (navigator.mozGetUserMedia ||
   } else if (window.webrtcDetectedBrowser === 'opera') {
     console.warn('Opera does not support screensharing feature in getUserMedia');
   }
-})();
+};
 
-/*! skylinkjs - v0.6.17 - Tue Jan 10 2017 01:58:42 GMT+0800 (SGT) */
+if (typeof window.require !== 'function') {
+  AdapterJS.defineMediaSourcePolyfill();
+}
 
-(function(refThis) {
+/*! skylinkjs - v0.6.19 - Fri Apr 07 2017 21:09:15 GMT+0800 (SGT) */
+
+(function(globals) {
 
 'use strict';
 
-/**
- * Polyfill for Object.keys() from Mozilla
- * From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
- */
-if (!Object.keys) {
-  Object.keys = (function() {
-    var hasOwnProperty = Object.prototype.hasOwnProperty,
-      hasDontEnumBug = !({
-        toString: null
-      }).propertyIsEnumerable('toString'),
-      dontEnums = [
-        'toString',
-        'toLocaleString',
-        'valueOf',
-        'hasOwnProperty',
-        'isPrototypeOf',
-        'propertyIsEnumerable',
-        'constructor'
-      ],
-      dontEnumsLength = dontEnums.length;
-
-    return function(obj) {
-      if (typeof obj !== 'object' && typeof obj !== 'function' || obj === null) throw new TypeError('Object.keys called on non-object');
-
-      var result = [];
-
-      for (var prop in obj) {
-        if (hasOwnProperty.call(obj, prop)) result.push(prop);
-      }
-
-      if (hasDontEnumBug) {
-        for (var i = 0; i < dontEnumsLength; i++) {
-          if (hasOwnProperty.call(obj, dontEnums[i])) result.push(dontEnums[i]);
-        }
-      }
-      return result;
-    }
-  })()
-}
-
-/**
- * Polyfill for Date.getISOString() from Mozilla
- * From https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString
- */
-(function() {
-  function pad(number) {
-    if (number < 10) {
-      return '0' + number;
-    }
-    return number;
-  }
-
-  Date.prototype.toISOString = function() {
-    return this.getUTCFullYear() +
-      '-' + pad(this.getUTCMonth() + 1) +
-      '-' + pad(this.getUTCDate()) +
-      'T' + pad(this.getUTCHours()) +
-      ':' + pad(this.getUTCMinutes()) +
-      ':' + pad(this.getUTCSeconds()) +
-      '.' + (this.getUTCMilliseconds() / 1000).toFixed(3).slice(2, 5) +
-      'Z';
-  };
-})();
-
-/**
- * Polyfill for addEventListener() from Eirik Backer @eirikbacker (github.com).
- * From https://gist.github.com/eirikbacker/2864711
- * MIT Licensed
- */
-(function(win, doc){
-  if(win.addEventListener) return; //No need to polyfill
-
-  function docHijack(p){var old = doc[p];doc[p] = function(v){ return addListen(old(v)) }}
-  function addEvent(on, fn, self){
-    return (self = this).attachEvent('on' + on, function(e){
-      var e = e || win.event;
-      e.preventDefault  = e.preventDefault  || function(){e.returnValue = false}
-      e.stopPropagation = e.stopPropagation || function(){e.cancelBubble = true}
-      fn.call(self, e);
-    });
-  }
-  function addListen(obj, i){
-    if(i = obj.length)while(i--)obj[i].addEventListener = addEvent;
-    else obj.addEventListener = addEvent;
-    return obj;
-  }
-
-  addListen([doc, win]);
-  if('Element' in win)win.Element.prototype.addEventListener = addEvent; //IE8
-  else{                                     //IE < 8
-    doc.attachEvent('onreadystatechange', function(){addListen(doc.all)}); //Make sure we also init at domReady
-    docHijack('getElementsByTagName');
-    docHijack('getElementById');
-    docHijack('createElement');
-    addListen(doc.all);
-  }
-})(window, document);
+/* jshint ignore:start */
+// Object.keys() polyfill - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
+!function(){Object.keys||(Object.keys=function(){var t=Object.prototype.hasOwnProperty,r=!{toString:null}.propertyIsEnumerable("toString"),e=["toString","toLocaleString","valueOf","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","constructor"],o=e.length;return function(n){if("object"!=typeof n&&"function"!=typeof n||null===n)throw new TypeError("Object.keys called on non-object");var c=[];for(var l in n)t.call(n,l)&&c.push(l);if(r)for(var p=0;o>p;p++)t.call(n,e[p])&&c.push(e[p]);return c}}())}();
+// Date.getISOString() polyfill - https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString
+!function(){function t(t){return 10>t?"0"+t:t}Date.prototype.toISOString=function(){return this.getUTCFullYear()+"-"+t(this.getUTCMonth()+1)+"-"+t(this.getUTCDate())+"T"+t(this.getUTCHours())+":"+t(this.getUTCMinutes())+":"+t(this.getUTCSeconds())+"."+(this.getUTCMilliseconds()/1e3).toFixed(3).slice(2,5)+"Z"}}();
+// Date.now() polyfill
+!function(){"function"!=typeof Date.now&&(Date.now=function(){return(new Date).getTime()})}();
+// addEventListener() polyfill - https://gist.github.com/eirikbacker/2864711
+!function(e,t){function n(e){var n=t[e];t[e]=function(e){return o(n(e))}}function a(t,n,a){return(a=this).attachEvent("on"+t,function(t){var t=t||e.event;t.preventDefault=t.preventDefault||function(){t.returnValue=!1},t.stopPropagation=t.stopPropagation||function(){t.cancelBubble=!0},n.call(a,t)})}function o(e,t){if(t=e.length)for(;t--;)e[t].addEventListener=a;else e.addEventListener=a;return e}e.addEventListener||(o([t,e]),"Element"in e?e.Element.prototype.addEventListener=a:(t.attachEvent("onreadystatechange",function(){o(t.all)}),n("getElementsByTagName"),n("getElementById"),n("createElement"),o(t.all)))}(window,document);
+// performance.now() polyfill - https://gist.github.com/paulirish/5438650
+!function(){if("performance"in window==0&&(window.performance={}),Date.now=Date.now||function(){return(new Date).getTime()},"now"in window.performance==0){var a=Date.now();performance.timing&&performance.timing.navigationStart&&(a=performance.timing.navigationStart),window.performance.now=function(){return Date.now()-a}}}();
+// BlobBuilder polyfill
+window.BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder;
+/* jshint ignore:end */
 
 /**
  * Global function that clones an object.
@@ -11691,7 +11668,7 @@ var clone = function (obj) {
  * If you have any issues, you may find answers to your questions in the FAQ section on [our support portal](
  * http://support.temasys.io), asks questions, request features or raise bug tickets as well.
  *
- * If you would like to contribute to our Temasys SkylinkJS codebase, see [the contributing README](
+ * If you would like to contribute to our Temasys Web SDK codebase, see [the contributing README](
  * https://github.com/Temasys/SkylinkJS/blob/master/CONTRIBUTING.md).
  *
  * [See License (Apache 2.0)](https://github.com/Temasys/SkylinkJS/blob/master/LICENSE)
@@ -11777,11 +11754,22 @@ function Skylink() {
   this._dataTransfers = {};
 
   /**
+   * Stores the list of sending data streaming sessions to Peers.
+   * @attribute _dataStreams
+   * @param {JSON} #streamId The data stream session.
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._dataStreams = {};
+
+  /**
    * Stores the list of buffered ICE candidates that is received before
    *   remote session description is received and set.
    * @attribute _peerCandidatesQueue
    * @param {Array} <#peerId> The list of the Peer connection buffered ICE candidates received.
-   * @param {Object} <#peerId>.<#index> The Peer connection buffered ICE candidate received.
+   * @param {RTCIceCandidate} <#peerId>.<#index> The Peer connection buffered ICE candidate received.
    * @type JSON
    * @private
    * @for Skylink
@@ -11884,7 +11872,7 @@ function Skylink() {
   /**
    * Stores the list of the Peer connections.
    * @attribute _peerConnections
-   * @param {Object} <#peerId> The Peer connection.
+   * @param {RTCPeerConnection} <#peerId> The Peer connection.
    * @type JSON
    * @private
    * @for Skylink
@@ -11895,13 +11883,34 @@ function Skylink() {
   /**
    * Stores the list of the Peer connections stats.
    * @attribute _peerStats
-   * @param {Object} <#peerId> The Peer connection stats.
+   * @param {JSON} <#peerId> The Peer connection stats.
    * @type JSON
    * @private
    * @for Skylink
    * @since 0.6.16
    */
   this._peerStats = {};
+
+  /**
+   * Stores the list of the Peer connections stats.
+   * @attribute _peerBandwidth
+   * @param {JSON} <#peerId> The Peer connection stats.
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.16
+   */
+  this._peerBandwidth = {};
+
+  /**
+   * Stores the list of the Peer custom configs.
+   * @attribute _peerCustomConfigs
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._peerCustomConfigs = {};
 
   /**
    * The flag if User is using plugin.
@@ -12589,12 +12598,22 @@ function Skylink() {
   /**
    * Stores the publish only settings.
    * @attribute _publishOnly
-   * @type JSON|Boolean
+   * @type Boolean
    * @private
    * @for Skylink
    * @since 0.6.16
    */
   this._publishOnly = false;
+
+  /**
+   * Stores the parent ID.
+   * @attribute _parentId
+   * @type String
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._parentId = null;
 
   /**
    * Stores the list of recordings.
@@ -12639,6 +12658,118 @@ function Skylink() {
    * @since 0.6.16
    */
   this._mcuUseRenegoRestart = false;
+
+  /**
+   * Stores the debugging TURN/STUN ICE server.
+   * @attribute _iceServer
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._iceServer = null;
+
+  /**
+   * Stores the debugging Signaling server.
+   * @attribute _socketServer
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._socketServer = null;
+
+  /**
+   * Stores the currently supported codecs.
+   * @attribute _currentCodecSupport
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._currentCodecSupport = null;
+
+  /**
+   * Stores the session description orders and info.
+   * @attribute _sdpSessions
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._sdpSessions = {};
+
+  /**
+   * Stores the flag if voice activity detection should be enabled.
+   * @attribute _voiceActivityDetection
+   * @type Boolean
+   * @default true
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._voiceActivityDetection = true;
+
+  /**
+   * Stores the datachannel binary data chunk type.
+   * @attribute _binaryChunkType
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._binaryChunkType = window.webrtcDetectedBrowser === 'firefox' ?
+    this.DATA_TRANSFER_DATA_TYPE.BLOB : this.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER;
+
+  /**
+   * Stores the RTCPeerConnection configuration.
+   * @attribute _peerConnectionConfig
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._peerConnectionConfig = {};
+
+  /**
+   * Stores the RTCPeerConnection configuration.
+   * @attribute _peerConnectionConfig
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._codecParams = {};
+
+  /**
+   * Stores the User's priority weight scheme to determine if User is offerer or answerer.
+   * @attribute _priorityWeightScheme
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._priorityWeightScheme = this.PRIORITY_WEIGHT_SCHEME.AUTO;
+
+  /**
+   * Stores the auto bandwidth settings.
+   * @attribute _bandwidthAdjuster
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.18
+   */
+  this._bandwidthAdjuster = null;
+
+  /**
+   * Stores the Peer connection status.
+   * @attribute _peerConnStatus
+   * @type JSON
+   * @private
+   * @for Skylink
+   * @since 0.6.19
+   */
+  this._peerConnStatus = {};
 }
 Skylink.prototype.DATA_CHANNEL_STATE = {
   CONNECTING: 'connecting',
@@ -12684,7 +12815,7 @@ Skylink.prototype.DATA_CHANNEL_TYPE = {
 /**
  * The list of Datachannel sending message error types.
  * @attribute DATA_CHANNEL_MESSAGE_ERROR
- * @param {String} MESSAGE <small>Value <code>"message"</code></small>
+ * @param {String} MESSAGE  <small>Value <code>"message"</code></small>
  *   The value of the Datachannel sending message error type when encountered during
  *   sending P2P message from <a href="#method_sendP2PMessage"><code>sendP2PMessage()</code> method</a>.
  * @param {String} TRANSFER <small>Value <code>"transfer"</code></small>
@@ -12708,24 +12839,25 @@ Skylink.prototype.DATA_CHANNEL_MESSAGE_ERROR = {
  * @for Skylink
  * @since 0.5.5
  */
-Skylink.prototype._createDataChannel = function(peerId, dataChannel, createAsMessagingChannel) {
+Skylink.prototype._createDataChannel = function(peerId, dataChannel, bufferThreshold, createAsMessagingChannel) {
   var self = this;
+  var channelName = (self._user && self._user.sid ? self._user.sid : '-') + '_' + peerId;
+  var channelType = createAsMessagingChannel ? self.DATA_CHANNEL_TYPE.MESSAGING : self.DATA_CHANNEL_TYPE.DATA;
+  var channelProp = channelType === self.DATA_CHANNEL_TYPE.MESSAGING ? 'main' : channelName;
 
   if (!self._user) {
-    log.error([peerId, 'RTCDataChannel', null,
+    log.error([peerId, 'RTCDataChannel', channelProp,
       'Aborting of creating or initializing Datachannel as User does not have Room session']);
     return;
   }
 
   if (!(self._peerConnections[peerId] &&
     self._peerConnections[peerId].signalingState !== self.PEER_CONNECTION_STATE.CLOSED)) {
-    log.error([peerId, 'RTCDataChannel', null,
+    log.error([peerId, 'RTCDataChannel', channelProp,
       'Aborting of creating or initializing Datachannel as Peer connection does not exists']);
     return;
   }
 
-  var channelName = self._user.sid + '_' + peerId;
-  var channelType = createAsMessagingChannel ? self.DATA_CHANNEL_TYPE.MESSAGING : self.DATA_CHANNEL_TYPE.DATA;
 
   if (dataChannel && typeof dataChannel === 'object') {
     channelName = dataChannel.label;
@@ -12737,23 +12869,26 @@ Skylink.prototype._createDataChannel = function(peerId, dataChannel, createAsMes
 
   if (!dataChannel) {
     try {
-      dataChannel = self._peerConnections[peerId].createDataChannel(channelName);
+      dataChannel = self._peerConnections[peerId].createDataChannel(channelName, {
+        reliable: true,
+        ordered: true
+      });
 
     } catch (error) {
-      log.error([peerId, 'RTCDataChannel', channelName, 'Failed creating Datachannel ->'], error);
-      self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.CREATE_ERROR, peerId, error, channelName, channelType, null);
+      log.error([peerId, 'RTCDataChannel', channelProp, 'Failed creating Datachannel ->'], error);
+      self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.CREATE_ERROR, peerId, error, channelName,
+        channelType, null, self._getDataChannelBuffer(dataChannel));
       return;
     }
   }
 
   if (!self._dataChannels[peerId]) {
-    log.debug([peerId, 'RTCDataChannel', channelName, 'initializing main DataChannel']);
-
+    channelProp = 'main';
     channelType = self.DATA_CHANNEL_TYPE.MESSAGING;
-
     self._dataChannels[peerId] = {};
-
+    log.debug([peerId, 'RTCDataChannel', channelProp, 'initializing main DataChannel']);
   } else if (self._dataChannels[peerId].main && self._dataChannels[peerId].main.channel.label === channelName) {
+    channelProp = 'main';
     channelType = self.DATA_CHANNEL_TYPE.MESSAGING;
   }
 
@@ -12763,16 +12898,20 @@ Skylink.prototype._createDataChannel = function(peerId, dataChannel, createAsMes
   dataChannel.onerror = function (evt) {
     var channelError = evt.error || evt;
 
-    log.error([peerId, 'RTCDataChannel', channelName, 'Datachannel has an exception ->'], channelError);
+    log.error([peerId, 'RTCDataChannel', channelProp, 'Datachannel has an exception ->'], channelError);
 
-    self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.ERROR, peerId, channelError, channelName, channelType, null);
+    self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.ERROR, peerId, channelError, channelName,
+      channelType, null, self._getDataChannelBuffer(dataChannel));
   };
 
+  // State where we can start calling .send() to queue more buffered data to be sent
+  // RTCDataChannel has an internal mechanism to queue data to be sent over
+  // This event might not be even triggered at all
   dataChannel.onbufferedamountlow = function () {
-    log.debug([peerId, 'RTCDataChannel', channelName, 'Datachannel buffering data transfer low']);
+    log.debug([peerId, 'RTCDataChannel', channelProp, 'Datachannel buffering data transfer low']);
 
-    // TODO: Should we add an event here
-    self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.BUFFERED_AMOUNT_LOW, peerId, null, channelName, channelType, null);
+    self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.BUFFERED_AMOUNT_LOW, peerId, null, channelName,
+      channelType, null, self._getDataChannelBuffer(dataChannel));
   };
 
   dataChannel.onmessage = function(event) {
@@ -12780,33 +12919,44 @@ Skylink.prototype._createDataChannel = function(peerId, dataChannel, createAsMes
   };
 
   var onOpenHandlerFn = function () {
-    log.debug([peerId, 'RTCDataChannel', channelName, 'Datachannel has opened']);
+    log.debug([peerId, 'RTCDataChannel', channelProp, 'Datachannel has opened']);
 
-    self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.OPEN, peerId, null, channelName, channelType, null);
+    dataChannel.bufferedAmountLowThreshold = bufferThreshold || 0;
+
+    self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.OPEN, peerId, null, channelName,
+      channelType, null, self._getDataChannelBuffer(dataChannel));
   };
 
   if (dataChannel.readyState === self.DATA_CHANNEL_STATE.OPEN) {
-    setTimeout(onOpenHandlerFn, 500);
+    setTimeout(onOpenHandlerFn, 1); // 500);
 
   } else {
-    self._trigger('dataChannelState', dataChannel.readyState, peerId, null, channelName, channelType, null);
+    self._trigger('dataChannelState', dataChannel.readyState, peerId, null, channelName,
+      channelType, null, self._getDataChannelBuffer(dataChannel));
 
     dataChannel.onopen = onOpenHandlerFn;
   }
 
   var onCloseHandlerFn = function () {
-    log.debug([peerId, 'RTCDataChannel', channelName, 'Datachannel has closed']);
+    log.debug([peerId, 'RTCDataChannel', channelProp, 'Datachannel has closed']);
 
-    self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.CLOSED, peerId, null, channelName, channelType, null);
+    self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.CLOSED, peerId, null, channelName,
+      channelType, null, self._getDataChannelBuffer(dataChannel));
+
+    if (self._peerConnections[peerId] && self._peerConnections[peerId].remoteDescription &&
+      self._peerConnections[peerId].remoteDescription.sdp && (self._peerConnections[peerId].remoteDescription.sdp.indexOf(
+      'm=application') === -1 || self._peerConnections[peerId].remoteDescription.sdp.indexOf('m=application 0') > 0)) {
+      return;
+    }
 
     if (channelType === self.DATA_CHANNEL_TYPE.MESSAGING) {
       setTimeout(function () {
         if (self._peerConnections[peerId] &&
           self._peerConnections[peerId].signalingState !== self.PEER_CONNECTION_STATE.CLOSED &&
           (self._peerConnections[peerId].localDescription &&
-            self._peerConnections[peerId].localDescription.type === self.HANDSHAKE_PROGRESS.OFFER)) {
-          log.debug([peerId, 'RTCDataChannel', channelName, 'Reviving Datachannel connection']);
-          self._createDataChannel(peerId, channelName, true);
+          self._peerConnections[peerId].localDescription.type === self.HANDSHAKE_PROGRESS.OFFER)) {
+          log.debug([peerId, 'RTCDataChannel', channelProp, 'Reviving Datachannel connection']);
+          self._createDataChannel(peerId, channelName, bufferThreshold, true);
         }
       }, 100);
     }
@@ -12850,16 +13000,52 @@ Skylink.prototype._createDataChannel = function(peerId, dataChannel, createAsMes
       channelName: channelName,
       channelType: channelType,
       transferId: null,
+      streamId: null,
       channel: dataChannel
     };
   } else {
     self._dataChannels[peerId][channelName] = {
       channelName: channelName,
       channelType: channelType,
-      transferId: channelName,
+      transferId: null,
+      streamId: null,
       channel: dataChannel
     };
   }
+};
+
+/**
+ * Function that returns the Datachannel buffer threshold and amount.
+ * @method _getDataChannelBuffer
+ * @return {JSON} The buffered amount information.
+ * @private
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype._getDataChannelBuffer = function (peerId, channelProp) {
+  if (typeof peerId === 'object') {
+    return {
+      bufferedAmountLow: typeof peerId.bufferedAmountLow === 'number' ?
+        peerId.bufferedAmountLow : parseInt(peerId.bufferedAmountLow, 10) || 0,
+      bufferedAmountLowThreshold: typeof peerId.bufferedAmountLowThreshold === 'number' ?
+        peerId.bufferedAmountLowThreshold : parseInt(peerId.bufferedAmountLowThreshold, 10) || 0
+    };
+  } else if (!(this._dataChannels[peerId] && this._dataChannels[peerId][channelProp] &&
+    this._dataChannels[peerId][channelProp].channel)) {
+    return {
+      bufferedAmountLow: 0,
+      bufferedAmountLowThreshold: 0
+    };
+  }
+
+  var channel = this._dataChannels[peerId][channelProp].channel;
+
+  return {
+    bufferedAmountLow: typeof channel.bufferedAmountLow === 'number' ?
+      channel.bufferedAmountLow : parseInt(channel.bufferedAmountLow, 10) || 0,
+    bufferedAmountLowThreshold: typeof channel.bufferedAmountLowThreshold === 'number' ?
+      channel.bufferedAmountLowThreshold : parseInt(channel.bufferedAmountLowThreshold, 10) || 0
+  };
 };
 
 /**
@@ -12879,19 +13065,19 @@ Skylink.prototype._sendMessageToDataChannel = function(peerId, data, channelProp
 
   // TODO: What happens when we want to send binary data over or ArrayBuffers?
   if (!(typeof data === 'object' && data) && !(data && typeof data === 'string')) {
-    log.warn([peerId, 'RTCDataChannel', 'prop:' + channelProp, 'Dropping invalid data ->'], data);
+    log.warn([peerId, 'RTCDataChannel', channelProp, 'Dropping invalid data ->'], data);
     return;
   }
 
   if (!(self._peerConnections[peerId] &&
     self._peerConnections[peerId].signalingState !== self.PEER_CONNECTION_STATE.CLOSED)) {
-    log.warn([peerId, 'RTCDataChannel', 'prop:' + channelProp,
+    log.warn([peerId, 'RTCDataChannel', channelProp,
       'Dropping for sending message as Peer connection does not exists or is closed ->'], data);
     return;
   }
 
   if (!(self._dataChannels[peerId] && self._dataChannels[peerId][channelProp])) {
-    log.warn([peerId, 'RTCDataChannel', 'prop:' + channelProp,
+    log.warn([peerId, 'RTCDataChannel', channelProp,
       'Dropping for sending message as Datachannel connection does not exists ->'], data);
     return;
   }
@@ -12906,30 +13092,32 @@ Skylink.prototype._sendMessageToDataChannel = function(peerId, data, channelProp
     var notOpenError = 'Failed sending message as Datachannel connection state is not opened. Current ' +
       'readyState is "' + readyState + '"';
 
-    log.error([peerId, 'RTCDataChannel', 'prop:' + channelProp, notOpenError + ' ->'], data);
+    log.error([peerId, 'RTCDataChannel', channelProp, notOpenError + ' ->'], data);
 
-    self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.SEND_MESSAGE_ERROR, peerId,
-      new Error(notOpenError), channelName, channelType, messageType);
-    
+    self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.SEND_MESSAGE_ERROR, peerId, new Error(notOpenError),
+      channelName, channelType, messageType, self._getDataChannelBuffer(peerId, channelProp));
+
     throw new Error(notOpenError);
   }
 
   try {
     if (!doNotConvert && typeof data === 'object') {
-      log.debug([peerId, 'RTCDataChannel', 'prop:' + channelProp, 'Sending message ->'], data);
+      log.debug([peerId, 'RTCDataChannel', channelProp, 'Sending "' + data.type + '" protocol message ->'], data);
 
       self._dataChannels[peerId][channelProp].channel.send(JSON.stringify(data));
 
     } else {
-      log.debug([peerId, 'RTCDataChannel', 'prop:' + channelProp, 'Sending data with size ->'], data.size || data.length);
+      log.debug([peerId, 'RTCDataChannel', channelProp, 'Sending data with size ->'],
+        data.size || data.length || data.byteLength);
 
       self._dataChannels[peerId][channelProp].channel.send(data);
     }
   } catch (error) {
-    log.error([peerId, 'RTCDataChannel', 'prop:' + channelProp, 'Failed sending message ->'], error);
+    log.error([peerId, 'RTCDataChannel', channelProp, 'Failed sending ' + (!doNotConvert && typeof data === 'object' ?
+      '"' + data.type + '" protocol message' : 'data') + ' ->'], error);
 
     self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.SEND_MESSAGE_ERROR, peerId,
-      error, channelName, channelType, messageType);
+      error, channelName, channelType, messageType, self._getDataChannelBuffer(peerId, channelProp));
 
     throw error;
   }
@@ -12956,9 +13144,10 @@ Skylink.prototype._closeDataChannel = function(peerId, channelProp) {
     var channelType = self._dataChannels[peerId][rChannelProp].channelType;
 
     if (self._dataChannels[peerId][rChannelProp].readyState !== self.DATA_CHANNEL_STATE.CLOSED) {
-      log.debug([peerId, 'RTCDataChannel', channelName, 'Closing Datachannel']);
+      log.debug([peerId, 'RTCDataChannel', channelProp, 'Closing Datachannel']);
 
-      self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.CLOSING, peerId, null, channelName, channelType, null);
+      self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.CLOSING, peerId, null, channelName, channelType,
+        null, self._getDataChannelBuffer(peerId, rChannelProp));
 
       self._dataChannels[peerId][rChannelProp].channel.close();
 
@@ -13169,7 +13358,7 @@ Skylink.prototype._chunkDataURL = function(dataURL, chunkSize) {
 
   return dataURLArray;
 };
-Skylink.prototype.DT_PROTOCOL_VERSION = '0.1.0';
+Skylink.prototype.DT_PROTOCOL_VERSION = '0.1.3';
 
 /**
  * The list of data transfers directions.
@@ -13261,7 +13450,45 @@ Skylink.prototype.DATA_TRANSFER_STATE = {
   UPLOAD_COMPLETED: 'uploadCompleted',
   DOWNLOAD_COMPLETED: 'downloadCompleted',
   USER_REJECTED: 'userRejected',
-  USER_UPLOAD_REQUEST: 'userRequest'
+  USER_UPLOAD_REQUEST: 'userRequest',
+  START_ERROR: 'startError'
+};
+
+/**
+ * The list of data streaming states.
+ * @attribute DATA_STREAM_STATE
+ * @param {String} SENDING_STARTED   <small>Value <code>"sendStart"</code></small>
+ *   The value of the state when data streaming session has started from User to Peer.
+ * @param {String} RECEIVING_STARTED <small>Value <code>"receiveStart"</code></small>
+ *   The value of the state when data streaming session has started from Peer to Peer.
+ * @param {String} RECEIVED          <small>Value <code>"received"</code></small>
+ *   The value of the state when data streaming session data chunk has been received from Peer to User.
+ * @param {String} SENT              <small>Value <code>"sent"</code></small>
+ *   The value of the state when data streaming session data chunk has been sent from User to Peer.
+ * @param {String} SENDING_STOPPED   <small>Value <code>"sendStop"</code></small>
+ *   The value of the state when data streaming session has stopped from User to Peer.
+ * @param {String} RECEIVING_STOPPED <small>Value <code>"receivingStop"</code></small>
+ *   The value of the state when data streaming session has stopped from Peer to User.
+ * @param {String} ERROR             <small>Value <code>"error"</code></small>
+ *   The value of the state when data streaming session has errors.
+ *   <small>At this stage, the data streaming state is considered <code>SENDING_STOPPED</code> or
+ *   <code>RECEIVING_STOPPED</code>.</small>
+ * @param {String} START_ERROR       <small>Value <code>"startError"</code></small>
+ *   The value of the state when data streaming session failed to start from User to Peer.
+ * @type JSON
+ * @readOnly
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.DATA_STREAM_STATE = {
+  SENDING_STARTED: 'sendStart',
+  SENDING_STOPPED: 'sendStop',
+  RECEIVING_STARTED: 'receiveStart',
+  RECEIVING_STOPPED: 'receiveStop',
+  RECEIVED: 'received',
+  SENT: 'sent',
+  ERROR: 'error',
+  START_ERROR: 'startError'
 };
 
 /**
@@ -13289,20 +13516,6 @@ Skylink.prototype._DC_PROTOCOL_TYPE = {
 };
 
 /**
- * Stores the list of agent names supported by the Web for Web only functionalities.
- * @attribute _SUPPORTED_WEB_AGENTS
- * @type Array
- * @readOnly
- * @private
- * @for Skylink
- * @since 0.6.16
- */
-Skylink.prototype._SUPPORTED_WEB_AGENTS = ['chrome', 'firefox', 'safari', 'IE', 'edge' ,'opera', 'bowser', 'blink'];
-
-/**
- * <blockquote class="info">
- *   Note that Android, iOS and C++ SDKs do not support simultaneous data transfers.
- * </blockquote>
  * Function that starts an uploading data transfer from User to Peers.
  * @method sendBlobData
  * @param {Blob} data The Blob object.
@@ -13344,6 +13557,18 @@ Skylink.prototype._SUPPORTED_WEB_AGENTS = ['chrome', 'firefox', 'safari', 'IE', 
  *   <a href="#event_dataTransferState"><code>dataTransferState</code> event</a> except without the
  *   <code>percentage</code> property and <code>data</code>.</small>
  * @trigger <ol class="desc-seq">
+ *   <li>Checks if User is in Room. <ol>
+ *   <li>If User is not in Room: <ol><li><a href="#event_dataTransferState">
+ *   <code>dataTransferState</code> event</a> triggers parameter payload <code>state</code>
+ *   as <code>START_ERROR</code>.</li><li><b>ABORT</b> step and return error.</li></ol></li></ol></li>
+ *   <li>Checks if there is any available Datachannel connections. <ol>
+ *   <li>If User is not in Room: <ol><li><a href="#event_dataTransferState">
+ *   <code>dataTransferState</code> event</a> triggers parameter payload <code>state</code>
+ *   as <code>START_ERROR</code>.</li><li><b>ABORT</b> step and return error.</li></ol></li></ol></li>
+ *   <li>Checks if provided <code>data</code> parameter is valid. <ol>
+ *   <li>If it is invalid: <ol><li><a href="#event_dataTransferState">
+ *   <code>dataTransferState</code> event</a> triggers parameter payload <code>state</code>
+ *   as <code>START_ERROR</code>.</li><li><b>ABORT</b> step and return error.</li></ol></li></ol></li>
  *   <li>Checks if Peer connection and Datachannel connection are in correct states. <ol>
  *   <li>If Peer connection or session does not exists: <ol><li><a href="#event_dataTransferState">
  *   <code>dataTransferState</code> event</a> triggers parameter payload <code>state</code>
@@ -13392,6 +13617,14 @@ Skylink.prototype._SUPPORTED_WEB_AGENTS = ['chrome', 'firefox', 'safari', 'IE', 
  *   simultaneous data transfers targeted for the data transfer session instead of using the messaging Datachannels
  *   with all Peers targeted for the data transfer session.</small> <ol><li>If messaging Datachannel connection has a
  *   data transfer in-progress: <ol><li><a href="#event_dataTransferState"><code>dataTransferState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>ERROR</code>.</li><li><b>ABORT</b> step and
+ *   return error.</li></ol></li><li>If there is any conflicting <a href="#method_streamData"><code>streamData()</code>
+ *   method</a> data streaming session: <small>If <code>sendChunksAsBinary</code> is provided as <code>true</code>,
+ *   it cannot start if existing data streaming session is expected binary data chunks, and if provided as
+ *   <code>false</code>, or method invoked is <a href="#method_sendURLData"><code>sendURLData()</code> method</a>,
+ *   or Peer is using string data chunks fallback due to its support despite provided as <code>true</code>,
+ *   it cannot start if existing data streaming session is expected string data chunks.</small><ol>
+ *   <li><a href="#event_dataTransferState"><code>dataTransferState</code> event</a>
  *   triggers parameter payload <code>state</code> as <code>ERROR</code>.</li><li><b>ABORT</b> step and
  *   return error.</li></ol></li></li></ol></ol></li></ol></li>
  *   <li>Starts the data transfer to Peer. <ol>
@@ -13531,150 +13764,10 @@ Skylink.prototype._SUPPORTED_WEB_AGENTS = ['chrome', 'firefox', 'safari', 'IE', 
  * @since 0.5.5
  */
 Skylink.prototype.sendBlobData = function(data, timeout, targetPeerId, sendChunksAsBinary, callback) {
-  var self = this;
-  var listOfPeers = Object.keys(self._peerConnections);
-  var transferInfo = {
-    name: null,
-    size: null,
-    chunkSize: self._CHUNK_FILE_SIZE,
-    chunkType: self.DATA_TRANSFER_DATA_TYPE.BINARY_STRING,
-    dataType: self.DATA_TRANSFER_SESSION_TYPE.BLOB,
-    mimeType: null,
-    direction: self.DATA_TRANSFER_TYPE.UPLOAD,
-    timeout: 60,
-    isPrivate: false,
-    percentage: 0
-  };
-
-  // Function that returns the error emitted before data transfer has started
-  var emitErrorBeforeDataTransferFn = function (error) {
-    log.error(error);
-
-    if (typeof callback === 'function') {
-      var transferErrors = {};
-
-      if (listOfPeers.length === 0) {
-        transferErrors.self = new Error(error);
-      } else {
-        for (var i = 0; i < listOfPeers.length; i++) {
-          transferErrors[listOfPeers[i]] = new Error(error);
-        }
-      }
-
-      callback({
-        transferId: null,
-        transferInfo: transferInfo,
-        listOfPeers: listOfPeers,
-        transferErrors: transferErrors
-      }, null);
-    }
-  };
-
-  // Remove MCU Peer as list of Peers
-  if (listOfPeers.indexOf('MCU') > -1) {
-    listOfPeers.splice(listOfPeers.indexOf('MCU'), 1);
-  }
-
-  // sendBlobData(.., timeout)
-  if (typeof timeout === 'number') {
-    transferInfo.timeout = timeout;
-  } else if (Array.isArray(timeout)) {
-    listOfPeers = timeout;
-  } else if (timeout && typeof timeout === 'string') {
-    listOfPeers = [timeout];
-  } else if (timeout && typeof timeout === 'boolean') {
-    transferInfo.chunkType = self.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER;
-    transferInfo.chunkSize = self._BINARY_FILE_SIZE;
-  } else if (typeof timeout === 'function') {
-    callback = timeout;
-  }
-
-  // sendBlobData(.., .., targetPeerId)
-  if (Array.isArray(targetPeerId)) {
-    listOfPeers = targetPeerId;
-  } else if (targetPeerId && typeof targetPeerId === 'string') {
-    listOfPeers = [targetPeerId];
-  } else if (targetPeerId && typeof targetPeerId === 'boolean') {
-    transferInfo.chunkType = self.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER;
-    transferInfo.chunkSize = self._BINARY_FILE_SIZE;
-  } else if (typeof targetPeerId === 'function') {
-    callback = targetPeerId;
-  }
-
-  // sendBlobData(.., .., .., sendChunksAsBinary)
-  if (sendChunksAsBinary && typeof sendChunksAsBinary === 'boolean') {
-    transferInfo.chunkType = self.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER;
-    transferInfo.chunkSize = self._BINARY_FILE_SIZE;
-  } else if (typeof sendChunksAsBinary === 'function') {
-    callback = sendChunksAsBinary;
-  }
-
-  if (window.webrtcDetectedBrowser === 'firefox' &&
-    transferInfo.chunkType === self.DATA_TRANSFER_DATA_TYPE.BINARY_STRING) {
-    transferInfo.chunkSize = self._MOZ_CHUNK_FILE_SIZE;
-  }
-
-  if (self._hasMCU && transferInfo.chunkType === self.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER) {
-    log.warn('Binary data chunks transfer is not yet supported with MCU environment. ' +
-      'Fallbacking to binary string data chunks transfer.');
-    transferInfo.chunkType = self.DATA_TRANSFER_DATA_TYPE.BINARY_STRING;
-    transferInfo.chunkSize = self._CHUNK_FILE_SIZE;
-  }
-
-  // Use BLOB for Firefox
-  if (transferInfo.chunkType === self.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER &&
-    window.webrtcDetectedBrowser === 'firefox') {
-    transferInfo.chunkType = self.DATA_TRANSFER_DATA_TYPE.BLOB;
-    transferInfo.chunkSize = self._MOZ_BINARY_FILE_SIZE;
-  }
-
-  // Start checking if data transfer can start
-  if (!(data && typeof data === 'object' && data instanceof Blob)) {
-    emitErrorBeforeDataTransferFn('Provided data is not a Blob data');
-    return;
-  }
-
-  transferInfo.name = data.name || null;
-  transferInfo.mimeType = data.type || null;
-
-  if (data.size < 1) {
-    emitErrorBeforeDataTransferFn('Provided data is not a valid Blob data.');
-    return;
-  }
-
-  transferInfo.size = data.size;
-
-  if (!self._user) {
-    emitErrorBeforeDataTransferFn('Unable to send any blob data. User is not in Room.');
-    return;
-  }
-
-  if (listOfPeers.length === 0) {
-    emitErrorBeforeDataTransferFn('Unable to send any blob data. There are no Peers to start data transfer with');
-    return;
-  }
-
-  if (!self._enableDataChannel) {
-    emitErrorBeforeDataTransferFn('Unable to send any blob data. Datachannel is disabled');
-    return;
-  }
-
-  var chunks = self._chunkBlobData(data, transferInfo.chunkSize);
-
-  transferInfo.originalSize = transferInfo.size;
-
-  if (transferInfo.chunkType === self.DATA_TRANSFER_DATA_TYPE.BINARY_STRING) {
-    transferInfo.size = 4 * Math.ceil(transferInfo.size / 3);
-    transferInfo.chunkSize = 4 * Math.ceil(transferInfo.chunkSize / 3);
-  }
-
-  self._startDataTransfer(chunks, transferInfo, listOfPeers, callback);
+  this._startDataTransfer(data, timeout, targetPeerId, sendChunksAsBinary, callback, 'blob');
 };
 
 /**
- * <blockquote class="info">
- *   Currently, the Android, iOS and C++ SDKs do not support this type of data transfer session.
- * </blockquote>
  * Function that starts an uploading string data transfer from User to Peers.
  * @method sendURLData
  * @param {String} data The data string to transfer to Peer.
@@ -13806,98 +13899,7 @@ Skylink.prototype.sendBlobData = function(data, timeout, targetPeerId, sendChunk
  * @since 0.6.1
  */
 Skylink.prototype.sendURLData = function(data, timeout, targetPeerId, callback) {
-  var self = this;
-  var listOfPeers = Object.keys(self._peerConnections);
-  var transferInfo = {
-    name: null,
-    size: null,
-    chunkSize: self._CHUNK_FILE_SIZE,
-    chunkType: self.DATA_TRANSFER_DATA_TYPE.STRING,
-    dataType: self.DATA_TRANSFER_SESSION_TYPE.DATA_URL,
-    mimeType: null,
-    direction: self.DATA_TRANSFER_TYPE.UPLOAD,
-    timeout: 60,
-    isPrivate: false,
-    percentage: 0
-  };
-
-  // Function that returns the error emitted before data transfer has started
-  var emitErrorBeforeDataTransferFn = function (error) {
-    log.error(error);
-
-    if (typeof callback === 'function') {
-      var transferErrors = {};
-
-      if (listOfPeers.length === 0) {
-        transferErrors.self = new Error(error);
-      } else {
-        for (var i = 0; i < listOfPeers.length; i++) {
-          transferErrors[listOfPeers[i]] = new Error(error);
-        }
-      }
-
-      callback({
-        transferId: null,
-        transferInfo: transferInfo,
-        listOfPeers: listOfPeers,
-        transferErrors: transferErrors
-      }, null);
-    }
-  };
-
-  // Remove MCU Peer as list of Peers
-  if (listOfPeers.indexOf('MCU') > -1) {
-    listOfPeers.splice(listOfPeers.indexOf('MCU'), 1);
-  }
-
-  // sendURLData(.., timeout)
-  if (typeof timeout === 'number') {
-    transferInfo.timeout = timeout;
-  } else if (Array.isArray(timeout)) {
-    listOfPeers = timeout;
-  } else if (timeout && typeof timeout === 'string') {
-    listOfPeers = [timeout];
-  } else if (typeof timeout === 'function') {
-    callback = timeout;
-  }
-
-  // sendURLData(.., .., targetPeerId)
-  if (Array.isArray(targetPeerId)) {
-    listOfPeers = targetPeerId;
-  } else if (targetPeerId && typeof targetPeerId === 'string') {
-    listOfPeers = [targetPeerId];
-  } else if (typeof targetPeerId === 'function') {
-    callback = targetPeerId;
-  }
-
-  // Start checking if data transfer can start
-  if (!(data && typeof data === 'string')) {
-    emitErrorBeforeDataTransferFn('Provided data is not a dataURL');
-    return;
-  }
-
-  transferInfo.size = data.length || data.size;
-
-  if (!self._user) {
-    emitErrorBeforeDataTransferFn('Unable to send any dataURL. User is not in Room.');
-    return;
-  }
-
-  if (listOfPeers.length === 0) {
-    emitErrorBeforeDataTransferFn('Unable to send any dataURL. There are no Peers to start data transfer with');
-    return;
-  }
-
-  if (!self._enableDataChannel) {
-    emitErrorBeforeDataTransferFn('Unable to send any dataURL. Datachannel is disabled');
-    return;
-  }
-
-  var chunks = self._chunkDataURL(data, transferInfo.chunkSize);
-
-  transferInfo.originalSize = transferInfo.size;
-
-  self._startDataTransfer(chunks, transferInfo, listOfPeers, callback);
+  this._startDataTransfer(data, timeout, targetPeerId, callback, null, 'data');
 };
 
 /**
@@ -14235,7 +14237,7 @@ Skylink.prototype.sendP2PMessage = function(message, targetPeerId) {
     isPrivate = true;
   }
 
-  if (!this._inRoom || !this._user) {
+  if (!this._inRoom || !(this._user && this._user.sid)) {
     log.error('Unable to send message as User is not in Room. ->', message);
     return;
   }
@@ -14300,22 +14302,897 @@ Skylink.prototype.sendP2PMessage = function(message, targetPeerId) {
 };
 
 /**
+ * <blockquote class="info">
+ *   Note that this feature is not supported by MCU enabled Peer connections.<br>
+ *   To start streaming data, see the <a href="#method_streamData"><code>streamData()</code>
+ *   method</a>. To stop data streaming session, see the <a href="#method_stopStreamingData"><code>
+ *   stopStreamingData()</code> method</a>.
+ * </blockquote>
+ * Function that starts a data chunks streaming session from User to Peers.
+ * @method startStreamingData
+ * @param {Boolean} [isStringStream=false] The flag if data streaming session sending data chunks
+ *   should be expected as string data chunks sent.
+ *   <small>By default, data chunks are expected to be sent in Blob or ArrayBuffer, and ArrayBuffer
+ *   data chunks will be converted to Blob.</small>
+ * @param {String|Array} [targetPeerId] The target Peer ID to send message to.
+ * - When provided as an Array, it will start streaming session to only Peers which IDs are in the list.
+ * - When not provided, it will start the streaming session to all connected Peers with Datachannel connection in the Room.
+ * @trigger <ol class="desc-seq">
+ * @trigger <ol class="desc-seq">
+ *   <li>Checks if User is in Room. <ol>
+ *   <li>If User is not in Room: <ol><li><a href="#event_dataStreamState">
+ *   <code>dataStreamState</code> event</a> triggers parameter payload <code>state</code>
+ *   as <code>START_ERROR</code>.</li><li><b>ABORT</b> step and return error.</li></ol></li></ol></li>
+ *   <li>Checks if there is any available Datachannel connections. <ol>
+ *   <li>If User is not in Room: <ol><li><a href="#event_dataStreamState">
+ *   <code>dataStreamState</code> event</a> triggers parameter payload <code>state</code>
+ *   as <code>START_ERROR</code>.</li><li><b>ABORT</b> step and return error.</li></ol></li></ol></li>
+ *   <li>Checks if Peer connection and Datachannel connection are in correct states. <ol>
+ *   <li>If Peer connection or session does not exists: <ol><li><a href="#event_dataStreamState">
+ *   <code>dataStreamState</code> event</a> triggers parameter payload <code>state</code>
+ *   as <code>START_ERROR</code>.</li><li><b>ABORT</b> step and return error.</li></ol></li>
+ *   <li>If Peer connection messaging Datachannel has not been opened: <small>This can be checked with
+ *   <a href="#event_dataChannelState"><code>dataChannelState</code> event</a> triggering parameter
+ *   payload <code>state</code> as <code>OPEN</code> and <code>channelType</code> as
+ *   <code>MESSAGING</code> for Peer.</small> <ol><li><a href="#event_dataStreamState">
+ *   <code>dataStreamState</code> event</a> triggers parameter payload <code>state</code> as <code>START_ERROR</code>.</li>
+ *   <li><b>ABORT</b> step and return error.</li></ol></li>
+ *   <li>If MCU is enabled for the App Key provided in <a href="#method_init"><code>init()</code>method</a> and connected: <ol>
+ *   <li>If MCU Peer connection messaging Datachannel has not been opened: <small>This can be checked with
+ *   <a href="#event_dataChannelState"><code>dataChannelState</code> event</a> triggering parameter
+ *   payload <code>state</code> as <code>OPEN</code>, <code>peerId</code> value as <code>"MCU"</code>
+ *   and <code>channelType</code> as <code>MESSAGING</code> for MCU Peer.</small>
+ *   <ol><li><a href="#event_dataStreamState"><code>dataStreamState</code> event</a> triggers
+ *   parameter payload <code>state</code> as <code>START_ERROR</code>.</li>
+ *   <li><b>ABORT</b> step and return error.</li></ol></li></ol></li>
+ *   <li>Checks if should open a new data Datachannel.<ol>
+ *   <li>If Peer supports simultaneous data streaming, open new data Datachannel: <small>If MCU is connected,
+ *   this opens a new data Datachannel with MCU Peer with all the Peers IDs information that supports
+ *   simultaneous data transfers targeted for the data streaming session instead of opening new data Datachannel
+ *   with all Peers targeted for the data streaming session.</small> <ol>
+ *   <li><a href="#event_dataChannelState"><code>dataChannelState</code> event</a> triggers parameter
+ *   payload <code>state</code> as <code>CONNECTING</code> and <code>channelType</code> as <code>DATA</code>.
+ *   <small>Note that there is no timeout to wait for parameter payload <code>state</code> to be
+ *   <code>OPEN</code>.</small></li>
+ *   <li>If Datachannel has been created and opened successfully: <ol>
+ *   <li><a href="#event_dataChannelState"><code>dataChannelState</code> event</a> triggers parameter payload
+ *   <code>state</code> as <code>OPEN</code> and <code>channelType</code> as <code>DATA</code>.</li></ol></li>
+ *   <li>Else: <ol><li><a href="#event_dataChannelState"><code>dataChannelState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>CREATE_ERROR</code> and <code>channelType</code> as
+ *   <code>DATA</code>.</li><li><a href="#event_dataStreamState"><code>dataStreamState</code> event</a> triggers
+ *   parameter payload <code>state</code> as <code>START_ERROR</code>.</li><li><b>ABORT</b> step and
+ *   return error.</li></ol></li></ol></li><li>Else: <small>If MCU is connected,
+ *   this uses the messaging Datachannel with MCU Peer with all the Peers IDs information that supports
+ *   simultaneous data transfers targeted for the data streaming session instead of using the messaging Datachannels
+ *   with all Peers targeted for the data streaming session.</small> <ol><li>If messaging Datachannel connection has a
+ *   data streaming in-progress: <ol><li><a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>START_ERROR</code>.</li><li><b>ABORT</b> step and
+ *   return error.</li></ol></li><li>If there is any conflicting <a href="#method_streamData"><code>streamData()</code>
+ *   method</a> data streaming session: <small>If <code>isStringStream</code> is provided as <code>true</code> and
+ *   <a href="#method_sendBlobData"><code>sendBlobData()</code> method</a> or <a href="#method_sendURLData">
+ *   <code>sendURLData()</code> method</a> has an existing binary string transfer, it cannot start string data
+ *   streaming session. Else if <a href="#method_sendBlobData"><code>sendBlobData()</code> method</a>
+ *   has an existing binary data transfer, it cannot start binary data streaming session.</small><ol>
+ *   <li><a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>START_ERROR</code>.</li><li><b>ABORT</b> step and
+ *   return error.</li></ol></li></li></ol></ol></li></ol></li>
+ *   <li>Starts the data streaming session with Peer. <ol>
+ *   <li><a href="#event_incomingDataStreamStarted"><code>incomingDataStreamStarted</code> event</a> triggers.</li>
+ *   <li><em>For User only</em> <a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>SENDING_STARTED</code>.</li>
+ *   <li><em>For Peer only</em> <a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>RECEIVING_STARTED</code>.</li></ol></li></ol>
+ * @example
+ *   // Example 1: Start streaming to all Peers
+ *   skylinkDemo.on("dataChannelState", function (state, peerId, error, channelName, channelType) {
+ *      if (state === skylinkDemo.DATA_CHANNEL_STATE.OPEN &&
+ *        channelType === skylinkDemo.DATA_CHANNEL_TYPE.MESSAGING) {
+ *        skylinkDemo.startStreamingData(false);
+ *      }
+ *   });
+ *
+ *   // Example 2: Start streaming to specific Peers
+ *   var peersInExclusiveParty = [];
+ *
+ *   skylinkDemo.on("peerJoined", function (peerId, peerInfo, isSelf) {
+ *     if (isSelf) return;
+ *     if (peerInfo.userData.exclusive) {
+ *       peersInExclusiveParty[peerId] = false;
+ *     }
+ *   });
+ *
+ *   skylinkDemo.on("dataChannelState", function (state, peerId, error, channelName, channelType) {
+ *      if (state === skylinkDemo.DATA_CHANNEL_STATE.OPEN &&
+ *        channelType === skylinkDemo.DATA_CHANNEL_TYPE.MESSAGING) {
+ *        peersInExclusiveParty[peerId] = true;
+ *      }
+ *   });
+ *
+ *   function updateExclusivePartyStatus (message) {
+ *     var readyToSend = [];
+ *     for (var p in peersInExclusiveParty) {
+ *       if (peersInExclusiveParty.hasOwnProperty(p)) {
+ *         readyToSend.push(p);
+ *       }
+ *     }
+ *     skylinkDemo.startStreamingData(message, readyToSend);
+ *   }
+ * @beta
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.startStreamingData = function(isStringStream, targetPeerId) {
+  var self = this;
+  var listOfPeers = Object.keys(self._dataChannels);
+  var isPrivate = false;
+  var sessionChunkType = 'binary';
+
+  if (Array.isArray(targetPeerId)) {
+    listOfPeers = targetPeerId;
+    isPrivate = true;
+  } else if (targetPeerId && typeof targetPeerId === 'string') {
+    listOfPeers = [targetPeerId];
+    isPrivate = true;
+  }
+
+  if (Array.isArray(isStringStream)) {
+    listOfPeers = isStringStream;
+    targetPeerId = isStringStream;
+    isPrivate = true;
+  } else if (isStringStream && typeof isStringStream === 'string') {
+    listOfPeers = [isStringStream];
+    targetPeerId = isStringStream;
+    isPrivate = true;
+  } else if (isStringStream && typeof isStringStream === 'boolean') {
+    sessionChunkType = 'string';
+  }
+
+  var sessionInfo = {
+    chunk: null,
+    chunkSize: 0,
+    chunkType: sessionChunkType === 'string' ? self.DATA_TRANSFER_DATA_TYPE.STRING : self._binaryChunkType,
+    isPrivate: isPrivate,
+    isStringStream: sessionChunkType === 'string',
+    senderPeerId: self._user && self._user.sid ? self._user.sid : null
+  };
+
+  // Remove MCU from list
+  if (listOfPeers.indexOf('MCU') > -1) {
+    listOfPeers.splice(listOfPeers.indexOf('MCU'), 1);
+  }
+
+  var emitErrorBeforeStreamingFn = function (error) {
+    log.error(error);
+
+    /*if (listOfPeers.length > 0) {
+      for (var i = 0; i < listOfPeers.length; i++) {
+        self._trigger('dataStreamState', self.DATA_STREAM_STATE.START_ERROR, null,
+          listOfPeers[i], sessionInfo, new Error(error));
+      }
+    } else {
+      self._trigger('dataStreamState', self.DATA_STREAM_STATE.START_ERROR, null,
+        null, sessionInfo, new Error(error));
+    }*/
+  };
+
+  if (!this._inRoom || !(this._user && this._user.sid)) {
+    return emitErrorBeforeStreamingFn('Unable to start data streaming as User is not in Room.');
+  }
+
+  if (!this._enableDataChannel) {
+    return emitErrorBeforeStreamingFn('Unable to start data streaming as User does not have Datachannel enabled.');
+  }
+
+  if (listOfPeers.length === 0) {
+    return emitErrorBeforeStreamingFn('Unable to start data streaming as there are no Peers to start session with.');
+  }
+
+  if (self._hasMCU) {
+    return emitErrorBeforeStreamingFn('Unable to start data streaming as this feature is current not supported by MCU yet.');
+  }
+
+  var transferId = 'stream_' + (self._user && self._user.sid ? self._user.sid : '-') + '_' + (new Date()).getTime();
+  var peersInterop = [];
+  var peersNonInterop = [];
+  var sessions = {};
+  var listenToPeerFn = function (peerId, channelProp) {
+    var hasStarted = false;
+    sessions[peerId] = channelProp;
+
+    self.once('dataStreamState', function () {}, function (state, evtTransferId, evtPeerId, evtSessionInfo) {
+      if (!(evtTransferId === transferId && evtPeerId === peerId)) {
+        return;
+      }
+
+      var dataChunk = evtSessionInfo.chunk;
+      var updatedSessionInfo = clone(evtSessionInfo);
+      delete updatedSessionInfo.chunk;
+
+      if (state === self.DATA_STREAM_STATE.SENDING_STARTED) {
+        hasStarted = true;
+        return;
+      }
+
+      if (hasStarted && [self.DATA_STREAM_STATE.ERROR, self.DATA_STREAM_STATE.SENDING_STOPPED].indexOf(state) > -1) {
+        if (channelProp === transferId) {
+          self._closeDataChannel(peerId, transferId);
+        }
+
+        if (self._dataStreams[transferId] && self._dataStreams[transferId].sessions[peerId]) {
+          delete self._dataStreams[transferId].sessions[peerId];
+
+          if (Object.keys(self._dataStreams[transferId].sessions).length === 0) {
+            delete self._dataStreams[transferId];
+          }
+        }
+        return true;
+      }
+    });
+  };
+
+  // Loop out unwanted Peers
+  for (var i = 0; i < listOfPeers.length; i++) {
+    var peerId = listOfPeers[i];
+    var error = null;
+    var dtProtocolVersion = ((self._peerInformations[peerId] || {}).agent || {}).DTProtocolVersion || '';
+    var channelProp = self._isLowerThanVersion(dtProtocolVersion, '0.1.2') ? 'main' : transferId;
+
+    if (!(self._dataChannels[peerId] && self._dataChannels[peerId].main)) {
+      error = 'Datachannel connection does not exists';
+    } else if (self._hasMCU && !(self._dataChannels.MCU && self._dataChannels.MCU.main)) {
+      error = 'MCU Datachannel connection does not exists';
+    } else if (self._isLowerThanVersion(dtProtocolVersion, '0.1.3')) {
+      error = 'Peer DTProtocolVersion does not support data streaming. (received: "' + dtProtocolVersion + '", expected: "0.1.3")';
+    } else {
+      if (channelProp === 'main') {
+        var dataTransferId = self._hasMCU ? self._dataChannels.MCU.main.transferId : self._dataChannels[peerId].main.transferId;
+
+        if (self._dataChannels[peerId].main.streamId) {
+          error = 'Peer Datachannel currently has an active data transfer session.';
+        } else if (self._hasMCU && self._dataChannels.MCU.main.streamId) {
+          error = 'MCU Peer Datachannel currently has an active data transfer session.';
+        } else if (self._dataTransfers[dataTransferId] && self._dataTransfers[dataTransferId].sessionChunkType === sessionChunkType) {
+          error = (self._hasMCU ? 'MCU ' : '') + 'Peer Datachannel currently has an active ' + sessionChunkType + ' data transfer.';
+        } else {
+          peersInterop.push(peerId);
+        }
+      } else {
+        peersNonInterop.push(peerId);
+      }
+    }
+
+    if (error) {
+      self._trigger('dataStreamState', self.DATA_STREAM_STATE.START_ERROR, transferId, peerId, sessionInfo, new Error(error));
+      listOfPeers.splice(i, 1);
+      i--;
+    } else {
+      listenToPeerFn(peerId, channelProp);
+    }
+  }
+
+  if (listOfPeers.length === 0) {
+    log.warn('There are no Peers to start data session with.');
+    return;
+  }
+
+  self._dataStreams[transferId] = {
+    sessions: sessions,
+    chunkType: sessionChunkType === 'string' ? self.DATA_TRANSFER_DATA_TYPE.STRING : self._binaryChunkType,
+    sessionChunkType: sessionChunkType,
+    isPrivate: isPrivate,
+    isStringStream: sessionChunkType === 'string',
+    senderPeerId: self._user && self._user.sid ? self._user.sid : null,
+    isUpload: true
+  };
+
+  var startDataSessionFn = function (peerId, channelProp, targetPeers) {
+    self.once('dataChannelState', function () {}, function (state, evtPeerId, channelName, channelType, error) {
+      if (!self._dataStreams[transferId]) {
+        return true;
+      }
+
+      if (!(evtPeerId === peerId && (channelProp === 'main' ? channelType === self.DATA_CHANNEL_TYPE.MESSAGING :
+        channelName === transferId && channelType === self.DATA_CHANNEL_TYPE.DATA))) {
+        return;
+      }
+
+      if ([self.DATA_CHANNEL_STATE.ERROR, self.DATA_CHANNEL_STATE.CLOSED].indexOf(state) > -1) {
+        var updatedError = new Error(error && error.message ? error.message :
+          'Failed data transfer as datachannel state is "' + state + '".');
+
+        if (peerId === 'MCU') {
+          for (var mp = 0; mp < targetPeers.length; mp++) {
+            self._trigger('dataStreamState', self.DATA_STREAM_STATE.ERROR, transferId, targetPeers[mp], sessionInfo, updatedError);
+          }
+        } else {
+          self._trigger('dataStreamState', self.DATA_STREAM_STATE.ERROR, transferId, peerId, sessionInfo, updatedError);
+        }
+        return true;
+      }
+    });
+
+    if (!(self._dataChannels[peerId][channelProp] &&
+      self._dataChannels[peerId][channelProp].channel.readyState === self.DATA_CHANNEL_STATE.OPEN)) {
+      var notOpenError = new Error('Failed starting data streaming session as channel is not opened.');
+      if (peerId === 'MCU') {
+        for (i = 0; i < targetPeers.length; i++) {
+          self._trigger('dataStreamState', self.DATA_STREAM_STATE.START_ERROR, transferId, targetPeers[i], sessionInfo, notOpenError);
+        }
+      } else {
+        self._trigger('dataStreamState', self.DATA_STREAM_STATE.START_ERROR, transferId, peerId, sessionInfo, notOpenError);
+      }
+    }
+
+    self._sendMessageToDataChannel(peerId, {
+      type: self._DC_PROTOCOL_TYPE.WRQ,
+      transferId: transferId,
+      name: transferId,
+      size: 0,
+      originalSize: 0,
+      dataType: 'fastBinaryStart',
+      mimeType: null,
+      chunkType: sessionChunkType,
+      chunkSize: 0,
+      timeout: 0,
+      isPrivate: isPrivate,
+      sender: self._user.sid,
+      agent: window.webrtcDetectedBrowser,
+      version: window.webrtcDetectedVersion,
+      target: peerId === 'MCU' ? targetPeers : peerId
+    }, channelProp);
+    self._dataChannels[peerId][channelProp].streamId = transferId;
+
+    var updatedSessionInfo = clone(sessionInfo);
+    delete updatedSessionInfo.chunk;
+
+    if (peerId === 'MCU') {
+      for (var tp = 0; tp < targetPeers.length; tp++) {
+        self._trigger('dataStreamState', self.DATA_STREAM_STATE.SENDING_STARTED, transferId, targetPeers[tp], sessionInfo, null);
+        self._trigger('incomingDataStreamStarted', transferId, targetPeers[tp], updatedSessionInfo, true);
+      }
+    } else {
+      self._trigger('dataStreamState', self.DATA_STREAM_STATE.SENDING_STARTED, transferId, peerId, sessionInfo, null);
+      self._trigger('incomingDataStreamStarted', transferId, peerId, updatedSessionInfo, true);
+    }
+  };
+
+  var waitForChannelOpenFn = function (peerId, targetPeers) {
+    self.once('dataChannelState', function (state, evtPeerId, error) {
+      if (state === self.DATA_CHANNEL_STATE.CREATE_ERROR) {
+        if (peerId === 'MCU') {
+          for (var mp = 0; mp < targetPeers.length; mp++) {
+            self._trigger('dataStreamState', self.DATA_STREAM_STATE.START_ERROR, transferId, targetPeers[mp], sessionInfo, error);
+          }
+        } else {
+          self._trigger('dataStreamState', self.DATA_STREAM_STATE.START_ERROR, transferId, peerId, sessionInfo, error);
+        }
+        return;
+      }
+      startDataSessionFn(peerId, transferId, targetPeers);
+    }, function (state, evtPeerId, error, channelName, channelType) {
+      if (evtPeerId === peerId && channelName === transferId && channelType === self.DATA_CHANNEL_TYPE.DATA) {
+        return [self.DATA_CHANNEL_STATE.CREATE_ERROR, self.DATA_CHANNEL_STATE.OPEN].indexOf(state) > -1;
+      }
+    });
+    self._createDataChannel(peerId, transferId, sessionChunkType === 'string' ? self._CHUNK_DATAURL_SIZE :
+      (window.webrtcDetectedBrowser === 'firefox' ? self._MOZ_BINARY_FILE_SIZE : self._BINARY_FILE_SIZE));
+  };
+
+  if (peersNonInterop.length > 0) {
+    if (self._hasMCU) {
+      waitForChannelOpenFn('MCU', peersNonInterop);
+    } else {
+      for (var pni = 0; pni < peersNonInterop.length; pni++) {
+        waitForChannelOpenFn(peersNonInterop[pni], null);
+      }
+    }
+  }
+
+  if (peersInterop.length > 0) {
+    if (self._hasMCU) {
+      startDataSessionFn('MCU', 'main', peersInterop);
+    } else {
+      for (var pi = 0; pi < peersInterop.length; pi++) {
+        startDataSessionFn(peersInterop[pi], 'main', null);
+      }
+    }
+  }
+};
+
+/**
+ * <blockquote class="info">
+ *   Note that this feature is not supported by MCU enabled Peer connections.<br>
+ *   To start data streaming session, see the <a href="#method_startStreamingData"><code>startStreamingData()</code>
+ *   method</a>. To stop data streaming session, see the <a href="#method_stopStreamingData"><code>stopStreamingData()</code> method</a>
+ * </blockquote>
+ * Function that sends a data chunk from User to Peers for an existing active data streaming session.
+ * @method streamData
+ * @param {String} streamId The data streaming session ID.
+ * @param {String|Blob|ArrayBuffer} chunk The data chunk.
+ *   <small>By default when it is not string data streaming, data chunks when is are expected to be
+ *   sent in Blob or ArrayBuffer, and ArrayBuffer data chunks will be converted to Blob.</small>
+ *   <small>For binary data chunks, the limit is <code>65456</code>.</small>
+ *   <small>For string data chunks, the limit is <code>1212</code>.</small>
+ * @trigger <ol class="desc-seq">
+ *   <li>Checks if Peer connection and Datachannel connection are in correct states. <ol>
+ *   <li>If Peer connection (or MCU Peer connection if enabled)
+ *   data streaming Datachannel has not been opened: <small>This can be checked with
+ *   <a href="#event_dataChannelState"><code>dataChannelState</code> event</a> triggering parameter
+ *   payload <code>state</code> as <code>OPEN</code> and <code>channelType</code> as
+ *   <code>MESSAGING</code> for Peer.</small> <ol><li><a href="#event_dataStreamState">
+ *   <code>dataStreamState</code> event</a> triggers parameter payload <code>state</code> as <code>ERROR</code>.</li>
+ *   <li><b>ABORT</b> step and return error.</li></ol></li></ol></li>
+ *   <li>Starts sending the data chunk to Peer. <ol>
+ *   <li><a href="#event_incomingDataStream"><code>incomingDataStream</code> event</a> triggers.</li>
+ *   <li><em>For User only</em> <a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>SENT</code>.</li>
+ *   <li><em>For Peer only</em> <a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>RECEIVED</code>.</li></ol></li></ol>
+ * @example
+ *   // Example 1: Start streaming
+ *   var currentStreamId = null
+ *   if (file.size > chunkLimit) {
+ *     while ((file.size - 1) > endCount) {
+ *       endCount = startCount + chunkLimit;
+ *       chunks.push(file.slice(startCount, endCount));
+ *       startCount += chunkLimit;
+ *     }
+ *     if ((file.size - (startCount + 1)) > 0) {
+ *       chunks.push(file.slice(startCount, file.size - 1));
+ *     }
+ *   } else {
+ *     chunks.push(file);
+ *   }
+ *   var processNextFn = function () {
+ *     if (chunks.length > 0) {
+ *       skylinkDemo.once("incomingDataStream", function () {
+ *         setTimeout(processNextFn, 1);
+ *       }, function (data, evtStreamId, evtPeerId, streamInfo, isSelf) {
+ *         return isSelf && evtStreamId === currentStreamId;
+ *       });
+ *       var chunk = chunks[0];
+ *       chunks.splice(0, 1);
+ *       skylinkDemo.streamData(currentStreamId, chunk);
+ *     } else {
+ *       skylinkDemo.stopStreamingData(currentStreamId);
+ *     }
+ *   };
+ *   skylinkDemo.once("incomingDataStreamStarted", processNextFn, function (streamId, peerId, streamInfo, isSelf) {
+ *     currentStreamId = streamId;
+ *     return isSelf;
+ *   });
+ *   skylinkDemo.once("incomingDataStreamStopped", function () {
+ *     // Render file
+ *   }, function (streamId, peerId, streamInfo, isSelf) {
+ *     return currentStreamId === streamId && isSelf;
+ *   });
+ *   skylinkDemo.startStreamingData(false);
+ * @beta
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.streamData = function(transferId, dataChunk) {
+  var self = this;
+
+  if (!(transferId && typeof transferId === 'string')) {
+    log.error('Failed streaming data chunk as stream session ID is not provided.');
+    return;
+  }
+
+  if (!(dataChunk && typeof dataChunk === 'object' && (dataChunk instanceof Blob || dataChunk instanceof ArrayBuffer))) {
+    log.error('Failed streaming data chunk as it is not provided.');
+    return;
+  }
+
+  if (!(self._inRoom && self._user && self._user.sid)) {
+    log.error('Failed streaming data chunk as User is not in the Room.');
+    return;
+  }
+
+  if (!self._dataStreams[transferId]) {
+    log.error('Failed streaming data chunk as session does not exists.');
+    return;
+  }
+
+  if (!self._dataStreams[transferId].isUpload) {
+    log.error('Failed streaming data chunk as session is not sending.');
+    return;
+  }
+
+  if (self._dataStreams[transferId].sessionChunkType === 'string' ? typeof dataChunk !== 'string' :
+    typeof dataChunk !== 'object') {
+    log.error('Failed streaming data chunk as data chunk does not match expected data type.');
+    return;
+  }
+
+  if (self._hasMCU) {
+    log.error('Failed streaming data chunk as MCU does not support this feature yet.');
+    return;
+  }
+
+  var updatedDataChunk = dataChunk instanceof ArrayBuffer ? new Blob(dataChunk) : dataChunk;
+
+  if (self._dataStreams[transferId].sessionChunkType === 'string' ? updatedDataChunk.length > self._CHUNK_DATAURL_SIZE :
+    updatedDataChunk.length > self._BINARY_FILE_SIZE) {
+    log.error('Failed streaming data chunk as data chunk exceeds maximum chunk limit.');
+    return;
+  }
+
+  var sessionInfo = {
+    chunk: updatedDataChunk,
+    chunkSize: updatedDataChunk.size || updatedDataChunk.length || updatedDataChunk.byteLength,
+    chunkType: self._dataStreams[transferId].sessionChunkType === 'string' ?
+      self.DATA_TRANSFER_DATA_TYPE.STRING : self._binaryChunkType,
+    isPrivate: self._dataStreams[transferId].sessionChunkType.isPrivate,
+    isStringStream: self._dataStreams[transferId].sessionChunkType === 'string',
+    senderPeerId: self._user && self._user.sid ? self._user.sid : null
+  };
+
+  var peersInterop = [];
+  var peersNonInterop = [];
+  var sendDataFn = function (peerId, channelProp, targetPeers) {
+    // When ready to be sent
+    var onSendDataFn = function (buffer) {
+      self._sendMessageToDataChannel(peerId, buffer, channelProp, true);
+
+      var updatedSessionInfo = clone(sessionInfo);
+      delete updatedSessionInfo.chunk;
+
+      if (targetPeers) {
+        for (var i = 0; i < targetPeers.length; i++) {
+          self._trigger('dataStreamState', self.DATA_STREAM_STATE.SENT, transferId, targetPeers[i], sessionInfo, null);
+          self._trigger('incomingDataStream', dataChunk, transferId, targetPeers[i], updatedSessionInfo, true);
+        }
+      } else {
+        self._trigger('dataStreamState', self.DATA_STREAM_STATE.SENT, transferId, peerId, sessionInfo, null);
+        self._trigger('incomingDataStream', dataChunk, transferId, peerId, updatedSessionInfo, true);
+      }
+    };
+
+    if (dataChunk instanceof Blob && sessionInfo.chunkType === self.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER) {
+      self._blobToArrayBuffer(dataChunk, onSendDataFn);
+    } else if (!(dataChunk instanceof Blob) && sessionInfo.chunkType === self.DATA_TRANSFER_DATA_TYPE.BLOB) {
+      onSendDataFn(new Blob([dataChunk]));
+    } else if (['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1 && typeof dataChunk !== 'string') {
+      onSendDataFn(new Int8Array(dataChunk));
+    } else {
+      onSendDataFn(dataChunk);
+    }
+  };
+
+  for (var peerId in self._dataStreams[transferId].sessions) {
+    if (self._dataStreams[transferId].sessions.hasOwnProperty(peerId) && self._dataStreams[transferId].sessions[peerId]) {
+      var channelProp = self._dataStreams[transferId].sessions[peerId];
+
+      if (!(self._dataChannels[self._hasMCU ? 'MCU' : peerId] && self._dataChannels[self._hasMCU ? 'MCU' : peerId][channelProp] &&
+        self._dataChannels[self._hasMCU ? 'MCU' : peerId][channelProp].channel.readyState === self.DATA_CHANNEL_STATE.OPEN &&
+        self._dataChannels[self._hasMCU ? 'MCU' : peerId][channelProp].streamId === transferId)) {
+        log.error([peerId, 'RTCDataChannel', transferId, 'Failed streaming data as it has not started or is ready.']);
+        self._trigger('dataStreamState', self.DATA_STREAM_STATE.ERROR, transferId, peerId, sessionInfo,
+          new Error('Streaming as it has not started or Datachannel connection is not open.'));
+        return;
+      }
+
+      if (self._hasMCU) {
+        if (channelProp === 'main') {
+          peersInterop.push(peerId);
+        } else {
+          peersNonInterop.push(peerId);
+        }
+      } else {
+        sendDataFn(peerId, channelProp);
+      }
+    }
+  }
+
+  if (self._hasMCU) {
+    if (peersInterop.length > 0) {
+      sendDataFn(peerId, 'main', peersInterop);
+    }
+    if (peersNonInterop.length > 0) {
+      sendDataFn(peerId, transferId, peersNonInterop);
+    }
+  }
+};
+
+/**
+ * <blockquote class="info">
+ *   To start data streaming session, see the <a href="#method_startStreamingData"><code>startStreamingData()</code>
+ *   method</a> To start streaming data, see the <a href="#method_streamData"><code>streamData()</code>
+ *   method</a>.
+ * </blockquote>
+ * Function that stops a data chunks streaming session from User to Peers.
+ * @method stopStreamingData
+ * @param {String} streamId The data streaming session ID.
+ * @trigger <ol class="desc-seq">
+ *   <li>Checks if Peer connection and Datachannel connection are in correct states. <ol>
+ *   <li>If Peer connection (or MCU Peer connection if enabled)
+ *   data streaming Datachannel has not been opened: <small>This can be checked with
+ *   <a href="#event_dataChannelState"><code>dataChannelState</code> event</a> triggering parameter
+ *   payload <code>state</code> as <code>OPEN</code> and <code>channelType</code> as
+ *   <code>MESSAGING</code> for Peer.</small> <ol><li><a href="#event_dataStreamState">
+ *   <code>dataStreamState</code> event</a> triggers parameter payload <code>state</code> as <code>ERROR</code>.</li>
+ *   <li><b>ABORT</b> step and return error.</li></ol></li></ol></li>
+ *   <li>Stops the data streaming session to Peer. <ol>
+ *   <li><a href="#event_incomingDataStreamStopped"><code>incomingDataStreamStopped</code> event</a> triggers.</li>
+ *   <li><em>For User only</em> <a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>SENDING_STOPPED</code>.</li>
+ *   <li><em>For Peer only</em> <a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+ *   triggers parameter payload <code>state</code> as <code>RECEIVING_STOPPED</code>.</li></ol></li></ol>
+ * @example
+ *   skylinkDemo.stopStreamData(streamId);
+ * @beta
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.stopStreamingData = function(transferId) {
+  var self = this;
+
+  if (!(transferId && typeof transferId === 'string')) {
+    log.error('Failed streaming data chunk as stream session ID is not provided.');
+    return;
+  }
+
+  if (!(self._inRoom && self._user && self._user.sid)) {
+    log.error('Failed streaming data chunk as User is not in the Room.');
+    return;
+  }
+
+  if (!self._dataStreams[transferId]) {
+    log.error('Failed stopping data streaming session as it does not exists.');
+    return;
+  }
+
+  if (!self._dataStreams[transferId].isUpload) {
+    log.error('Failed stopping data streaming session as it is not sending.');
+    return;
+  }
+
+  if (self._hasMCU) {
+    log.error('Failed stopping data streaming session as MCU does not support this feature yet.');
+    return;
+  }
+
+  var sessionInfo = {
+    chunk: null,
+    chunkSize: 0,
+    chunkType: self._dataStreams[transferId].sessionChunkType === 'string' ?
+      self.DATA_TRANSFER_DATA_TYPE.STRING : self._binaryChunkType,
+    isPrivate: self._dataStreams[transferId].sessionChunkType.isPrivate,
+    isStringStream: self._dataStreams[transferId].sessionChunkType === 'string',
+    senderPeerId: self._user && self._user.sid ? self._user.sid : null
+  };
+
+  var peersInterop = [];
+  var peersNonInterop = [];
+  var sendDataFn = function (peerId, channelProp, targetPeers) {
+    self._sendMessageToDataChannel(peerId, {
+      type: self._DC_PROTOCOL_TYPE.WRQ,
+      transferId: transferId,
+      name: transferId,
+      size: 0,
+      originalSize: 0,
+      dataType: 'fastBinaryStop',
+      mimeType: null,
+      chunkType: self._dataStreams[transferId].sessionChunkType,
+      chunkSize: 0,
+      timeout: 0,
+      isPrivate: self._dataStreams[transferId].isPrivate,
+      sender: self._user.sid,
+      agent: window.webrtcDetectedBrowser,
+      version: window.webrtcDetectedVersion,
+      target: targetPeers ? targetPeers : peerId
+    }, channelProp);
+
+    var updatedSessionInfo = clone(sessionInfo);
+    delete updatedSessionInfo.chunk;
+
+    if (targetPeers) {
+      for (var i = 0; i < targetPeers.length; i++) {
+        self._trigger('dataStreamState', self.DATA_STREAM_STATE.SENDING_STOPPED, transferId, targetPeers[i], sessionInfo, null);
+        self._trigger('incomingDataStreamStopped', transferId, targetPeers[i], updatedSessionInfo, true);
+      }
+    } else {
+      self._trigger('dataStreamState', self.DATA_STREAM_STATE.SENDING_STOPPED, transferId, peerId, sessionInfo, null);
+      self._trigger('incomingDataStreamStopped', transferId, peerId, updatedSessionInfo, true);
+    }
+  };
+
+  for (var peerId in self._dataStreams[transferId].sessions) {
+    if (self._dataStreams[transferId].sessions.hasOwnProperty(peerId) && self._dataStreams[transferId].sessions[peerId]) {
+      var channelProp = self._dataStreams[transferId].sessions[peerId];
+
+      if (!(self._dataChannels[self._hasMCU ? 'MCU' : peerId] && self._dataChannels[self._hasMCU ? 'MCU' : peerId][channelProp] &&
+        self._dataChannels[self._hasMCU ? 'MCU' : peerId][channelProp].channel.readyState === self.DATA_CHANNEL_STATE.OPEN &&
+        self._dataChannels[self._hasMCU ? 'MCU' : peerId][channelProp].streamId === transferId)) {
+        log.error([peerId, 'RTCDataChannel', transferId, 'Failed stopping data streaming session as channel is closed.']);
+        self._trigger('dataStreamState', self.DATA_STREAM_STATE.ERROR, transferId, peerId, sessionInfo,
+          new Error('Failed stopping data streaming session as Datachannel connection is not open or is active.'));
+        return;
+      }
+
+      if (self._hasMCU) {
+        if (self._dataStreams[transferId].sessions[peerId] === 'main') {
+          peersInterop.push(peerId);
+        } else {
+          peersNonInterop.push(peerId);
+        }
+      } else {
+        sendDataFn(peerId, channelProp);
+      }
+    }
+  }
+
+  if (self._hasMCU) {
+    if (peersInterop.length > 0) {
+      sendDataFn(peerId, 'main', peersInterop);
+    }
+    if (peersNonInterop.length > 0) {
+      sendDataFn(peerId, transferId, peersNonInterop);
+    }
+  }
+};
+
+
+/**
  * Function that starts the data transfer to Peers.
  * @method _startDataTransfer
  * @private
  * @for Skylink
  * @since 0.6.1
  */
-Skylink.prototype._startDataTransfer = function(chunks, transferInfo, listOfPeers, callback) {
+Skylink.prototype._startDataTransfer = function(data, timeout, targetPeerId, sendChunksAsBinary, callback, sessionType) {
   var self = this;
-  var transferId = self._user.sid + '_' + (new Date()).getTime();
+  var transferId = (self._user ? self._user.sid : '') + '_' + (new Date()).getTime();
   var transferErrors = {};
   var transferCompleted = [];
+  var chunks = [];
+  var listOfPeers = Object.keys(self._peerConnections);
+  var sessionChunkType = 'string';
+  var transferInfo = {
+    name: null,
+    size: null,
+    chunkSize: null,
+    chunkType: null,
+    dataType: null,
+    mimeType: null,
+    direction: self.DATA_TRANSFER_TYPE.UPLOAD,
+    timeout: 60,
+    isPrivate: false,
+    percentage: 0
+  };
 
-  // Polyfill data name to prevent empty fields in WRQ
-  // TODO: What happens if transfer requires extension?
-  if (!transferInfo.name) {
-    transferInfo.name = transferId;
+  // sendBlobData(.., timeout)
+  if (typeof timeout === 'number') {
+    transferInfo.timeout = timeout;
+  } else if (Array.isArray(timeout)) {
+    listOfPeers = timeout;
+  } else if (timeout && typeof timeout === 'string') {
+    listOfPeers = [timeout];
+  } else if (timeout && typeof timeout === 'boolean') {
+    sessionChunkType = 'binary';
+  } else if (typeof timeout === 'function') {
+    callback = timeout;
+  }
+
+  // sendBlobData(.., .., targetPeerId)
+  if (Array.isArray(targetPeerId)) {
+    listOfPeers = targetPeerId;
+  } else if (targetPeerId && typeof targetPeerId === 'string') {
+    listOfPeers = [targetPeerId];
+  } else if (targetPeerId && typeof targetPeerId === 'boolean') {
+    sessionChunkType = 'binary';
+  } else if (typeof targetPeerId === 'function') {
+    callback = targetPeerId;
+  }
+
+  // sendBlobData(.., .., .., sendChunksAsBinary)
+  if (sendChunksAsBinary && typeof sendChunksAsBinary === 'boolean') {
+    sessionChunkType = 'binary';
+  } else if (typeof sendChunksAsBinary === 'function') {
+    callback = sendChunksAsBinary;
+  }
+
+  // Remove MCU Peer as list of Peers
+  if (listOfPeers.indexOf('MCU') > -1) {
+    listOfPeers.splice(listOfPeers.indexOf('MCU'), 1);
+  }
+
+  // Function that returns the error emitted before data transfer has started
+  var emitErrorBeforeDataTransferFn = function (error) {
+    log.error(error);
+
+    if (typeof callback === 'function') {
+      var transferErrors = {};
+
+      if (listOfPeers.length === 0) {
+        transferErrors.self = new Error(error);
+        /*self._trigger('dataTransferState', self.DATA_TRANSFER_STATE.START_ERROR, null, null, transferInfo, {
+          transferType: self.DATA_TRANSFER_TYPE.DOWNLOAD,
+          message: new Error(error)
+        });*/
+      } else {
+        for (var i = 0; i < listOfPeers.length; i++) {
+          transferErrors[listOfPeers[i]] = new Error(error);
+          /*self._trigger('dataTransferState', self.DATA_TRANSFER_STATE.START_ERROR, null, listOfPeers[i], transferInfo, {
+            transferType: self.DATA_TRANSFER_TYPE.DOWNLOAD,
+            message: new Error(error)
+          });*/
+        }
+      }
+
+      callback({
+        transferId: null,
+        transferInfo: transferInfo,
+        listOfPeers: listOfPeers,
+        transferErrors: transferErrors
+      }, null);
+    }
+  };
+
+  if (sessionType === 'blob') {
+    if (self._hasMCU && sessionChunkType === 'binary') {
+      log.warn('Binary data chunks transfer is not yet supported with MCU environment. ' +
+        'Fallbacking to binary string data chunks transfer.');
+      sessionChunkType = 'string';
+    }
+
+    var chunkSize = sessionChunkType === 'string' ? (window.webrtcDetectedBrowser === 'firefox' ?
+      self._MOZ_CHUNK_FILE_SIZE : self._CHUNK_FILE_SIZE) : (window.webrtcDetectedBrowser === 'firefox' ?
+      self._MOZ_BINARY_FILE_SIZE : self._BINARY_FILE_SIZE);
+
+    transferInfo.dataType = self.DATA_TRANSFER_SESSION_TYPE.BLOB;
+    transferInfo.chunkSize = sessionChunkType === 'string' ? 4 * Math.ceil(chunkSize / 3) : chunkSize;
+    transferInfo.chunkType = sessionChunkType === 'binary' ? self._binaryChunkType : self.DATA_TRANSFER_DATA_TYPE.BINARY_STRING;
+
+    // Start checking if data transfer can start
+    if (!(data && typeof data === 'object' && data instanceof Blob)) {
+      emitErrorBeforeDataTransferFn('Provided data is not a Blob data');
+      return;
+    }
+
+    transferInfo.name = data.name || transferId;
+    transferInfo.mimeType = data.type || null;
+
+    if (data.size < 1) {
+      emitErrorBeforeDataTransferFn('Provided data is not a valid Blob data.');
+      return;
+    }
+
+    transferInfo.originalSize = data.size;
+    transferInfo.size = sessionChunkType === 'string' ? 4 * Math.ceil(data.size / 3) : data.size;
+    chunks = self._chunkBlobData(data, chunkSize);
+  } else {
+    transferInfo.dataType = self.DATA_TRANSFER_SESSION_TYPE.DATA_URL;
+    transferInfo.chunkSize = self._CHUNK_DATAURL_SIZE;
+    transferInfo.chunkType = self.DATA_TRANSFER_DATA_TYPE.STRING;
+
+    // Start checking if data transfer can start
+    if (!(data && typeof data === 'string')) {
+      emitErrorBeforeDataTransferFn('Provided data is not a dataURL');
+      return;
+    }
+
+    transferInfo.originalSize = transferInfo.size = data.length || data.size;
+    chunks = self._chunkDataURL(data, transferInfo.chunkSize);
+  }
+
+  if (!(self._user && self._user.sid)) {
+    emitErrorBeforeDataTransferFn('Unable to send any ' +
+      sessionType.replace('data', 'dataURL') + ' data. User is not in Room.');
+    return;
+  }
+
+  if (!self._enableDataChannel) {
+    emitErrorBeforeDataTransferFn('Unable to send any ' +
+      sessionType.replace('data', 'dataURL') + ' data. Datachannel is disabled');
+    return;
+  }
+
+  if (listOfPeers.length === 0) {
+    emitErrorBeforeDataTransferFn('Unable to send any ' +
+      sessionType.replace('data', 'dataURL') + ' data. There are no Peers to start data transfer with');
+    return;
   }
 
   self._dataTransfers[transferId] = clone(transferInfo);
@@ -14326,15 +15203,17 @@ Skylink.prototype._startDataTransfer = function(chunks, transferInfo, listOfPeer
   self._dataTransfers[transferId].chunks = chunks;
   self._dataTransfers[transferId].enforceBSPeers = [];
   self._dataTransfers[transferId].enforcedBSInfo = {};
+  self._dataTransfers[transferId].sessionType = sessionType;
+  self._dataTransfers[transferId].sessionChunkType = sessionChunkType;
+  self._dataTransfers[transferId].senderPeerId = self._user.sid;
 
   // Check if fallback chunks is required
-  if ([self.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER, self.DATA_TRANSFER_DATA_TYPE.BLOB].indexOf(
-    transferInfo.chunkType) > -1) {
+  if (sessionType === 'blob' && sessionChunkType === 'binary') {
     for (var p = 0; p < listOfPeers.length; p++) {
-      var agentName = (((self._peerInformations[listOfPeers[p]]) || {}).agent || {}).name || '';
+      var protocolVer = (((self._peerInformations[listOfPeers[p]]) || {}).agent || {}).DTProtocolVersion || '0.1.0';
 
       // C++ SDK does not support binary file transfer for now
-      if (self._SUPPORTED_WEB_AGENTS.indexOf(agentName) === -1) {
+      if (self._isLowerThanVersion(protocolVer, '0.1.3')) {
         self._dataTransfers[transferId].enforceBSPeers.push(listOfPeers[p]);
       }
     }
@@ -14463,7 +15342,7 @@ Skylink.prototype._startDataTransferToPeer = function (transferId, peerId, callb
   var sendWRQFn = function () {
     var size = self._dataTransfers[transferId].size;
     var chunkSize = self._dataTransfers[transferId].chunkSize;
-    var chunkType = self._dataTransfers[transferId].chunkType;
+    var chunkType = self._dataTransfers[transferId].sessionChunkType;
 
     if (self._dataTransfers[transferId].enforceBSPeers.indexOf(peerId) > -1) {
       log.warn([peerId, 'RTCDataChannel', transferId,
@@ -14472,7 +15351,7 @@ Skylink.prototype._startDataTransferToPeer = function (transferId, peerId, callb
 
       size = self._dataTransfers[transferId].enforceBSInfo.size;
       chunkSize = self._dataTransfers[transferId].enforceBSInfo.chunkSize;
-      chunkType = self._dataTransfers[transferId].enforceBSInfo.chunkType;
+      chunkType = 'string';
     }
 
     self._sendMessageToDataChannel(peerId, {
@@ -14481,7 +15360,7 @@ Skylink.prototype._startDataTransferToPeer = function (transferId, peerId, callb
       name: self._dataTransfers[transferId].name,
       size: size,
       originalSize: self._dataTransfers[transferId].originalSize,
-      dataType: self._dataTransfers[transferId].dataType,
+      dataType: self._dataTransfers[transferId].sessionType,
       mimeType: self._dataTransfers[transferId].mimeType,
       chunkType: chunkType,
       chunkSize: chunkSize,
@@ -14594,11 +15473,28 @@ Skylink.prototype._startDataTransferToPeer = function (transferId, peerId, callb
     return;
   }
 
-  var agentName = (self._peerInformations[peerId].agent || {}).name || '';
-  var requireInterop = self._SUPPORTED_WEB_AGENTS.indexOf(agentName) === -1 && agentName !== 'cpp';
+  var streamId = self._dataChannels[peerId].main.streamId;
+
+  if (streamId && channelProp === 'main' && self._dataStreams[streamId] &&
+  // Check if session chunk streaming is string and sending is string for Peer
+    ((self._dataStreams[streamId].sessionChunkType === 'string' &&
+    (self._dataTransfers[transferId].sessionChunkType === 'string' ||
+    self._dataTransfers[transferId].enforceBSPeers.indexOf(peerId) > -1)) ||
+  // Check if session chunk streaming is binary and sending is binary for Peer
+    (self._dataStreams[streamId].sessionChunkType === 'binary' &&
+    self._dataStreams[streamId].sessionChunkType === 'binary' &&
+    self._dataTransfers[transferId].enforceBSPeers.indexOf(peerId) === -1))) {
+    returnErrorBeforeTransferFn('Unable to start data transfer as Peer Datachannel currently has an active ' +
+      self._dataStreams[streamId].sessionChunkType + ' data streaming session.');
+    return;
+  }
+
+  var protocolVer = (self._peerInformations[peerId].agent || {}).DTProtocolVersion || '0.1.0';
+  var requireInterop = self._isLowerThanVersion(protocolVer, '0.1.2');
 
   // Prevent DATA_URL (or "string" dataType transfers) with Android / iOS / C++ SDKs
-  if ((requireInterop || agentName === 'cpp') && self._dataTransfers[transferId].dataType === self.DATA_TRANSFER_SESSION_TYPE.DATA_URL) {
+  if (self._isLowerThanVersion(protocolVer, '0.1.2') && self._dataTransfers[transferId].sessionType === 'data' &&
+    self._dataTransfers[transferId].sessionChunkType === 'string') {
     returnErrorBeforeTransferFn('Unable to start data transfer as Peer do not support DATA_URL type of data transfers');
     return;
   }
@@ -14656,6 +15552,7 @@ Skylink.prototype._startDataTransferToPeer = function (transferId, peerId, callb
     if (evtPeerId === peerId && (channelType === self.DATA_CHANNEL_TYPE.DATA ? channelName === transferId : true)) {
       if (state === self.DATA_CHANNEL_STATE.OPEN && channelType === self.DATA_CHANNEL_TYPE.DATA &&
         channelName === transferId) {
+        self._dataChannels[peerId][channelProp].transferId = transferId;
         sendWRQFn();
         return false;
       }
@@ -14667,12 +15564,12 @@ Skylink.prototype._startDataTransferToPeer = function (transferId, peerId, callb
   // Create new Datachannel for Peer to start data transfer
   if (!((requireInterop && peerId !== 'MCU') || channelProp === 'main')) {
     channelProp = transferId;
-
-    self._createDataChannel(peerId, transferId);
-
+    self._createDataChannel(peerId, transferId, self._dataTransfers[transferId].sessionType === 'data' ?
+      self._CHUNK_DATAURL_SIZE : (self._dataTransfers[transferId].sessionChunkType === 'string' ?
+      (window.webrtcDetectedBrowser === 'firefox' ? 16384 : 65546) : // After conversion to base64 string computed size
+      (window.webrtcDetectedBrowser === 'firefox' ? self._MOZ_BINARY_FILE_SIZE : self._BINARY_FILE_SIZE)));
   } else {
     self._dataChannels[peerId].main.transferId = transferId;
-
     sendWRQFn();
   }
 };
@@ -14818,7 +15715,7 @@ Skylink.prototype._handleDataTransferTimeoutForPeer = function (transferId, peer
         return;
       }
 
-      if (!self._user) {
+      if (!(self._user && self._user.sid)) {
         log.debug([peerId, 'RTCDataChannel', transferId, 'User is not in Room. Ignoring expired timeout.']);
         return;
       }
@@ -14889,16 +15786,23 @@ Skylink.prototype._processDataChannelData = function(rawData, peerId, channelNam
   var self = this;
 
   var channelProp = channelType === self.DATA_CHANNEL_TYPE.MESSAGING ? 'main' : channelName;
-  var transferId = channelProp === 'main' ? self._dataChannels[peerId].main.transferId : channelName;
+  var transferId = self._dataChannels[peerId][channelProp].transferId || null;
+  var streamId = self._dataChannels[peerId][channelProp].streamId || null;
+  var isStreamChunk = false;
+
+  if (streamId && self._dataStreams[streamId]) {
+    isStreamChunk = self._dataStreams[streamId].sessionChunkType === 'string' ? typeof rawData === 'string' :
+      typeof rawData === 'object';
+  }
 
   if (!self._peerConnections[peerId]) {
-    log.warn([peerId, 'RTCDataChannel', channelName, 'Dropping data received from Peer ' +
+    log.warn([peerId, 'RTCDataChannel', channelProp, 'Dropping data received from Peer ' +
       'as connection is not present ->'], rawData);
     return;
   }
 
   if (!(self._dataChannels[peerId] && self._dataChannels[peerId][channelProp])) {
-    log.warn([peerId, 'RTCDataChannel', channelName, 'Dropping data received from Peer ' +
+    log.warn([peerId, 'RTCDataChannel', channelProp, 'Dropping data received from Peer ' +
       'as Datachannel connection is not present ->'], rawData);
     return;
   }
@@ -14907,8 +15811,9 @@ Skylink.prototype._processDataChannelData = function(rawData, peerId, channelNam
   if (typeof rawData === 'string') {
     try {
       var protocolData = JSON.parse(rawData);
+      isStreamChunk = false;
 
-      log.debug([peerId, 'RTCDataChannel', channelProp, 'Received protocol message ->'], protocolData);
+      log.debug([peerId, 'RTCDataChannel', channelProp, 'Received protocol "' + protocolData.type + '" message ->'], protocolData);
 
       // Ignore ACK, ERROR and CANCEL if there is no data transfer session in-progress
       if ([self._DC_PROTOCOL_TYPE.ACK, self._DC_PROTOCOL_TYPE.ERROR, self._DC_PROTOCOL_TYPE.CANCEL].indexOf(protocolData.type) > -1 &&
@@ -14923,7 +15828,7 @@ Skylink.prototype._processDataChannelData = function(rawData, peerId, channelNam
           // Discard iOS bidirectional upload when Datachannel is in-progress for data transfers
           if (transferId && self._dataTransfers[transferId] && self._dataTransfers[transferId].sessions[peerId]) {
             log.warn([peerId, 'RTCDataChannel', channelProp, 'Rejecting bidirectional data transfer request as ' +
-              'it is currently not supported in the SDK']);
+              'it is currently not supported in the SDK ->'], protocolData);
 
             self._sendMessageToDataChannel(peerId, {
               type: self._DC_PROTOCOL_TYPE.ACK,
@@ -14947,33 +15852,39 @@ Skylink.prototype._processDataChannelData = function(rawData, peerId, channelNam
           self._MESSAGEProtocolHandler(peerId, protocolData, channelProp);
           break;
         default:
-          log.warn([peerId, 'RTCDataChannel', channelProp, 'Discarded unknown protocol message ->'], protocolData);
+          log.warn([peerId, 'RTCDataChannel', channelProp, 'Discarded unknown "' + protocolData.type + '" message ->'], protocolData);
       }
 
     } catch (error) {
       if (rawData.indexOf('{') > -1 && rawData.indexOf('}') > 0) {
-        log.error([peerId, 'RTCDataChannel', channelProp, 'Received error ->'], error);
+        log.error([peerId, 'RTCDataChannel', channelProp, 'Failed parsing protocol step data error ->'], {
+          data: rawData,
+          error: error
+        });
 
-        self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.ERROR, peerId, error, channelName, channelType, null);
+        self._trigger('dataChannelState', self.DATA_CHANNEL_STATE.ERROR, peerId, error, channelName,
+          channelType, null, self._getDataChannelBuffer(peerId, channelProp));
         throw error;
       }
 
-      if (!(transferId && self._dataTransfers[transferId] && self._dataTransfers[transferId].sessions[peerId])) {
-        log.warn([peerId, 'RTCDataChannel', channelProp, 'Discarded data chunk as data transfer session ' +
-          'is not present ->'], rawData);
+      if (!isStreamChunk && !(transferId && self._dataTransfers[transferId] && self._dataTransfers[transferId].sessions[peerId])) {
+        log.warn([peerId, 'RTCDataChannel', channelProp, 'Discarded data chunk without session ->'], rawData);
         return;
       }
 
-      if (self._dataTransfers[transferId].chunks[self._dataTransfers[transferId].sessions[peerId].ackN]) {
-        log.warn([peerId, 'RTCDataChannel', transferId, 'Dropping data chunk as it has already been added ->'], rawData);
-        return;
+      if (!isStreamChunk && transferId) {
+        if (self._dataTransfers[transferId].chunks[self._dataTransfers[transferId].sessions[peerId].ackN]) {
+          log.warn([peerId, 'RTCDataChannel', transferId, 'Dropping data chunk ' + (!isStreamChunk ? '@' +
+            self._dataTransfers[transferId].sessions[peerId].ackN : '') + ' as it has already been added ->'], rawData);
+          return;
+        }
       }
 
       var chunkType = self.DATA_TRANSFER_DATA_TYPE.BINARY_STRING;
 
-      if (self._dataTransfers[transferId].dataType === self.DATA_TRANSFER_SESSION_TYPE.DATA_URL) {
-        log.debug([peerId, 'RTCDataChannel', channelProp, 'Received string data chunk @' +
-          self._dataTransfers[transferId].sessions[peerId].ackN + ' with size ->'], rawData.length || rawData.size);
+      if (!isStreamChunk ? self._dataTransfers[transferId].dataType === self.DATA_TRANSFER_SESSION_TYPE.DATA_URL : true) {
+        log.debug([peerId, 'RTCDataChannel', channelProp, 'Received string data chunk ' + (!isStreamChunk ? '@' +
+          self._dataTransfers[transferId].sessions[peerId].ackN : '') + ' with size ->'], rawData.length || rawData.size);
 
         self._DATAProtocolHandler(peerId, rawData, self.DATA_TRANSFER_DATA_TYPE.STRING,
           rawData.length || rawData.size || 0, channelProp);
@@ -14990,24 +15901,49 @@ Skylink.prototype._processDataChannelData = function(rawData, peerId, channelNam
       }
     }
   } else {
+    if (!isStreamChunk && !(transferId && self._dataTransfers[transferId] && self._dataTransfers[transferId].sessions[peerId])) {
+      log.warn([peerId, 'RTCDataChannel', channelProp, 'Discarded data chunk without session ->'], rawData);
+      return;
+    }
+
+    if (!isStreamChunk && transferId) {
+      if (self._dataTransfers[transferId].chunks[self._dataTransfers[transferId].sessions[peerId].ackN]) {
+        log.warn([peerId, 'RTCDataChannel', transferId, 'Dropping data chunk ' + (!isStreamChunk ? '@' +
+          self._dataTransfers[transferId].sessions[peerId].ackN : '') + ' as it has already been added ->'], rawData);
+        return;
+      }
+    }
+
     if (rawData instanceof Blob) {
-      log.debug([peerId, 'RTCDataChannel', channelProp, 'Received blob data chunk @' +
-        self._dataTransfers[transferId].sessions[peerId].ackN + ' with size ->'], rawData.size);
+      log.debug([peerId, 'RTCDataChannel', channelProp, 'Received blob data chunk ' + (isStreamChunk ? '' :
+        '@' + self._dataTransfers[transferId].sessions[peerId].ackN) + ' with size ->'], rawData.size);
 
       self._DATAProtocolHandler(peerId, rawData, self.DATA_TRANSFER_DATA_TYPE.BLOB, rawData.size, channelProp);
 
     } else {
       var byteArray = rawData;
+      var blob = null;
 
+      // Plugin binary handling
       if (rawData.constructor && rawData.constructor.name === 'Array') {
         // Need to re-parse on some browsers
         byteArray = new Int8Array(rawData);
       }
 
-      var blob = new Blob([byteArray]);
+      // Fallback for older IE versions
+      if (window.webrtcDetectedBrowser === 'IE') {
+        if (window.BlobBuilder) {
+          var bb = new BlobBuilder();
+          bb.append(rawData.constructor && rawData.constructor.name === 'ArrayBuffer' ?
+            byteArray : (new Uint8Array(byteArray)).buffer);
+          blob = bb.getBlob();
+        }
+      } else {
+        blob = new Blob([byteArray]);
+      }
 
-      log.debug([peerId, 'RTCDataChannel', channelProp, 'Received arraybuffer data chunk @' +
-        self._dataTransfers[transferId].sessions[peerId].ackN + ' with size ->'], blob.size);
+      log.debug([peerId, 'RTCDataChannel', channelProp, 'Received arraybuffer data chunk ' + (isStreamChunk ? '' :
+        '@' + self._dataTransfers[transferId].sessions[peerId].ackN) + ' with size ->'], blob.size);
 
       self._DATAProtocolHandler(peerId, blob, self.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER, blob.size, channelProp);
     }
@@ -15023,37 +15959,138 @@ Skylink.prototype._processDataChannelData = function(rawData, peerId, channelNam
  */
 Skylink.prototype._WRQProtocolHandler = function(peerId, data, channelProp) {
   var self = this;
-  var transferId = channelProp === 'main' ? data.transferId || peerId + '_' + (new Date()).getTime() : channelProp;
+  var transferId = channelProp === 'main' ? data.transferId || null : channelProp;
   var senderPeerId = data.sender || peerId;
 
-  self._dataTransfers[transferId] = {
-    name: data.name || transferId,
-    size: data.size || 0,
-    chunkSize: data.chunkSize,
-    originalSize: data.originalSize || 0,
-    timeout: data.timeout || 60,
-    isPrivate: !!data.isPrivate,
-    senderPeerId: data.sender || peerId,
-    dataType: data.dataType || self.DATA_TRANSFER_SESSION_TYPE.BLOB,
-    mimeType: data.mimeType || null,
-    chunkType: data.chunkType || self.DATA_TRANSFER_DATA_TYPE.BINARY_STRING,
-    direction: self.DATA_TRANSFER_TYPE.DOWNLOAD,
-    chunks: [],
-    sessions: {}
-  };
+  if (['fastBinaryStart', 'fastBinaryStop'].indexOf(data.dataType) > -1) {
+    if (data.dataType === 'fastBinaryStart') {
+      if (!transferId) {
+        transferId = 'stream_' + peerId + '_' + (new Date()).getTime();
+      }
+      self._dataStreams[transferId] = {
+        chunkSize: 0,
+        chunkType: data.chunkType === 'string' ? self.DATA_TRANSFER_DATA_TYPE.STRING : self._binaryChunkType,
+        sessionChunkType: data.chunkType,
+        isPrivate: !!data.isPrivate,
+        isStringStream: data.chunkType === 'string',
+        senderPeerId: senderPeerId,
+        isUpload: false
+      };
+      self._dataChannels[peerId][channelProp].streamId = transferId;
+      var hasStarted = false;
+      self.once('dataChannelState', function () {}, function (state, evtPeerId, channelName, channelType, error) {
+        if (!self._dataStreams[transferId]) {
+          return true;
+        }
 
-  self._dataChannels[peerId][channelProp].transferId = transferId;
-  self._dataTransfers[transferId].sessions[peerId] = {
-    timer: null,
-    ackN: 0,
-    receivedSize: 0
-  };
+        if (!(evtPeerId === peerId && (channelProp === 'main' ? channelType === self.DATA_CHANNEL_TYPE.MESSAGING :
+          channelName === transferId && channelType === self.DATA_CHANNEL_TYPE.DATA))) {
+          return;
+        }
 
-  self._trigger('incomingDataRequest', transferId, senderPeerId,
-    self._getTransferInfo(transferId, peerId, false, false, false), false);
+        if ([self.DATA_CHANNEL_STATE.ERROR, self.DATA_CHANNEL_STATE.CLOSED].indexOf(state) > -1) {
+          var updatedError = new Error(error && error.message ? error.message :
+            'Failed data transfer as datachannel state is "' + state + '".');
 
-  self._trigger('dataTransferState', self.DATA_TRANSFER_STATE.UPLOAD_REQUEST, transferId, senderPeerId,
-    self._getTransferInfo(transferId, peerId, true, false, false), null);
+          self._trigger('dataStreamState', self.DATA_STREAM_STATE.ERROR, transferId, senderPeerId, {
+            chunk: null,
+            chunkSize: 0,
+            chunkType: self._dataStreams[transferId].chunkType,
+            isPrivate: self._dataStreams[transferId].isPrivate,
+            isStringStream: self._dataStreams[transferId].sessionChunkType === 'string',
+            senderPeerId: senderPeerId
+          }, updatedError);
+          return true;
+        }
+      });
+
+      self._trigger('dataStreamState', self.DATA_STREAM_STATE.RECEIVING_STARTED, transferId, senderPeerId, {
+        chunk: null,
+        chunkSize: 0,
+        chunkType: self._dataStreams[transferId].chunkType,
+        isPrivate: self._dataStreams[transferId].isPrivate,
+        isStringStream: self._dataStreams[transferId].sessionChunkType === 'string',
+        senderPeerId: senderPeerId
+      }, null);
+      self._trigger('incomingDataStreamStarted', transferId, senderPeerId, {
+        chunkSize: 0,
+        chunkType: self._dataStreams[transferId].chunkType,
+        isPrivate: self._dataStreams[transferId].isPrivate,
+        isStringStream: self._dataStreams[transferId].sessionChunkType === 'string',
+        senderPeerId: senderPeerId
+      }, false);
+
+    } else {
+      transferId = self._dataChannels[peerId][channelProp].streamId;
+      if (self._dataStreams[transferId] && !self._dataStreams[transferId].isUpload) {
+        self._trigger('dataStreamState', self.DATA_STREAM_STATE.RECEIVING_STOPPED, transferId, senderPeerId, {
+          chunk: null,
+          chunkSize: 0,
+          chunkType: self._dataStreams[transferId].chunkType,
+          isPrivate: self._dataStreams[transferId].isPrivate,
+          isStringStream: self._dataStreams[transferId].sessionChunkType === 'string',
+          senderPeerId: senderPeerId
+        }, null);
+        self._trigger('incomingDataStreamStopped', transferId, senderPeerId, {
+          chunkSize: 0,
+          chunkType: self._dataStreams[transferId].chunkType,
+          isPrivate: self._dataStreams[transferId].isPrivate,
+          isStringStream: self._dataStreams[transferId].sessionChunkType === 'string',
+          senderPeerId: senderPeerId
+        }, false);
+        self._dataChannels[peerId][channelProp].streamId = null;
+        if (channelProp !== 'main') {
+          self._closeDataChannel(peerId, channelProp);
+        }
+
+        delete self._dataStreams[transferId];
+      }
+    }
+  } else {
+    if (!transferId) {
+      transferId = 'transfer_' + peerId + '_' + (new Date()).getTime();
+    }
+
+    self._dataTransfers[transferId] = {
+      name: data.name || transferId,
+      size: data.size || 0,
+      chunkSize: data.chunkSize,
+      originalSize: data.originalSize || 0,
+      timeout: data.timeout || 60,
+      isPrivate: !!data.isPrivate,
+      senderPeerId: data.sender || peerId,
+      dataType: self.DATA_TRANSFER_SESSION_TYPE.BLOB,
+      mimeType: data.mimeType || null,
+      chunkType: self.DATA_TRANSFER_DATA_TYPE.BINARY_STRING,
+      direction: self.DATA_TRANSFER_TYPE.DOWNLOAD,
+      chunks: [],
+      sessions: {},
+      sessionType: data.dataType || 'blob',
+      sessionChunkType: data.chunkType || 'string'
+    };
+
+    if (self._dataTransfers[transferId].sessionType === 'data' &&
+      self._dataTransfers[transferId].sessionChunkType === 'string') {
+      self._dataTransfers[transferId].dataType = self.DATA_TRANSFER_SESSION_TYPE.DATA_URL;
+      self._dataTransfers[transferId].chunkType = self.DATA_TRANSFER_DATA_TYPE.STRING;
+    } else if (self._dataTransfers[transferId].sessionType === 'blob' &&
+      self._dataTransfers[transferId].sessionChunkType === 'binary') {
+      self._dataTransfers[transferId].chunkType = self._binaryChunkType;
+    }
+
+    self._dataChannels[peerId][channelProp].transferId = transferId;
+    self._dataTransfers[transferId].sessions[peerId] = {
+      timer: null,
+      ackN: 0,
+      receivedSize: 0
+    };
+
+    self._trigger('incomingDataRequest', transferId, senderPeerId,
+      self._getTransferInfo(transferId, peerId, false, false, false), false);
+
+    self._trigger('dataTransferState', self.DATA_TRANSFER_STATE.UPLOAD_REQUEST, transferId, senderPeerId,
+      self._getTransferInfo(transferId, peerId, true, false, false), null);
+  }
 };
 
 /**
@@ -15291,6 +16328,34 @@ Skylink.prototype._DATAProtocolHandler = function(peerId, chunk, chunkType, chun
   var transferId = channelProp;
   var senderPeerId = peerId;
 
+  if (!(self._dataChannels[peerId] && self._dataChannels[peerId][channelProp])) {
+    return;
+  }
+
+  var streamId = self._dataChannels[peerId][channelProp].streamId;
+
+  if (streamId && self._dataStreams[streamId] && ((typeof chunk === 'string' &&
+    self._dataStreams[streamId].sessionChunkType === 'string') || (chunk instanceof Blob &&
+    self._dataStreams[streamId].sessionChunkType === 'binary'))) {
+    senderPeerId = self._dataStreams[streamId].senderPeerId || peerId;
+    self._trigger('dataStreamState', self.DATA_STREAM_STATE.RECEIVED, streamId, senderPeerId, {
+      chunk: chunk,
+      chunkSize: chunkSize,
+      chunkType: chunkType,
+      isPrivate: self._dataStreams[streamId].sessionChunkType.isPrivate,
+      isStringStream: self._dataStreams[streamId].sessionChunkType === 'string',
+      senderPeerId: senderPeerId
+    }, null);
+    self._trigger('incomingDataStream', chunk, transferId, senderPeerId, {
+      chunkSize: chunkSize,
+      chunkType: chunkType,
+      isPrivate: self._dataStreams[streamId].sessionChunkType.isPrivate,
+      isStringStream: self._dataStreams[streamId].sessionChunkType === 'string',
+      senderPeerId: senderPeerId
+    }, false);
+    return;
+  }
+
   if (channelProp === 'main') {
     transferId = self._dataChannels[peerId].main.transferId;
   }
@@ -15306,7 +16371,7 @@ Skylink.prototype._DATAProtocolHandler = function(peerId, chunk, chunkType, chun
   self._dataTransfers[transferId].chunks[self._dataTransfers[transferId].sessions[peerId].ackN] = chunk;
 
   if (self._dataTransfers[transferId].sessions[peerId].receivedSize >= self._dataTransfers[transferId].size) {
-    log.log([peerId, 'RTCDataChannel', channelProp, 'Data transfer has been completed. Computed size ->'], 
+    log.log([peerId, 'RTCDataChannel', channelProp, 'Data transfer has been completed. Computed size ->'],
       self._dataTransfers[transferId].sessions[peerId].receivedSize);
 
     // Send last ACK to Peer to indicate completion of data transfers
@@ -15410,9 +16475,11 @@ Skylink.prototype._onIceCandidate = function(targetMid, candidate) {
 
     log.debug([targetMid, 'RTCIceCandidate', candidateType, 'Generated ICE candidate ->'], candidate);
 
-    if (candidateType === 'endOfCandidates') {
+    if (candidateType === 'endOfCandidates' || !(self._peerConnections[targetMid] &&
+      self._peerConnections[targetMid].localDescription && self._peerConnections[targetMid].localDescription.sdp &&
+      self._peerConnections[targetMid].localDescription.sdp.indexOf('\r\na=mid:' + candidate.sdpMid + '\r\n') > -1)) {
       log.warn([targetMid, 'RTCIceCandidate', candidateType, 'Dropping of sending ICE candidate ' +
-        'end-of-candidates signal to prevent errors ->'], candidate);
+        'end-of-candidates signal or unused ICE candidates to prevent errors ->'], candidate);
       return;
     }
 
@@ -15462,6 +16529,10 @@ Skylink.prototype._onIceCandidate = function(targetMid, candidate) {
   } else {
     log.log([targetMid, 'RTCIceCandidate', null, 'ICE gathering has completed.']);
 
+    if (pc.gathered) {
+      return;
+    }
+
     pc.gathering = false;
     pc.gathered = true;
 
@@ -15482,7 +16553,7 @@ Skylink.prototype._onIceCandidate = function(targetMid, candidate) {
         type: sessionDescription.type,
         sdp: self._addSDPMediaStreamTrackIDs(targetMid, sessionDescription),
         mid: self._user.sid,
-        userInfo: self._getUserInfo(),
+        userInfo: self._getUserInfo(targetMid),
         target: targetMid,
         rid: self._room.id
       });
@@ -15545,7 +16616,8 @@ Skylink.prototype._addIceCandidateFromQueue = function(targetMid) {
 
       this._addIceCandidate(targetMid, canArray[0], canArray[1]);
     } else if (this._peerConnections[targetMid] &&
-      this._peerConnections[targetMid].signalingState !== this.PEER_CONNECTION_STATE.CLOSED) {
+      this._peerConnections[targetMid].signalingState !== this.PEER_CONNECTION_STATE.CLOSED &&
+      AdapterJS && !this._isLowerThanVersion(AdapterJS.VERSION, '0.14.0')) {
       log.debug([targetMid, 'RTCPeerConnection', null, 'Signaling of end-of-candidates remote ICE gathering.']);
       this._peerConnections[targetMid].addIceCandidate(null);
     }
@@ -15599,7 +16671,10 @@ Skylink.prototype._addIceCandidate = function (targetMid, canId, candidate) {
     }, null);
 
   if (!(self._peerConnections[targetMid] &&
-    self._peerConnections[targetMid].signalingState !== self.PEER_CONNECTION_STATE.CLOSED)) {
+    self._peerConnections[targetMid].signalingState !== self.PEER_CONNECTION_STATE.CLOSED &&
+    self._peerConnections[targetMid].remoteDescription &&
+    self._peerConnections[targetMid].remoteDescription.sdp &&
+    self._peerConnections[targetMid].remoteDescription.sdp.indexOf('\r\na=mid:' + candidate.sdpMid + '\r\n') > -1)) {
     log.warn([targetMid, 'RTCIceCandidate', canId + ':' + candidateType, 'Dropping ICE candidate ' +
       'as Peer connection does not exists or is closed']);
     self._trigger('candidateProcessingState', self.CANDIDATE_PROCESSING_STATE.DROPPED,
@@ -15682,6 +16757,7 @@ Skylink.prototype.TURN_TRANSPORT = {
  * @since 0.5.4
  */
 Skylink.prototype._setIceServers = function(givenConfig) {
+  var self = this;
   var givenIceServers = clone(givenConfig.iceServers);
   var iceServersList = {};
   var newIceServers = [];
@@ -15691,7 +16767,7 @@ Skylink.prototype._setIceServers = function(givenConfig) {
 
 
 
-  if (this._forceTURNSSL) {
+  if (self._forceTURNSSL) {
     if (window.webrtcDetectedBrowser === 'chrome' ||
       window.webrtcDetectedBrowser === 'safari' ||
       window.webrtcDetectedBrowser === 'IE') {
@@ -15735,18 +16811,18 @@ Skylink.prototype._setIceServers = function(givenConfig) {
     }
 
     if (server.url.indexOf('stun') === 0) {
-      if (!this._enableSTUN) {
+      if (!self._enableSTUN) {
         log.warn('Ignoring STUN server provided at index ' + i, clone(server));
         continue;
       }
 
-      if (!this._usePublicSTUN && server.url.indexOf('temasys') === -1) {
+      if (!self._usePublicSTUN && server.url.indexOf('temasys') === -1) {
         log.warn('Ignoring public STUN server provided at index ' + i, clone(server));
         continue;
       }
 
     } else if (server.url.indexOf('turn') === 0) {
-      if (!this._enableTURN) {
+      if (!self._enableTURN) {
         log.warn('Ignoring TURN server provided at index ' + i, clone(server));
         continue;
       }
@@ -15783,7 +16859,7 @@ Skylink.prototype._setIceServers = function(givenConfig) {
     var credential = typeof server.credential === 'string' ? server.credential : 'none';
 
     if (server.url.indexOf('turn') === 0) {
-      if (this._TURNTransport === this.TURN_TRANSPORT.ANY) {
+      if (self._TURNTransport === self.TURN_TRANSPORT.ANY) {
         pushIceServer(username, credential, server.url);
 
       } else {
@@ -15793,17 +16869,17 @@ Skylink.prototype._setIceServers = function(givenConfig) {
           rawUrl = rawUrl.split('?transport=')[0];
         }
 
-        if (this._TURNTransport === this.TURN_TRANSPORT.NONE) {
+        if (self._TURNTransport === self.TURN_TRANSPORT.NONE) {
           pushIceServer(username, credential, rawUrl);
-        } else if (this._TURNTransport === this.TURN_TRANSPORT.UDP) {
+        } else if (self._TURNTransport === self.TURN_TRANSPORT.UDP) {
           pushIceServer(username, credential, rawUrl + '?transport=udp');
-        } else if (this._TURNTransport === this.TURN_TRANSPORT.TCP) {
+        } else if (self._TURNTransport === self.TURN_TRANSPORT.TCP) {
           pushIceServer(username, credential, rawUrl + '?transport=tcp');
-        } else if (this._TURNTransport === this.TURN_TRANSPORT.ALL) {
+        } else if (self._TURNTransport === self.TURN_TRANSPORT.ALL) {
           pushIceServer(username, credential, rawUrl + '?transport=tcp');
           pushIceServer(username, credential, rawUrl + '?transport=udp');
         } else {
-          log.warn('Invalid TURN transport option "' + this._TURNTransport +
+          log.warn('Invalid TURN transport option "' + self._TURNTransport +
             '". Ignoring TURN server at index' + i, clone(server));
           continue;
         }
@@ -15814,7 +16890,7 @@ Skylink.prototype._setIceServers = function(givenConfig) {
   }
 
   // add mozilla STUN for firefox
-  if (this._enableSTUN && this._usePublicSTUN && window.webrtcDetectedBrowser === 'firefox') {
+  if (self._enableSTUN && self._usePublicSTUN && window.webrtcDetectedBrowser === 'firefox') {
     pushIceServer('none', 'none', 'stun:stun.services.mozilla.com', 0);
   }
 
@@ -15886,6 +16962,23 @@ Skylink.prototype._setIceServers = function(givenConfig) {
     }
   }
 
+  if (self._iceServer) {
+    var nUsername = null, nCredential = null;
+    for (i = 0; i < newIceServers.length; i++) {
+      if (newIceServers[i].username) {
+        nUsername = newIceServers[i].username;
+      }
+      if (newIceServers[i].credential) {
+        nCredential = newIceServers[i].credential;
+      }
+    }
+    newIceServers = [{
+      urls: self._iceServer.urls,
+      username: nUsername,
+      credential: nCredential
+    }];
+  }
+
   log.log('Output iceServers configuration:', newIceServers);
 
   return {
@@ -15941,6 +17034,83 @@ Skylink.prototype.SERVER_PEER_TYPE = {
 
 /**
  * <blockquote class="info">
+ *  Learn more about how ICE works in this
+ *  <a href="https://temasys.com.sg/ice-what-is-this-sorcery/">article here</a>.
+ * </blockquote>
+ * The list of available Peer connection bundle policies.
+ * @attribute BUNDLE_POLICY
+ * @param {String} MAX_COMPAT <small>Value <code>"max-compat"</code></small>
+ *   The value of the bundle policy to generate ICE candidates for each media type
+ *   so each media type flows through different transports.
+ * @param {String} MAX_BUNDLE <small>Value <code>"max-bundle"</code></small>
+ *   The value of the bundle policy to generate ICE candidates for one media type
+ *   so all media type flows through a single transport.
+ * @param {String} BALANCED   <small>Value <code>"balanced"</code></small>
+ *   The value of the bundle policy to use <code>MAX_BUNDLE</code> if Peer supports it,
+ *   else fallback to <code>MAX_COMPAT</code>.
+ * @param {String} NONE       <small>Value <code>"none"</code></small>
+ *   The value of the bundle policy to not use any media bundle.
+ *   <small>This removes the <code>a=group:BUNDLE</code> line from session descriptions.</small>
+ * @type JSON
+ * @readOnly
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.BUNDLE_POLICY = {
+  MAX_COMPAT: 'max-compat',
+  BALANCED: 'balanced',
+  MAX_BUNDLE: 'max-bundle',
+  NONE: 'none'
+};
+
+/**
+ * <blockquote class="info">
+ *  Learn more about how ICE works in this
+ *  <a href="https://temasys.com.sg/ice-what-is-this-sorcery/">article here</a>.
+ * </blockquote>
+ * The list of available Peer connection RTCP mux policies.
+ * @attribute RTCP_MUX_POLICY
+ * @param {String} REQUIRE   <small>Value <code>"require"</code></small>
+ *   The value of the RTCP mux policy to generate ICE candidates for RTP only and RTCP shares the same ICE candidates.
+ * @param {String} NEGOTIATE <small>Value <code>"negotiate"</code></small>
+ *   The value of the RTCP mux policy to generate ICE candidates for both RTP and RTCP each.
+ * @type JSON
+ * @readOnly
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.RTCP_MUX_POLICY = {
+  REQUIRE: 'require',
+  NEGOTIATE: 'negotiate'
+};
+
+/**
+ * <blockquote class="info">
+ *  Learn more about how ICE works in this
+ *  <a href="https://temasys.com.sg/ice-what-is-this-sorcery/">article here</a>.
+ * </blockquote>
+ * The list of available Peer connection certificates cryptographic algorithm to use.
+ * @attribute PEER_CERTIFICATE
+ * @param {String} RSA   <small>Value <code>"RSA"</code></small>
+ *   The value of the Peer connection certificate algorithm to use RSA-1024.
+ * @param {String} ECDSA <small>Value <code>"ECDSA"</code></small>
+ *   The value of the Peer connection certificate algorithm to use ECDSA.
+ * @param {String} AUTO  <small>Value <code>"AUTO"</code></small>
+ *   The value of the Peer connection to use the default certificate generated.
+ * @type JSON
+ * @readOnly
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.PEER_CERTIFICATE = {
+  RSA: 'RSA',
+  ECDSA: 'ECDSA',
+  AUTO: 'AUTO'
+};
+
+/**
+ * <blockquote class="info">
+ *   Note that Edge browser does not support renegotiation.
  *   For MCU enabled Peer connections with <code>options.mcuUseRenegoRestart</code> set to <code>false</code>
  *   in the <a href="#method_init"><code>init()</code> method</a>, the restart functionality may differ, you
  *   may learn more about how to workaround it
@@ -15968,6 +17138,17 @@ Skylink.prototype.SERVER_PEER_TYPE = {
  *   The flag if ICE connections should restart when refreshing Peer connections.
  *   <small>This is used when ICE connection state is <code>FAILED</code> or <code>DISCONNECTED</code>, which state
  *   can be retrieved with the <a href="#event_iceConnectionState"><code>iceConnectionState</code> event</a>.</small>
+ * @param {JSON} [options] <blockquote class="info">
+ *   Note that for MCU connections, the <code>bandwidth</code> or <code>googleXBandwidth</code>
+ *   settings will override for all Peers or the current Room connection session settings.</blockquote>
+ *   The custom Peer configuration settings.
+ * @param {JSON} [options.bandwidth] The configuration to set the maximum streaming bandwidth to send to Peers.
+ *   <small>Object signature follows <a href="#method_joinRoom"><code>joinRoom()</code> method</a>
+ *   <code>options.bandwidth</code> settings.</small>
+ * @param {JSON} [options.googleXBandwidth] The configuration to set the experimental google
+ *   video streaming bandwidth sent to Peers.
+ *   <small>Object signature follows <a href="#method_joinRoom"><code>joinRoom()</code> method</a>
+ *   <code>options.googleXBandwidth</code> settings.</small>
  * @param {Function} [callback] The callback function fired when request has completed.
  *   <small>Function parameters signature is <code>function (error, success)</code></small>
  *   <small>Function request completion is determined by the <a href="#event_peerRestart">
@@ -15981,9 +17162,25 @@ Skylink.prototype.SERVER_PEER_TYPE = {
  *   with the Peer ID defined in <code>#peerId</code> property.
  *   <small>If <code>#peerId</code> value is <code>"self"</code>, it means that it is the error when there
  *   is no Peer connections to refresh with.</small>
+ * @param {JSON} callback.error.refreshSettings The list of Peer connection refresh settings.
+ * @param {JSON} callback.error.refreshSettings.#peerId The Peer connection refresh settings associated
+ *   with the Peer ID defined in <code>#peerId</code> property.
+ * @param {Boolean} callback.error.refreshSettings.#peerId.iceRestart The flag if ICE restart is enabled for
+ *   this Peer connection refresh session.
+ * @param {JSON} callback.error.refreshSettings.#peerId.customSettings The Peer connection custom settings.
+ *   <small>Object signature follows <a href="#method_getPeersCustomSettings"><code>getPeersCustomSettings</code>
+ *   method</a> returned per <code>#peerId</code> object.</small>
  * @param {JSON} callback.success The success result in request.
  *   <small>Defined as <code>null</code> when there are errors in request</small>
  * @param {Array} callback.success.listOfPeers The list of Peer IDs targeted.
+ * @param {JSON} callback.success.refreshSettings The list of Peer connection refresh settings.
+ * @param {JSON} callback.success.refreshSettings.#peerId The Peer connection refresh settings associated
+ *   with the Peer ID defined in <code>#peerId</code> property.
+ * @param {Boolean} callback.success.refreshSettings.#peerId.iceRestart The flag if ICE restart is enabled for
+ *   this Peer connection refresh session.
+ * @param {JSON} callback.success.refreshSettings.#peerId.customSettings The Peer connection custom settings.
+ *   <small>Object signature follows <a href="#method_getPeersCustomSettings"><code>getPeersCustomSettings</code>
+ *   method</a> returned per <code>#peerId</code> object.</small>
  * @trigger <ol class="desc-seq">
  *   <li>Checks if MCU is enabled for App Key provided in <a href="#method_init"><code>init()</code> method</a><ol>
  *   <li>If MCU is enabled: <ol><li>If there are connected Peers in the Room: <ol>
@@ -16061,11 +17258,12 @@ Skylink.prototype.SERVER_PEER_TYPE = {
  * @for Skylink
  * @since 0.5.5
  */
-Skylink.prototype.refreshConnection = function(targetPeerId, iceRestart, callback) {
+Skylink.prototype.refreshConnection = function(targetPeerId, iceRestart, options, callback) {
   var self = this;
 
   var listOfPeers = Object.keys(self._peerConnections);
   var doIceRestart = false;
+  var bwOptions = {};
 
   if(Array.isArray(targetPeerId)) {
     listOfPeers = targetPeerId;
@@ -16073,14 +17271,24 @@ Skylink.prototype.refreshConnection = function(targetPeerId, iceRestart, callbac
     listOfPeers = [targetPeerId];
   } else if (typeof targetPeerId === 'boolean') {
     doIceRestart = targetPeerId;
+  } else if (targetPeerId && typeof targetPeerId === 'object') {
+    bwOptions = targetPeerId;
   } else if (typeof targetPeerId === 'function') {
     callback = targetPeerId;
   }
 
   if (typeof iceRestart === 'boolean') {
     doIceRestart = iceRestart;
+  } else if (iceRestart && typeof iceRestart === 'object') {
+    bwOptions = iceRestart;
   } else if (typeof iceRestart === 'function') {
     callback = iceRestart;
+  }
+
+  if (options && typeof options === 'object') {
+    bwOptions = options;
+  } else if (typeof options === 'function') {
+    callback = options;
   }
 
   var emitErrorForPeersFn = function (error) {
@@ -16104,8 +17312,13 @@ Skylink.prototype.refreshConnection = function(targetPeerId, iceRestart, callbac
     }
   };
 
-  if (listOfPeers.length === 0) {
+  if (listOfPeers.length === 0 && !(self._hasMCU && !self._mcuUseRenegoRestart)) {
     emitErrorForPeersFn('There is currently no peer connections to restart');
+    return;
+  }
+
+  if (window.webrtcDetectedBrowser === 'edge') {
+    emitErrorForPeersFn('Edge browser currently does not support renegotiation.');
     return;
   }
 
@@ -16116,7 +17329,7 @@ Skylink.prototype.refreshConnection = function(targetPeerId, iceRestart, callbac
       }
       return;
     }
-    self._refreshPeerConnection(listOfPeers, doIceRestart, callback);
+    self._refreshPeerConnection(listOfPeers, doIceRestart, bwOptions, callback);
   }, 'refreshConnection', self._throttlingTimeouts.refreshConnection);
 
 };
@@ -16128,11 +17341,12 @@ Skylink.prototype.refreshConnection = function(targetPeerId, iceRestart, callbac
  * @for Skylink
  * @since 0.6.15
  */
-Skylink.prototype._refreshPeerConnection = function(listOfPeers, doIceRestart, callback) {
+Skylink.prototype._refreshPeerConnection = function(listOfPeers, doIceRestart, bwOptions, callback) {
   var self = this;
   var listOfPeerRestarts = [];
   var error = '';
   var listOfPeerRestartErrors = {};
+  var listOfPeersSettings = {};
 
   // To fix jshint dont put functions within a loop
   var refreshSinglePeerCallback = function (peerId) {
@@ -16141,6 +17355,12 @@ Skylink.prototype._refreshPeerConnection = function(listOfPeers, doIceRestart, c
         if (error) {
           log.error([peerId, 'RTCPeerConnection', null, 'Failed restarting for peer'], error);
           listOfPeerRestartErrors[peerId] = error;
+        } else {
+          listOfPeersSettings[peerId] = {
+            iceRestart: !self._hasMCU && self._peerInformations[peerId] && self._peerInformations[peerId].config &&
+              self._peerInformations[peerId].config.enableIceRestart && self._enableIceRestart && doIceRestart,
+            customSettings: self.getPeersCustomSettings()[peerId] || {}
+          };
         }
         listOfPeerRestarts.push(peerId);
       }
@@ -16152,11 +17372,13 @@ Skylink.prototype._refreshPeerConnection = function(listOfPeers, doIceRestart, c
           if (Object.keys(listOfPeerRestartErrors).length > 0) {
             callback({
               refreshErrors: listOfPeerRestartErrors,
-              listOfPeers: listOfPeers
+              listOfPeers: listOfPeers,
+              refreshSettings: listOfPeersSettings
             }, null);
           } else {
             callback(null, {
-              listOfPeers: listOfPeers
+              listOfPeers: listOfPeers,
+              refreshSettings: listOfPeersSettings
             });
           }
         }
@@ -16176,7 +17398,7 @@ Skylink.prototype._refreshPeerConnection = function(listOfPeers, doIceRestart, c
     log.log([peerId, 'PeerConnection', null, 'Restarting peer connection']);
 
     // do a hard reset on variable object
-    self._restartPeerConnection(peerId, doIceRestart, peerCallback);
+    self._restartPeerConnection(peerId, doIceRestart, bwOptions, peerCallback);
   };
 
   if(!self._hasMCU) {
@@ -16194,11 +17416,14 @@ Skylink.prototype._refreshPeerConnection = function(listOfPeers, doIceRestart, c
       }
     }
   } else {
-    self._restartMCUConnection(callback, doIceRestart);
+    self._restartMCUConnection(callback, doIceRestart, bwOptions);
   }
 };
 
 /**
+ * <blockquote class="info">
+ * Note that this is not well supported in the Edge browser.
+ * </blockquote>
  * Function that retrieves Peer connection bandwidth and ICE connection stats.
  * @method getConnectionStatus
  * @param {String|Array} [targetPeerId] The target Peer ID to retrieve connection stats from.
@@ -16372,6 +17597,10 @@ Skylink.prototype.getConnectionStatus = function (targetPeerId, callback) {
     return;
   }
 
+  if (window.webrtcDetectedBrowser === 'edge') {
+    log.warn('Edge browser does not have well support for stats.');
+  }
+
   var completedTaskCounter = [];
 
   var checkCompletedFn = function (peerId) {
@@ -16399,432 +17628,43 @@ Skylink.prototype.getConnectionStatus = function (targetPeerId, callback) {
   };
 
   var statsFn = function (peerId) {
-    log.debug([peerId, 'RTCStatsReport', null, 'Retrieivng connection status']);
+    var retrieveFn = function (firstRetrieval, nextCb) {
+      return function (err, result) {
+        if (err) {
+          log.error([peerId, 'RTCStatsReport', null, 'Retrieval failure ->'], error);
+          listOfPeerErrors[peerId] = error;
+          self._trigger('getConnectionStatusStateChange', self.GET_CONNECTION_STATUS_STATE.RETRIEVE_ERROR,
+            peerId, null, error);
+          checkCompletedFn(peerId);
+          if (firstRetrieval) {
+            delete self._peerStats[peerId];
+          }
+          return;
+        }
+
+        if (firstRetrieval) {
+          nextCb();
+        } else {
+          listOfPeerStats[peerId] = result;
+          self._trigger('getConnectionStatusStateChange', self.GET_CONNECTION_STATUS_STATE.RETRIEVE_SUCCESS,
+            peerId, listOfPeerStats[peerId], null);
+          checkCompletedFn(peerId);
+        }
+      };
+    };
 
     if (!self._peerStats[peerId]) {
       self._peerStats[peerId] = {};
+
+      log.debug([peerId, 'RTCStatsReport', null, 'Retrieving first report to tabulate results']);
+
+      self._retrieveStats(peerId, retrieveFn(true, function () {
+        self._retrieveStats(peerId, retrieveFn());
+      }), true);
+      return;
     }
 
-    var pc = self._peerConnections[peerId];
-    var result = {
-      raw: null,
-      connection: {
-        iceConnectionState: pc.iceConnectionState,
-        iceGatheringState: pc.iceGatheringState,
-        signalingState: pc.signalingState,
-        remoteDescription: {
-          type: pc.remoteDescription ? pc.remoteDescription.type || null : null,
-          sdp : pc.remoteDescription ? pc.remoteDescription.sdp || null : null
-        },
-        localDescription: {
-          type: pc.localDescription ? pc.localDescription.type || null : null,
-          sdp : pc.localDescription ? pc.localDescription.sdp || null : null
-        },
-        candidates: clone(self._gatheredCandidates[peerId] || {
-          sending: { host: [], srflx: [], relay: [] },
-          receiving: { host: [], srflx: [], relay: [] }
-        }),
-        dataChannels: {}
-      },
-      audio: {
-        sending: {
-          ssrc: null,
-          bytes: 0,
-          packets: 0,
-          packetsLost: 0,
-          rtt: 0,
-          jitter: 0,
-          jitterBufferMs: null,
-          codec: self._getSDPSelectedCodec(peerId, pc.remoteDescription, 'audio'),
-          inputLevel: null,
-          echoReturnLoss: null,
-          echoReturnLossEnhancement: null,
-          totalBytes: 0,
-          totalPackets: 0,
-          totalPacketsLost: 0
-        },
-        receiving: {
-          ssrc: null,
-          bytes: 0,
-          packets: 0,
-          packetsLost: 0,
-          jitter: 0,
-          jitterBufferMs: null,
-          codec: self._getSDPSelectedCodec(peerId, pc.remoteDescription, 'audio'),
-          outputLevel: null,
-          totalBytes: 0,
-          totalPackets: 0,
-          totalPacketsLost: 0
-        }
-      },
-      video: {
-        sending: {
-          ssrc: null,
-          bytes: 0,
-          packets: 0,
-          packetsLost: 0,
-          rtt: 0,
-          jitter: 0,
-          jitterBufferMs: null,
-          codec: self._getSDPSelectedCodec(peerId, pc.remoteDescription, 'video'),
-          frameWidth: null,
-          frameHeight: null,
-          framesInput: null,
-          frames: null,
-          frameRateMean: null,
-          frameRateStdDev: null,
-          framesDropped: null,
-          nacks: null,
-          plis: null,
-          firs: null,
-          totalBytes: 0,
-          totalPackets: 0,
-          totalPacketsLost: 0,
-          totalNacks: 0,
-          totalPlis: 0,
-          totalFirs: 0
-        },
-        receiving: {
-          ssrc: null,
-          bytes: 0,
-          packets: 0,
-          packetsLost: 0,
-          jitter: 0,
-          jitterBufferMs: null,
-          codec: self._getSDPSelectedCodec(peerId, pc.remoteDescription, 'video'),
-          frameWidth: null,
-          frameHeight: null,
-          framesDecoded: null,
-          framesOutput: null,
-          frames: null,
-          frameRateMean: null,
-          frameRateStdDev: null,
-          nacks: null,
-          plis: null,
-          firs: null,
-          e2eDelay: null,
-          totalBytes: 0,
-          totalPackets: 0,
-          totalPacketsLost: 0,
-          totalNacks: 0,
-          totalPlis: 0,
-          totalFirs: 0
-        }
-      },
-      selectedCandidate: {
-        local: { ipAddress: null, candidateType: null, portNumber: null, transport: null },
-        remote: { ipAddress: null, candidateType: null, portNumber: null, transport: null }
-      }
-    };
-
-    for (var channelProp in self._dataChannels[peerId]) {
-      if (self._dataChannels[peerId].hasOwnProperty(channelProp) && self._dataChannels[peerId][channelProp]) {
-        result.connection.dataChannels[self._dataChannels[peerId][channelProp].channel.label] = {
-          label: self._dataChannels[peerId][channelProp].channel.label,
-          readyState: self._dataChannels[peerId][channelProp].channel.readyState,
-          channelType: channelProp === 'main' ? self.DATA_CHANNEL_TYPE.MESSAGING : self.DATA_CHANNEL_TYPE.DATA,
-          currentTransferId: self._dataChannels[peerId][channelProp].transferId || null
-        };
-      }
-    }
-
-    var loopFn = function (obj, fn) {
-      for (var prop in obj) {
-        if (obj.hasOwnProperty(prop) && obj[prop]) {
-          fn(obj[prop], prop);
-        }
-      }
-    };
-
-    var formatCandidateFn = function (candidateDirType, candidate) {
-      result.selectedCandidate[candidateDirType].ipAddress = candidate.ipAddress;
-      result.selectedCandidate[candidateDirType].candidateType = candidate.candidateType;
-      result.selectedCandidate[candidateDirType].portNumber = typeof candidate.portNumber !== 'number' ?
-        parseInt(candidate.portNumber, 10) || null : candidate.portNumber;
-      result.selectedCandidate[candidateDirType].transport = candidate.transport;
-    };
-
-    pc.getStats(null, function (stats) {
-      log.debug([peerId, 'RTCStatsReport', null, 'Retrieval success ->'], stats);
-
-      result.raw = stats;
-
-      if (window.webrtcDetectedBrowser === 'firefox') {
-        loopFn(stats, function (obj, prop) {
-          var dirType = '';
-
-          // Receiving/Sending RTP packets
-          if (prop.indexOf('inbound_rtp') === 0 || prop.indexOf('outbound_rtp') === 0) {
-            dirType = prop.indexOf('inbound_rtp') === 0 ? 'receiving' : 'sending';
-
-            if (!self._peerStats[peerId][prop]) {
-              self._peerStats[peerId][prop] = obj;
-            }
-
-            result[obj.mediaType][dirType].bytes = self._parseConnectionStats(self._peerStats[peerId][prop],
-              obj, dirType === 'receiving' ? 'bytesReceived' : 'bytesSent');
-            result[obj.mediaType][dirType].totalBytes = parseInt(
-              (dirType === 'receiving' ? obj.bytesReceived : obj.bytesSent) || '0', 10);
-            result[obj.mediaType][dirType].packets = self._parseConnectionStats(self._peerStats[peerId][prop],
-              obj, dirType === 'receiving' ? 'packetsReceived' : 'packetsSent');
-            result[obj.mediaType][dirType].totalPackets = parseInt(
-              (dirType === 'receiving' ? obj.packetsReceived : obj.packetsSent) || '0', 10);
-            result[obj.mediaType][dirType].ssrc = obj.ssrc;
-
-            if (dirType === 'receiving') {
-              result[obj.mediaType][dirType].packetsLost = self._parseConnectionStats(self._peerStats[peerId][prop],
-                obj, 'packetsLost');
-              result[obj.mediaType][dirType].totalPacketsLost = parseInt(obj.packetsLost || '0', 10);
-              result[obj.mediaType][dirType].jitter = obj.jitter || 0;
-            }
-
-            if (obj.mediaType === 'video') {
-              result.video[dirType].frameRateMean = obj.framerateMean || 0;
-              result.video[dirType].frameRateStdDev = obj.framerateStdDev || 0;
-
-              if (dirType === 'sending') {
-                result.video.sending.framesDropped = obj.framesDropped || 0;
-              }
-            }
-
-            self._peerStats[peerId][prop] = obj;
-
-          // Sending RTP packets lost
-          } else if (prop.indexOf('inbound_rtcp') === 0 || prop.indexOf('outbound_rtcp') === 0) {
-            dirType = prop.indexOf('inbound_rtp') === 0 ? 'receiving' : 'sending';
-
-            if (!self._peerStats[peerId][prop]) {
-              self._peerStats[peerId][prop] = obj;
-            }
-
-            if (dirType === 'sending') {
-              result[obj.mediaType].sending.rtt = obj.mozRtt || 0;
-              result[obj.mediaType].sending.packetsLost = self._parseConnectionStats(self._peerStats[peerId][prop],
-                obj, 'packetsLost');
-              result[obj.mediaType].sending.totalPacketsLost = parseInt(obj.packetsLost || '0', 10);
-              result[obj.mediaType].sending.jitter = obj.jitter || 0;
-            }
-
-            self._peerStats[peerId][prop] = obj;
-
-          // Candidates
-          } else if (obj.nominated && obj.selected) {
-            formatCandidateFn('remote', stats[obj.remoteCandidateId]);
-            formatCandidateFn('local', stats[obj.localCandidateId]);
-          }
-        });
-
-      } else if (window.webrtcDetectedBrowser === 'edge') {
-        if (pc.getRemoteStreams().length > 0) {
-          var tracks = pc.getRemoteStreams()[0].getTracks();
-
-          loopFn(tracks, function (track) {
-            loopFn(stats, function (obj, prop) {
-              if (obj.type === 'track' && obj.trackIdentifier === track.id) {
-                loopFn(stats, function (streamObj) {
-                  if (streamObj.associateStatsId === obj.id &&
-                    ['outboundrtp', 'inboundrtp'].indexOf(streamObj.type) > -1) {
-                    var dirType = streamObj.type === 'outboundrtp' ? 'sending' : 'receiving';
-
-                    if (!self._peerStats[peerId][prop]) {
-                      self._peerStats[peerId][prop] = streamObj;
-                    }
-
-                    result[track.kind][dirType].bytes = self._parseConnectionStats(self._peerStats[peerId][prop], streamObj,
-                      dirType === 'sending' ? 'bytesSent' : 'bytesReceived');
-                    result[track.kind][dirType].totalBytes = parseInt(
-                      (dirType === 'sending' ? streamObj.bytesSent : streamObj.bytesReceived) || '0', 10);
-                    result[track.kind][dirType].packets = self._parseConnectionStats(self._peerStats[peerId][prop], streamObj,
-                      dirType === 'sending' ? 'packetsSent' : 'packetsReceived');
-                    result[track.kind][dirType].totalPackets = parseInt(
-                      (dirType === 'sending' ? streamObj.packetsSent : streamObj.packetsReceived) || '0', 10);
-                    result[track.kind][dirType].packetsLost = self._parseConnectionStats(self._peerStats[peerId][prop], streamObj, 'packetsLost');
-                    result[track.kind][dirType].totalPacketsLost = parseInt(streamObj.packetsLost || '0', 10);
-                    result[track.kind][dirType].ssrc = parseInt(streamObj.ssrc || '0', 10);
-
-                    if (dirType === 'sending') {
-                      result[track.kind].sending.rtt = obj.roundTripTime || 0;
-                    }
-
-                    self._peerStats[peerId][prop] = streamObj;
-                  }
-                });
-              }
-            });
-          });
-        }
-
-      } else {
-        var reportedCandidate = false;
-
-        loopFn(stats, function (obj, prop) {
-          if (prop.indexOf('ssrc_') === 0) {
-            var dirType = prop.indexOf('_recv') > 0 ? 'receiving' : 'sending';
-
-            // Polyfill fix for plugin. Plugin should fix this though
-            if (!obj.mediaType) {
-              obj.mediaType = obj.hasOwnProperty('audioOutputLevel') ||
-                obj.hasOwnProperty('audioInputLevel') ? 'audio' : 'video';
-            }
-
-            if (!self._peerStats[peerId][prop]) {
-              self._peerStats[peerId][prop] = obj;
-            }
-
-            try {
-              if (obj.mediaType === 'video' && dirType === 'receiving') {
-                var captureStartNtpTimeMs = parseInt(obj.googCaptureStartNtpTimeMs || '0', 10);
-
-                if (captureStartNtpTimeMs > 0 && pc.getRemoteStreams().length > 0 && document &&
-                  typeof document.getElementsByTagName === 'function') {
-                  var streamId = pc.getRemoteStreams()[0].id || pc.getRemoteStreams()[0].label;
-                  var elements = [];
-
-                  if (self._isUsingPlugin) {
-                    elements = document.getElementsByTagName('object');
-                  } else {
-                    elements = document.getElementsByTagName('video');
-
-                    if (elements.length === 0) {
-                      elements = document.getElementsByTagName('audio');
-                    }
-                  }
-
-                  for (var e = 0; e < elements.length; e++) {
-                    var videoElmStreamId = null;
-
-                    if (self._isUsingPlugin) {
-                      if (!(elements[e].children && typeof elements[e].children === 'object' &&
-                        typeof elements[e].children.length === 'number' && elements[e].children.length > 0)) {
-                        break;
-                      }
-
-                      for (var ec = 0; ec < elements[e].children.length; ec++) {
-                        if (elements[e].children[ec].name === 'streamId') {
-                          videoElmStreamId = elements[e].children[ec].value || null;
-                          break;
-                        }
-                      }
-
-                    } else {
-                      videoElmStreamId = elements[e].srcObject ? elements[e].srcObject.id ||
-                        elements[e].srcObject.label : null;
-                    }
-
-                    if (videoElmStreamId && videoElmStreamId === streamId) {
-                      result[obj.mediaType][dirType].e2eDelay = ((new Date()).getTime() + 2208988800000) -
-                        captureStartNtpTimeMs - elements[e].currentTime * 1000;
-                      break;
-                    }
-                  }
-                }
-              }
-            } catch (error) {
-              log.warn([peerId, 'RTCStatsReport', null, 'Failed retrieving e2e delay ->'], error);
-            }
-
-            // Receiving/Sending RTP packets
-            result[obj.mediaType][dirType].ssrc = parseInt(obj.ssrc || '0', 10);
-            result[obj.mediaType][dirType].bytes = self._parseConnectionStats(self._peerStats[peerId][prop],
-              obj, dirType === 'receiving' ? 'bytesReceived' : 'bytesSent');
-            result[obj.mediaType][dirType].totalBytes = parseInt((dirType === 'receiving' ? obj.bytesReceived :
-              obj.bytesSent) || '0', 10);
-            result[obj.mediaType][dirType].packets = self._parseConnectionStats(self._peerStats[peerId][prop],
-              obj, dirType === 'receiving' ? 'packetsReceived' : 'packetsSent');
-            result[obj.mediaType][dirType].totalPackets = parseInt((dirType === 'receiving' ? obj.packetsReceived :
-              obj.packetsSent) || '0', 10);
-            result[obj.mediaType][dirType].packetsLost = self._parseConnectionStats(self._peerStats[peerId][prop],
-              obj, 'packetsLost');
-            result[obj.mediaType][dirType].totalPacketsLost = parseInt(obj.packetsLost || '0', 10);
-            result[obj.mediaType][dirType].jitter = parseFloat(obj.googJitterReceived || '0', 10);
-            result[obj.mediaType][dirType].googJitterBufferMs = parseFloat(obj.googJitterBufferMs || '0', 10);
-
-            if (result[obj.mediaType][dirType].codec) {
-              if (obj.googCodecName && obj.googCodecName !== 'unknown') {
-                result[obj.mediaType][dirType].codec.name = obj.googCodecName;
-              }
-              if (obj.codecImplementationName && obj.codecImplementationName !== 'unknown') {
-                result[obj.mediaType][dirType].codec.implementation = obj.codecImplementationName;
-              }
-            }
-
-            if (dirType === 'sending') {
-              // NOTE: Chrome sending audio does have it but plugin has..
-              result[obj.mediaType].sending.rtt = parseFloat(obj.googRtt || '0', 10);
-            }
-
-            if (obj.mediaType === 'video') {
-              result.video[dirType].frameWidth = parseInt((dirType === 'receiving' ?
-                obj.googFrameWidthReceived : obj.googFrameWidthSent) || '0', 10);
-              result.video[dirType].frameHeight = parseInt((dirType === 'receiving' ?
-                obj.googFrameHeightReceived : obj.googFrameHeightSent) || '0', 10);
-              result.video[dirType].frames = parseInt((dirType === 'receiving' ?
-                obj.googFrameRateReceived : obj.googFrameRateSent) || '0', 10);
-
-              result.video[dirType].nacks = self._parseConnectionStats(self._peerStats[peerId][prop],
-                obj, dirType === 'receiving' ? 'googNacksReceived' : 'googNacksSent');
-              result[obj.mediaType][dirType].totalNacks = parseInt((dirType === 'receiving' ? obj.googNacksReceived :
-                obj.googNacksSent) || '0', 10);
-              result.video[dirType].plis = self._parseConnectionStats(self._peerStats[peerId][prop],
-                obj, dirType === 'receiving' ? 'googPlisReceived' : 'googPlisSent');
-              result[obj.mediaType][dirType].totalPlis = parseInt((dirType === 'receiving' ? obj.googPlisReceived :
-                obj.googPlisSent) || '0', 10);
-              result.video[dirType].firs = self._parseConnectionStats(self._peerStats[peerId][prop],
-                obj, dirType === 'receiving' ? 'googFirsReceived' : 'googFirsSent');
-              result[obj.mediaType][dirType].totalFirs = parseInt((dirType === 'receiving' ? obj.googFirsReceived :
-                obj.googFirsSent) || '0', 10);
-
-              if (dirType === 'receiving') {
-                result.video[dirType].framesDecoded = parseInt(obj.googFrameRateDecoded || '0', 10);
-                result.video[dirType].framesOutput = parseInt(obj.googFrameRateOutput || '0', 10);
-              } else {
-                result.video[dirType].framesInput = parseInt(obj.googFrameRateInput || '0', 10);
-              }
-            } else {
-              if (dirType === 'receiving') {
-                result.audio[dirType].outputLevel = parseFloat(obj.audioOutputLevel || '0', 10);
-
-              } else {
-                result.audio[dirType].inputLevel = parseFloat(obj.audioInputLevel || '0', 10);
-                result.audio[dirType].echoReturnLoss = parseFloat(obj.googEchoCancellationReturnLoss || '0', 10);
-                result.audio[dirType].echoReturnLossEnhancement = parseFloat(obj.googEchoCancellationReturnLossEnhancement || '0', 10);
-              }
-            }
-
-            self._peerStats[peerId][prop] = obj;
-
-            if (!reportedCandidate) {
-              loopFn(stats, function (canObj, canProp) {
-                if (!reportedCandidate && canProp.indexOf('Conn-') === 0) {
-                  if (obj.transportId === canObj.googChannelId) {
-                    formatCandidateFn('local', stats[canObj.localCandidateId]);
-                    formatCandidateFn('remote', stats[canObj.remoteCandidateId]);
-                    reportedCandidate = true;
-                  }
-                }
-              });
-            }
-          }
-        });
-      }
-
-      listOfPeerStats[peerId] = result;
-
-      self._trigger('getConnectionStatusStateChange', self.GET_CONNECTION_STATUS_STATE.RETRIEVE_SUCCESS,
-        peerId, listOfPeerStats[peerId], null);
-
-      checkCompletedFn(peerId);
-
-    }, function (error) {
-      log.error([peerId, 'RTCStatsReport', null, 'Retrieval failure ->'], error);
-
-      listOfPeerErrors[peerId] = error;
-
-      self._trigger('getConnectionStatusStateChange', self.GET_CONNECTION_STATUS_STATE.RETRIEVE_ERROR,
-        peerId, null, error);
-
-      checkCompletedFn(peerId);
-    });
+    self._retrieveStats(peerId, retrieveFn());
   };
 
   // Loop through all the list of Peers selected to retrieve connection status
@@ -16852,6 +17692,773 @@ Skylink.prototype.getConnectionStatus = function (targetPeerId, callback) {
 };
 
 /**
+ * Function that retrieves Peer connection stats.
+ * @method _retrieveStats
+ * @private
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype._retrieveStats = function (peerId, callback, beSilentOnLogs, isAutoBwStats) {
+  var self = this;
+
+  if (!beSilentOnLogs) {
+    log.debug([peerId, 'RTCStatsReport', null, 'Retrieivng connection status']);
+  }
+
+  var pc = self._peerConnections[peerId];
+  var result = {
+    raw: null,
+    connection: {
+      iceConnectionState: pc.iceConnectionState,
+      iceGatheringState: pc.iceGatheringState,
+      signalingState: pc.signalingState,
+      remoteDescription: {
+        type: pc.remoteDescription ? pc.remoteDescription.type || null : null,
+        sdp : pc.remoteDescription ? pc.remoteDescription.sdp || null : null
+      },
+      localDescription: {
+        type: pc.localDescription ? pc.localDescription.type || null : null,
+        sdp : pc.localDescription ? pc.localDescription.sdp || null : null
+      },
+      candidates: clone(self._gatheredCandidates[peerId] || {
+        sending: { host: [], srflx: [], relay: [] },
+        receiving: { host: [], srflx: [], relay: [] }
+      }),
+      dataChannels: {},
+      constraints: self._peerConnStatus[peerId] ? self._peerConnStatus[peerId].constraints : null,
+      optional: self._peerConnStatus[peerId] ? self._peerConnStatus[peerId].optional : null,
+      sdpConstraints: self._peerConnStatus[peerId] ? self._peerConnStatus[peerId].sdpConstraints : null
+    },
+    audio: {
+      sending: {
+        ssrc: null,
+        bytes: 0,
+        packets: 0,
+        // Should not be for sending?
+        packetsLost: 0,
+        rtt: 0,
+        // Should not be for sending?
+        jitter: 0,
+        // Should not be for sending?
+        jitterBufferMs: null,
+        codec: self._getSDPSelectedCodec(peerId, pc.remoteDescription, 'audio', beSilentOnLogs),
+        nacks: null,
+        inputLevel: null,
+        echoReturnLoss: null,
+        echoReturnLossEnhancement: null,
+        totalBytes: 0,
+        totalPackets: 0,
+        totalPacketsLost: 0,
+        totalNacks: null
+      },
+      receiving: {
+        ssrc: null,
+        bytes: 0,
+        packets: 0,
+        packetsLost: 0,
+        packetsDiscarded: 0,
+        fractionLost: 0,
+        nacks: null,
+        jitter: 0,
+        jitterBufferMs: null,
+        codec: self._getSDPSelectedCodec(peerId, pc.remoteDescription, 'audio', beSilentOnLogs),
+        outputLevel: null,
+        totalBytes: 0,
+        totalPackets: 0,
+        totalPacketsLost: 0,
+        totalNacks: null
+      }
+    },
+    video: {
+      sending: {
+        ssrc: null,
+        bytes: 0,
+        packets: 0,
+        // Should not be for sending?
+        packetsLost: 0,
+        rtt: 0,
+        // Should not be for sending?
+        jitter: 0,
+        // Should not be for sending?
+        jitterBufferMs: null,
+        codec: self._getSDPSelectedCodec(peerId, pc.remoteDescription, 'video', beSilentOnLogs),
+        frameWidth: null,
+        frameHeight: null,
+        framesDecoded: null,
+        framesCorrupted: null,
+        framesDropped: null,
+        framesPerSecond: null,
+        framesInput: null,
+        frames: null,
+        frameRateEncoded: null,
+        frameRate: null,
+        frameRateInput: null,
+        frameRateMean: null,
+        frameRateStdDev: null,
+        nacks: null,
+        plis: null,
+        firs: null,
+        slis: null,
+        qpSum: null,
+        totalBytes: 0,
+        totalPackets: 0,
+        totalPacketsLost: 0,
+        totalNacks: null,
+        totalPlis: null,
+        totalFirs: null,
+        totalSlis: null,
+        totalFrames: null
+      },
+      receiving: {
+        ssrc: null,
+        bytes: 0,
+        packets: 0,
+        packetsDiscarded: 0,
+        packetsLost: 0,
+        fractionLost: 0,
+        jitter: 0,
+        jitterBufferMs: null,
+        codec: self._getSDPSelectedCodec(peerId, pc.remoteDescription, 'video', beSilentOnLogs),
+        frameWidth: null,
+        frameHeight: null,
+        framesDecoded: null,
+        framesCorrupted: null,
+        framesPerSecond: null,
+        framesDropped: null,
+        framesOutput: null,
+        frames: null,
+        frameRateMean: null,
+        frameRateStdDev: null,
+        nacks: null,
+        plis: null,
+        firs: null,
+        slis: null,
+        e2eDelay: null,
+        totalBytes: 0,
+        totalPackets: 0,
+        totalPacketsLost: 0,
+        totalNacks: null,
+        totalPlis: null,
+        totalFirs: null,
+        totalSlis: null,
+        totalFrames: null
+      }
+    },
+    selectedCandidate: {
+      local: {
+        ipAddress: null,
+        candidateType: null,
+        portNumber: null,
+        transport: null,
+        turnMediaTransport: null
+      },
+      remote: {
+        ipAddress: null,
+        candidateType: null,
+        portNumber: null,
+        transport: null
+      },
+      consentResponses: {
+        received: null,
+        sent: null,
+        totalReceived: null,
+        totalSent: null
+      },
+      consentRequests: {
+        received: null,
+        sent: null,
+        totalReceived: null,
+        totalSent: null
+      },
+      responses: {
+        received: null,
+        sent: null,
+        totalReceived: null,
+        totalSent: null
+      },
+      requests: {
+        received: null,
+        sent: null,
+        totalReceived: null,
+        totalSent: null
+      }
+    },
+    certificate: {
+      local: self._getSDPFingerprint(peerId, pc.localDescription, beSilentOnLogs),
+      remote: self._getSDPFingerprint(peerId, pc.remoteDescription, beSilentOnLogs),
+      dtlsCipher: null,
+      srtpCipher: null
+    }
+  };
+
+  if (self._dataChannels[peerId]) {
+    for (var channelProp in self._dataChannels[peerId]) {
+      if (self._dataChannels[peerId].hasOwnProperty(channelProp) && self._dataChannels[peerId][channelProp]) {
+        result.connection.dataChannels[self._dataChannels[peerId][channelProp].channel.label] = {
+          label: self._dataChannels[peerId][channelProp].channel.label,
+          readyState: self._dataChannels[peerId][channelProp].channel.readyState,
+          channelType: channelProp === 'main' ? self.DATA_CHANNEL_TYPE.MESSAGING : self.DATA_CHANNEL_TYPE.DATA,
+          currentTransferId: self._dataChannels[peerId][channelProp].transferId || null,
+          currentStreamId: self._dataChannels[peerId][channelProp].streamId || null
+        };
+      }
+    }
+  }
+
+  var loopFn = function (obj, fn) {
+    for (var prop in obj) {
+      if (obj.hasOwnProperty(prop) && obj[prop]) {
+        fn(obj[prop], prop);
+      }
+    }
+  };
+
+  var formatCandidateFn = function (candidateDirType, candidate) {
+    result.selectedCandidate[candidateDirType].ipAddress = candidate.ipAddress;
+    result.selectedCandidate[candidateDirType].candidateType = candidate.candidateType;
+    result.selectedCandidate[candidateDirType].portNumber = typeof candidate.portNumber !== 'number' ?
+      parseInt(candidate.portNumber, 10) || null : candidate.portNumber;
+    result.selectedCandidate[candidateDirType].transport = candidate.transport;
+  };
+
+  pc.getStats(null, function (stats) {
+    if (!beSilentOnLogs) {
+      log.debug([peerId, 'RTCStatsReport', null, 'Retrieval success ->'], stats);
+    }
+
+    if (isAutoBwStats ? !self._peerStats[peerId] : !self._peerBandwidth[peerId]) {
+      callback(new Error('Peer connection stats object is not defined.', null));
+      return;
+    }
+
+    result.raw = stats;
+
+    if (window.webrtcDetectedBrowser === 'firefox') {
+      loopFn(stats, function (obj, prop) {
+        var dirType = '';
+
+        // Receiving/Sending RTP packets
+        if (prop.indexOf('inbound_rtp') === 0 || prop.indexOf('outbound_rtp') === 0) {
+          dirType = prop.indexOf('inbound_rtp') === 0 ? 'receiving' : 'sending';
+
+          if (isAutoBwStats) {
+            if (!self._peerBandwidth[peerId][prop]) {
+              self._peerBandwidth[peerId][prop] = obj;
+            }
+          } else if (!self._peerStats[peerId][prop]) {
+            self._peerStats[peerId][prop] = obj;
+          }
+
+          result[obj.mediaType][dirType].bytes = self._parseConnectionStats(
+            isAutoBwStats ? self._peerBandwidth[peerId][prop] : self._peerStats[peerId][prop],
+            obj, dirType === 'receiving' ? 'bytesReceived' : 'bytesSent');
+          result[obj.mediaType][dirType].totalBytes = parseInt(
+            (dirType === 'receiving' ? obj.bytesReceived : obj.bytesSent) || '0', 10);
+          result[obj.mediaType][dirType].packets = self._parseConnectionStats(
+            isAutoBwStats ? self._peerBandwidth[peerId][prop] : self._peerStats[peerId][prop],
+            obj, dirType === 'receiving' ? 'packetsReceived' : 'packetsSent');
+          result[obj.mediaType][dirType].totalPackets = parseInt(
+            (dirType === 'receiving' ? obj.packetsReceived : obj.packetsSent) || '0', 10);
+          result[obj.mediaType][dirType].ssrc = obj.ssrc;
+
+          if (obj.mediaType === 'video') {
+            result.video[dirType].frameRateMean = obj.framerateMean || 0;
+            result.video[dirType].frameRateStdDev = obj.framerateStdDev || 0;
+            result.video[dirType].framesDropped = typeof obj.framesDropped === 'number' ? obj.framesDropped :
+              (typeof obj.droppedFrames === 'number' ? obj.droppedFrames : null);
+            result.video[dirType].framesCorrupted = typeof obj.framesCorrupted === 'number' ? obj.framesCorrupted : null;
+            result.video[dirType].framesPerSecond = typeof obj.framesPerSecond === 'number' ? obj.framesPerSecond : null;
+
+            if (dirType === 'sending') {
+              result.video[dirType].framesEncoded = typeof obj.framesEncoded === 'number' ? obj.framesEncoded : null;
+              result.video[dirType].frames = typeof obj.framesSent === 'number' ? obj.framesSent : null;
+            } else {
+              result.video[dirType].framesDecoded = typeof obj.framesDecoded === 'number' ? obj.framesDecoded : null;
+              result.video[dirType].frames = typeof obj.framesReceived === 'number' ? obj.framesReceived : null;
+            }
+          }
+
+          if (dirType === 'receiving') {
+            obj.packetsDiscarded = (typeof obj.packetsDiscarded === 'number' ? obj.packetsDiscarded :
+              obj.discardedPackets) || 0;
+            obj.packetsLost = typeof obj.packetsLost === 'number' ? obj.packetsLost : 0;
+
+            result[obj.mediaType].receiving.packetsLost = self._parseConnectionStats(
+              isAutoBwStats ? self._peerBandwidth[peerId][prop] : self._peerStats[peerId][prop],
+              obj, 'packetsLost');
+            result[obj.mediaType].receiving.packetsDiscarded = self._parseConnectionStats(
+              isAutoBwStats ? self._peerBandwidth[peerId][prop] : self._peerStats[peerId][prop],
+              obj, 'packetsDiscarded');
+            result[obj.mediaType].receiving.totalPacketsDiscarded = obj.packetsDiscarded;
+            result[obj.mediaType].receiving.totalPacketsLost = obj.packetsLost;
+          }
+
+          if (isAutoBwStats) {
+            self._peerBandwidth[peerId][prop] = obj;
+          } else if (!self._peerStats[peerId][prop]) {
+            self._peerStats[peerId][prop] = obj;
+          }
+
+        // Sending RTP packets lost
+        } else if (prop.indexOf('inbound_rtcp') === 0 || prop.indexOf('outbound_rtcp') === 0) {
+          dirType = prop.indexOf('inbound_rtp') === 0 ? 'receiving' : 'sending';
+
+          if (isAutoBwStats) {
+            if (!self._peerBandwidth[peerId][prop]) {
+              self._peerBandwidth[peerId][prop] = obj;
+            }
+          } else if (!self._peerStats[peerId][prop]) {
+            self._peerStats[peerId][prop] = obj;
+          }
+
+          if (dirType === 'sending') {
+            result[obj.mediaType].sending.rtt = obj.mozRtt || 0;
+            result[obj.mediaType].sending.targetBitrate = typeof obj.targetBitrate === 'number' ? obj.targetBitrate : 0;
+          } else {
+            result[obj.mediaType].receiving.jitter = obj.jitter || 0;
+          }
+
+          if (isAutoBwStats) {
+            self._peerBandwidth[peerId][prop] = obj;
+          } else if (!self._peerStats[peerId][prop]) {
+            self._peerStats[peerId][prop] = obj;
+          }
+
+        // Candidates
+        } else if (obj.nominated && obj.selected) {
+          formatCandidateFn('remote', stats[obj.remoteCandidateId]);
+          formatCandidateFn('local', stats[obj.localCandidateId]);
+        }
+      });
+
+    } else if (window.webrtcDetectedBrowser === 'edge') {
+      var tracks = [];
+
+      if (pc.getRemoteStreams().length > 0) {
+        tracks = tracks.concat(pc.getRemoteStreams()[0].getTracks());
+      }
+
+      if (pc.getLocalStreams().length > 0) {
+        tracks = tracks.concat(pc.getLocalStreams()[0].getTracks());
+      }
+
+      loopFn(tracks, function (track) {
+        loopFn(stats, function (obj, prop) {
+          if (obj.type === 'track' && obj.trackIdentifier === track.id) {
+            var dirType = obj.remoteSource ? 'receiving' : 'sending';
+            var mediaType = track.kind;
+
+            if (mediaType === 'audio') {
+              result[mediaType][dirType][dirType === 'sending' ? 'inputLevel' : 'outputLevel'] = obj.audioLevel;
+              if (dirType === 'sending') {
+                result[mediaType][dirType].echoReturnLoss = obj.echoReturnLoss;
+                result[mediaType][dirType].echoReturnLossEnhancement = obj.echoReturnLossEnhancement;
+              }
+            } else {
+              result[mediaType][dirType].frames = self._parseConnectionStats(
+                isAutoBwStats ? self._peerBandwidth[peerId][subprop] : self._peerStats[peerId][subprop],
+                streamObj,dirType === 'sending' ? obj.framesSent : obj.framesReceived);
+              result[mediaType][dirType].framesDropped = obj.framesDropped;
+              result[mediaType][dirType].framesDecoded = obj.framesDecoded;
+              result[mediaType][dirType].framesCorrupted = obj.framesCorrupted;
+              result[mediaType][dirType].framesPerSecond = obj.framesPerSecond;
+              result[mediaType][dirType].frameHeight = obj.frameHeight || null;
+              result[mediaType][dirType].frameWidth = obj.frameWidth || null;
+              result[mediaType][dirType].totalFrames = dirType === 'sending' ? obj.framesSent : obj.framesReceived;
+            }
+
+            loopFn(stats, function (streamObj, subprop) {
+              if (streamObj.mediaTrackId === obj.id && ['outboundrtp', 'inboundrtp'].indexOf(streamObj.type) > -1) {
+                if (isAutoBwStats) {
+                  if (!self._peerBandwidth[peerId][subprop]) {
+                    self._peerBandwidth[peerId][subprop] = streamObj;
+                  }
+                } else if (!self._peerStats[peerId][subprop]) {
+                  self._peerStats[peerId][subprop] = streamObj;
+                }
+
+                result[mediaType][dirType].ssrc = parseInt(streamObj.ssrc || '0', 10);
+                result[mediaType][dirType].nacks = self._parseConnectionStats(
+                  isAutoBwStats ? self._peerBandwidth[peerId][subprop] : self._peerStats[peerId][subprop],
+                  streamObj, 'nackCount');
+                result[mediaType][dirType].totalNacks = streamObj.nackCount;
+
+                if (mediaType === 'video') {
+                  result[mediaType][dirType].firs = self._parseConnectionStats(
+                    isAutoBwStats ? self._peerBandwidth[peerId][subprop] : self._peerStats[peerId][subprop],
+                    streamObj, 'firCount');
+                  result[mediaType][dirType].plis = self._parseConnectionStats(
+                    isAutoBwStats ? self._peerBandwidth[peerId][subprop] : self._peerStats[peerId][subprop],
+                    streamObj, 'pliCount');
+                  result[mediaType][dirType].slis = self._parseConnectionStats(
+                    isAutoBwStats ? self._peerBandwidth[peerId][subprop] : self._peerStats[peerId][subprop],
+                    streamObj, 'sliCount');
+                  result[mediaType][dirType].totalFirs = streamObj.firCount;
+                  result[mediaType][dirType].totalPlis = streamObj.plisCount;
+                  result[mediaType][dirType].totalSlis = streamObj.sliCount;
+                }
+
+                result[mediaType][dirType].bytes = self._parseConnectionStats(
+                  isAutoBwStats ? self._peerBandwidth[peerId][subprop] : self._peerStats[peerId][subprop],
+                  streamObj, dirType === 'receiving' ? 'bytesReceived' : 'bytesSent');
+                result[mediaType][dirType].packets = self._parseConnectionStats(
+                  isAutoBwStats ? self._peerBandwidth[peerId][subprop] : self._peerStats[peerId][subprop],
+                  streamObj, dirType === 'receiving' ? 'packetsReceived' : 'packetsSent');
+
+                result[mediaType][dirType].totalBytes = dirType === 'receiving' ? streamObj.bytesReceived : streamObj.bytesSent;
+                result[mediaType][dirType].totalPackets = dirType === 'receiving' ? streamObj.packetsReceived : streamObj.packetsSent;
+
+                if (dirType === 'receiving') {
+                  result[mediaType][dirType].jitter = streamObj.jitter || 0;
+                  result[mediaType].receiving.fractionLost = streamObj.fractionLost;
+                  result[mediaType][dirType].packetsLost = self._parseConnectionStats(
+                    isAutoBwStats ? self._peerBandwidth[peerId][subprop] : self._peerStats[peerId][subprop],
+                    streamObj, 'packetsLost');
+                  result[mediaType][dirType].packetsDiscarded = self._parseConnectionStats(
+                    isAutoBwStats ? self._peerBandwidth[peerId][subprop] : self._peerStats[peerId][subprop],
+                    streamObj, 'packetsDiscarded');
+                  result[mediaType][dirType].totalPacketsLost = streamObj.packetsLost;
+                  result[mediaType][dirType].totalPacketsDiscarded = streamObj.packetsDiscarded || 0;
+                } else {
+                  result[mediaType].sending.rtt = streamObj.roundTripTime || 0;
+                  result[mediaType].sending.targetBitrate = streamObj.targetBitrate || 0;
+                }
+
+                if (result[mediaType][dirType].codec && streamObj.codecId) {
+                  result[mediaType][dirType].codec.name = streamObj.codecId;
+                }
+              }
+            });
+          }
+        });
+      });
+
+    } else {
+      var reportedCandidate = false;
+      var reportedCertificate = false;
+
+      loopFn(stats, function (obj, prop) {
+        if (prop.indexOf('ssrc_') === 0) {
+          var dirType = prop.indexOf('_recv') > 0 ? 'receiving' : 'sending';
+
+          // Polyfill fix for plugin. Plugin should fix this though
+          if (!obj.mediaType) {
+            obj.mediaType = obj.hasOwnProperty('audioOutputLevel') || obj.hasOwnProperty('audioInputLevel') ||
+              obj.hasOwnProperty('googEchoCancellationReturnLoss') || obj.hasOwnProperty('googEchoCancellation') ?
+              'audio' : 'video';
+          }
+
+          if (isAutoBwStats) {
+            if (!self._peerBandwidth[peerId][prop]) {
+              self._peerBandwidth[peerId][prop] = obj;
+            }
+          } else if (!self._peerStats[peerId][prop]) {
+            self._peerStats[peerId][prop] = obj;
+          }
+
+          // Capture e2e delay
+          try {
+            if (obj.mediaType === 'video' && dirType === 'receiving') {
+              var captureStartNtpTimeMs = parseInt(obj.googCaptureStartNtpTimeMs || '0', 10);
+
+              if (captureStartNtpTimeMs > 0 && pc.getRemoteStreams().length > 0 && document &&
+                typeof document.getElementsByTagName === 'function') {
+                var streamId = pc.getRemoteStreams()[0].id || pc.getRemoteStreams()[0].label;
+                var elements = [];
+
+                if (self._isUsingPlugin) {
+                  elements = document.getElementsByTagName('object');
+                } else {
+                  elements = document.getElementsByTagName('video');
+
+                  if (elements.length === 0) {
+                    elements = document.getElementsByTagName('audio');
+                  }
+                }
+
+                for (var e = 0; e < elements.length; e++) {
+                  var videoElmStreamId = null;
+
+                  if (self._isUsingPlugin) {
+                    if (!(elements[e].children && typeof elements[e].children === 'object' &&
+                      typeof elements[e].children.length === 'number' && elements[e].children.length > 0)) {
+                      break;
+                    }
+
+                    for (var ec = 0; ec < elements[e].children.length; ec++) {
+                      if (elements[e].children[ec].name === 'streamId') {
+                        videoElmStreamId = elements[e].children[ec].value || null;
+                        break;
+                      }
+                    }
+
+                  } else {
+                    videoElmStreamId = elements[e].srcObject ? elements[e].srcObject.id ||
+                      elements[e].srcObject.label : null;
+                  }
+
+                  if (videoElmStreamId && videoElmStreamId === streamId) {
+                    result[obj.mediaType][dirType].e2eDelay = ((new Date()).getTime() + 2208988800000) -
+                      captureStartNtpTimeMs - elements[e].currentTime * 1000;
+                    break;
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            if (!beSilentOnLogs) {
+              log.warn([peerId, 'RTCStatsReport', null, 'Failed retrieving e2e delay ->'], error);
+            }
+          }
+
+          // Receiving/Sending RTP packets
+          result[obj.mediaType][dirType].ssrc = parseInt(obj.ssrc || '0', 10);
+          result[obj.mediaType][dirType].bytes = self._parseConnectionStats(
+            isAutoBwStats ? self._peerBandwidth[peerId][prop] : self._peerStats[peerId][prop],
+            obj, dirType === 'receiving' ? 'bytesReceived' : 'bytesSent');
+          result[obj.mediaType][dirType].packets = self._parseConnectionStats(
+            isAutoBwStats ? self._peerBandwidth[peerId][prop] : self._peerStats[peerId][prop],
+            obj, dirType === 'receiving' ? 'packetsReceived' : 'packetsSent');
+          result[obj.mediaType][dirType].nacks = self._parseConnectionStats(
+            isAutoBwStats ? self._peerBandwidth[peerId][prop] : self._peerStats[peerId][prop],
+            obj, dirType === 'receiving' ? 'googNacksReceived' : 'googNacksSent');
+          result[obj.mediaType][dirType].totalPackets = parseInt((dirType === 'receiving' ? obj.packetsReceived :
+            obj.packetsSent) || '0', 10);
+          result[obj.mediaType][dirType].totalBytes = parseInt((dirType === 'receiving' ? obj.bytesReceived :
+            obj.bytesSent) || '0', 10);
+          result[obj.mediaType][dirType].totalNacks = parseInt((dirType === 'receiving' ? obj.googNacksReceived :
+            obj.googNacksSent) || '0', 10);
+
+          if (result[obj.mediaType][dirType].codec) {
+            if (obj.googCodecName && obj.googCodecName !== 'unknown') {
+              result[obj.mediaType][dirType].codec.name = obj.googCodecName;
+            }
+            if (obj.codecImplementationName && obj.codecImplementationName !== 'unknown') {
+              result[obj.mediaType][dirType].codec.implementation = obj.codecImplementationName;
+            }
+          }
+
+          if (dirType === 'sending') {
+            // NOTE: Chrome sending audio does have it but plugin has..
+            result[obj.mediaType].sending.rtt = parseFloat(obj.googRtt || '0', 10);
+            result[obj.mediaType].sending.targetBitrate = obj.targetBitrate ? parseInt(obj.targetBitrate, 10) : null;
+          } else {
+            result[obj.mediaType].receiving.packetsLost = self._parseConnectionStats(
+              isAutoBwStats ? self._peerBandwidth[peerId][prop] : self._peerStats[peerId][prop],
+              obj, 'packetsLost');
+            result[obj.mediaType].receiving.packetsDiscarded = self._parseConnectionStats(
+              isAutoBwStats ? self._peerBandwidth[peerId][prop] : self._peerStats[peerId][prop],
+              obj, 'packetsDiscarded');
+            result[obj.mediaType].receiving.jitter = parseFloat(obj.googJitterReceived || '0', 10);
+            result[obj.mediaType].receiving.jitterBufferMs = obj.googJitterBufferMs ? parseFloat(obj.googJitterBufferMs || '0', 10) : null;
+            result[obj.mediaType].receiving.totalPacketsLost = parseInt(obj.packetsLost || '0', 10);
+            result[obj.mediaType].receiving.totalPacketsDiscarded = parseInt(obj.packetsDiscarded || '0', 10);
+          }
+
+          if (obj.mediaType === 'video') {
+            result.video[dirType].framesCorrupted = obj.framesCorrupted ? parseInt(obj.framesCorrupted, 10) : null;
+            result.video[dirType].framesPerSecond = obj.framesPerSecond ? parseFloat(obj.framesPerSecond, 10) : null;
+            result.video[dirType].framesDropped = obj.framesDropped ? parseInt(obj.framesDropped, 10) : null;
+
+            if (dirType === 'sending') {
+              result.video[dirType].frameWidth = obj.googFrameWidthSent ?
+                parseInt(obj.googFrameWidthSent, 10) : null;
+              result.video[dirType].frameHeight = obj.googFrameHeightSent ?
+                parseInt(obj.googFrameHeightSent, 10) : null;
+              result.video[dirType].plis = obj.googPlisSent ?
+                self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][prop] :
+                self._peerStats[peerId][prop], obj, 'googPlisSent') : null;
+              result.video[dirType].firs = obj.googFirsSent ?
+                self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][prop] :
+                self._peerStats[peerId][prop], obj, 'googFirsSent') : null;
+              result[obj.mediaType][dirType].totalPlis = obj.googPlisSent ? parseInt(obj.googPlisSent, 10) : null;
+              result[obj.mediaType][dirType].totalFirs = obj.googFirsSent ? parseInt(obj.googFirsSent, 10) : null;
+              result.video[dirType].framesEncoded = obj.framesEncoded ? parseInt(obj.framesEncoded, 10) : null;
+              result.video[dirType].frameRateEncoded = obj.googFrameRateEncoded ?
+                parseInt(obj.googFrameRateEncoded, 10) : null;
+              result.video[dirType].frameRateInput = obj.googFrameRateInput ?
+                parseInt(obj.googFrameRateInput, 10) : null;
+              result.video[dirType].frameRate = obj.googFrameRateSent ?
+                parseInt(obj.googFrameRateSent, 10) : null;
+              result.video[dirType].qpSum = obj.qpSum ? parseInt(obj.qpSum, 10) : null;
+              result.video[dirType].frames = obj.framesSent ?
+                self._parseConnectionStats(isAutoBwStats ? self._peerStats[peerId][prop] :
+                self._peerStats[peerId][prop], obj, 'framesSent') : null;
+              result.video[dirType].totalFrames = obj.framesSent ? parseInt(obj.framesSent, 10) : null;
+            } else {
+              result.video[dirType].frameWidth = obj.googFrameWidthReceived ?
+                parseInt(obj.googFrameWidthReceived, 10) : null;
+              result.video[dirType].frameHeight = obj.googFrameHeightReceived ?
+                parseInt(obj.googFrameHeightReceived, 10) : null;
+              result.video[dirType].plis = obj.googPlisReceived ?
+                self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][prop] :
+                self._peerStats[peerId][prop], obj, 'googPlisReceived') : null;
+              result.video[dirType].firs = obj.googFirsReceived ?
+                self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][prop] :
+                self._peerStats[peerId][prop], obj, 'googFirsReceived') : null;
+              result[obj.mediaType][dirType].totalPlis = obj.googPlisReceived ? parseInt(obj.googPlisReceived, 10) : null;
+              result[obj.mediaType][dirType].totalFirs = obj.googFirsReceived ? parseInt(obj.googFirsReceived, 10) : null;
+              result.video[dirType].framesDecoded = obj.framesDecoded ? parseInt(obj.framesDecoded, 10) : null;
+              result.video[dirType].frameRateDecoded = obj.googFrameRateDecoded ?
+                parseInt(obj.googFrameRateDecoded, 10) : null;
+              result.video[dirType].frameRateOutput = obj.googFrameRateOutput ?
+                parseInt(obj.googFrameRateOutput, 10) : null;
+              result.video[dirType].frameRate = obj.googFrameRateReceived ?
+                parseInt(obj.googFrameRateReceived, 10) : null;
+              result.video[dirType].frames = obj.framesReceived ?
+                self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][prop] :
+                self._peerStats[peerId][prop], obj, 'framesReceived') : null;
+              result.video[dirType].totalFrames = obj.framesReceived ? parseInt(obj.framesReceived, 10) : null;
+            }
+          } else {
+            if (dirType === 'receiving') {
+              result.audio[dirType].outputLevel = parseFloat(obj.audioOutputLevel || '0', 10);
+            } else {
+              result.audio[dirType].inputLevel = parseFloat(obj.audioInputLevel || '0', 10);
+              result.audio[dirType].echoReturnLoss = parseFloat(obj.googEchoCancellationReturnLoss || '0', 10);
+              result.audio[dirType].echoReturnLossEnhancement = parseFloat(obj.googEchoCancellationReturnLossEnhancement || '0', 10);
+            }
+          }
+
+          if (isAutoBwStats) {
+            self._peerBandwidth[peerId][prop] = obj;
+          } else if (!self._peerStats[peerId][prop]) {
+            self._peerStats[peerId][prop] = obj;
+          }
+
+          if (!reportedCandidate) {
+            loopFn(stats, function (canObj, canProp) {
+              if (!reportedCandidate && canProp.indexOf('Conn-') === 0) {
+                if (obj.transportId === canObj.googChannelId) {
+                  if (isAutoBwStats) {
+                    if (!self._peerBandwidth[peerId][canProp]) {
+                      self._peerBandwidth[peerId][canProp] = canObj;
+                    }
+                  } else if (!self._peerStats[peerId][canProp]) {
+                    self._peerStats[peerId][canProp] = canObj;
+                  }
+
+                  formatCandidateFn('local', stats[canObj.localCandidateId]);
+                  formatCandidateFn('remote', stats[canObj.remoteCandidateId]);
+                  result.selectedCandidate.writable = canObj.googWritable ? canObj.googWritable === 'true' : null;
+                  result.selectedCandidate.readable = canObj.googReadable ? canObj.googReadable === 'true' : null;
+                  result.selectedCandidate.rtt = canObj.googRtt ?
+                    self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][canProp] :
+                    self._peerStats[peerId][canProp], canObj, 'googRtt') : null;
+                  result.selectedCandidate.totalRtt = canObj.googRtt ? parseInt(canObj.googRtt, 10) : null;
+                  result.selectedCandidate.requests = {
+                    received: canObj.requestsReceived ?
+                      self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][canProp] :
+                      self._peerStats[peerId][canProp], canObj, 'requestsReceived') : null,
+                    sent: canObj.requestsSent ?
+                      self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][canProp] :
+                      self._peerStats[peerId][canProp], canObj, 'requestsSent') : null,
+                    totalReceived: canObj.requestsReceived ? parseInt(canObj.requestsReceived, 10) : null,
+                    totalSent: canObj.requestsSent ? parseInt(canObj.requestsSent, 10) : null
+                  };
+                  result.selectedCandidate.responses = {
+                    received: canObj.responsesReceived ?
+                      self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][canProp] :
+                      self._peerStats[peerId][canProp], canObj, 'responsesReceived') : null,
+                    sent: canObj.responsesSent ?
+                      self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][canProp] :
+                      self._peerStats[peerId][canProp], canObj, 'responsesSent') : null,
+                    totalReceived: canObj.responsesReceived ? parseInt(canObj.responsesReceived, 10) : null,
+                    totalSent: canObj.responsesSent ? parseInt(canObj.responsesSent, 10) : null
+                  };
+                  result.selectedCandidate.consentRequests = {
+                    received: canObj.consentRequestsReceived ?
+                      self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][canProp] :
+                      self._peerStats[peerId][canProp], canObj, 'consentRequestsReceived') : null,
+                    sent: canObj.consentRequestsSent ?
+                      self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][canProp] :
+                      self._peerStats[peerId][canProp], canObj, 'consentRequestsSent') : null,
+                    totalReceived: canObj.consentRequestsReceived ? parseInt(canObj.consentRequestsReceived, 10) : null,
+                    totalSent: canObj.consentRequestsSent ? parseInt(canObj.consentRequestsSent, 10) : null
+                  };
+                  result.selectedCandidate.consentResponses = {
+                    received: canObj.consentResponsesReceived ?
+                      self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][canProp] :
+                      self._peerStats[peerId][canProp], canObj, 'consentResponsesReceived') : null,
+                    sent: canObj.consentResponsesSent ?
+                      self._parseConnectionStats(isAutoBwStats ? self._peerBandwidth[peerId][canProp] :
+                      self._peerStats[peerId][canProp], canObj, 'consentResponsesSent') : null,
+                    totalReceived: canObj.consentResponsesReceived ? parseInt(canObj.consentResponsesReceived, 10) : null,
+                    totalSent: canObj.consentResponsesSent ? parseInt(canObj.consentResponsesSent, 10) : null
+                  };
+
+                  if (isAutoBwStats) {
+                    if (!self._peerBandwidth[peerId][canProp]) {
+                      self._peerBandwidth[peerId][canProp] = canObj;
+                    }
+                  } else if (!self._peerStats[peerId][canProp]) {
+                    self._peerStats[peerId][canProp] = canObj;
+                  }
+                  reportedCandidate = true;
+                }
+              }
+            });
+          }
+
+          if (!reportedCertificate && stats[obj.transportId]) {
+            result.certificate.srtpCipher = stats[obj.transportId].srtpCipher || null;
+            result.certificate.dtlsCipher = stats[obj.transportId].dtlsCipher || null;
+
+            var localCertId = stats[obj.transportId].localCertificateId;
+            var remoteCertId = stats[obj.transportId].remoteCertificateId;
+
+            if (localCertId && stats[localCertId]) {
+              result.certificate.local.derBase64 = stats[localCertId].googDerBase64 || null;
+              if (stats[localCertId].googFingerprint) {
+                result.certificate.local.fingerprint = stats[localCertId].googFingerprint;
+              }
+              if (stats[localCertId].googFingerprintAlgorithm) {
+                result.certificate.local.fingerprintAlgorithm = stats[localCertId].googFingerprintAlgorithm;
+              }
+            }
+
+            if (remoteCertId && stats[remoteCertId]) {
+              result.certificate.remote.derBase64 = stats[remoteCertId].googDerBase64 || null;
+              if (stats[remoteCertId].googFingerprint) {
+                result.certificate.remote.fingerprint = stats[remoteCertId].googFingerprint;
+              }
+              if (stats[remoteCertId].googFingerprintAlgorithm) {
+                result.certificate.remote.fingerprintAlgorithm = stats[remoteCertId].googFingerprintAlgorithm;
+              }
+            }
+            reportedCertificate = true;
+          }
+        }
+      });
+    }
+
+    if ((result.selectedCandidate.local.candidateType || '').indexOf('relay') === 0) {
+      result.selectedCandidate.local.turnMediaTransport = 'UDP';
+      if (self._forceTURNSSL && window.webrtcDetectedBrowser !== 'firefox') {
+        result.selectedCandidate.local.turnMediaTransport = 'TCP/TLS';
+      } else if ((self._TURNTransport === self.TURN_TRANSPORT.TCP || self._forceTURNSSL) &&
+        self._room && self._room.connection && self._room.connection.peerConfig &&
+        Array.isArray(self._room.connection.peerConfig.iceServers) &&
+        self._room.connection.peerConfig.iceServers[0] &&
+        self._room.connection.peerConfig.iceServers[0].urls[0] &&
+        self._room.connection.peerConfig.iceServers[0].urls[0].indexOf('?transport=tcp') > 0) {
+        result.selectedCandidate.local.turnMediaTransport = 'TCP';
+      }
+    } else {
+      result.selectedCandidate.local.turnMediaTransport = null;
+    }
+
+    callback(null, result);
+
+  }, function (error) {
+    if (!beSilentOnLogs) {
+      log.error([peerId, 'RTCStatsReport', null, 'Failed retrieving stats ->'], error);
+    }
+    callback(error, null);
+  });
+};
+
+/**
  * Function that starts the Peer connection session.
  * Remember to remove previous method of reconnection (re-creating the Peer connection - destroy and create connection).
  * @method _addPeer
@@ -16859,30 +18466,34 @@ Skylink.prototype.getConnectionStatus = function (targetPeerId, callback) {
  * @for Skylink
  * @since 0.5.4
  */
-Skylink.prototype._addPeer = function(targetMid, peerBrowser, toOffer, restartConn, receiveOnly, isSS) {
+Skylink.prototype._addPeer = function(targetMid, cert, peerBrowser, receiveOnly, isSS) {
   var self = this;
-  if (self._peerConnections[targetMid] && !restartConn) {
+  if (self._peerConnections[targetMid]) {
     log.error([targetMid, null, null, 'Connection to peer has already been made']);
     return;
   }
+
+  self._peerConnStatus[targetMid] = {
+    connected: false,
+    init: false
+  };
+
   log.log([targetMid, null, null, 'Starting the connection to peer. Options provided:'], {
     peerBrowser: peerBrowser,
-    toOffer: toOffer,
     receiveOnly: receiveOnly,
     enableDataChannel: self._enableDataChannel
   });
 
   log.info('Adding peer', isSS);
 
-  if (!restartConn) {
-    self._peerConnections[targetMid] = self._createPeerConnection(targetMid, !!isSS);
-  }
+  self._peerConnections[targetMid] = self._createPeerConnection(targetMid, !!isSS, cert);
 
   if (!self._peerConnections[targetMid]) {
-    log.error([targetMid, null, null, 'Failed creating the connection to peer']);
+    log.error([targetMid, null, null, 'Failed creating the connection to peer.']);
     return;
   }
 
+  self._peerConnStatus[targetMid].init = true;
   self._peerConnections[targetMid].hasScreen = !!isSS;
 };
 
@@ -16894,7 +18505,7 @@ Skylink.prototype._addPeer = function(targetMid, peerBrowser, toOffer, restartCo
  * @for Skylink
  * @since 0.5.8
  */
-Skylink.prototype._restartPeerConnection = function (peerId, doIceRestart, callback) {
+Skylink.prototype._restartPeerConnection = function (peerId, doIceRestart, bwOptions, callback) {
   var self = this;
 
   if (!self._peerConnections[peerId]) {
@@ -16924,7 +18535,35 @@ Skylink.prototype._restartPeerConnection = function (peerId, doIceRestart, callb
   // This is when the state is stable and re-handshaking is possible
   // This could be due to previous connection handshaking that is already done
   if (pc.signalingState === self.PEER_CONNECTION_STATE.STABLE && self._peerConnections[peerId]) {
-    log.log([peerId, null, null, 'Sending restart message to signaling server']);
+    log.log([peerId, null, null, 'Sending restart message to signaling server ->'], {
+      iceRestart: doIceRestart,
+      options: bwOptions
+    });
+
+    self._peerCustomConfigs[peerId] = self._peerCustomConfigs[peerId] || {};
+    self._peerCustomConfigs[peerId].bandwidth = self._peerCustomConfigs[peerId].bandwidth || {};
+    self._peerCustomConfigs[peerId].googleXBandwidth = self._peerCustomConfigs[peerId].googleXBandwidth || {};
+
+    if (bwOptions.bandwidth && typeof bwOptions.bandwidth === 'object') {
+      if (typeof bwOptions.bandwidth.audio === 'number') {
+        self._peerCustomConfigs[peerId].bandwidth.audio = bwOptions.bandwidth.audio;
+      }
+      if (typeof bwOptions.bandwidth.video === 'number') {
+        self._peerCustomConfigs[peerId].bandwidth.video = bwOptions.bandwidth.video;
+      }
+      if (typeof bwOptions.bandwidth.data === 'number') {
+        self._peerCustomConfigs[peerId].bandwidth.data = bwOptions.bandwidth.data;
+      }
+    }
+
+    if (bwOptions.googleXBandwidth && typeof bwOptions.googleXBandwidth === 'object') {
+      if (typeof bwOptions.googleXBandwidth.min === 'number') {
+        self._peerCustomConfigs[peerId].googleXBandwidth.min = bwOptions.googleXBandwidth.min;
+      }
+      if (typeof bwOptions.googleXBandwidth.max === 'number') {
+        self._peerCustomConfigs[peerId].googleXBandwidth.max = bwOptions.googleXBandwidth.max;
+      }
+    }
 
     var restartMsg = {
       type: self._SIG_MESSAGE_TYPE.RESTART,
@@ -16933,7 +18572,7 @@ Skylink.prototype._restartPeerConnection = function (peerId, doIceRestart, callb
       agent: window.webrtcDetectedBrowser,
       version: (window.webrtcDetectedVersion || 0).toString(),
       os: window.navigator.platform,
-      userInfo: self._getUserInfo(),
+      userInfo: self._getUserInfo(peerId),
       target: peerId,
       weight: self._peerPriorityWeight,
       receiveOnly: self.getPeerInfo().config.receiveOnly,
@@ -16952,9 +18591,10 @@ Skylink.prototype._restartPeerConnection = function (peerId, doIceRestart, callb
       restartMsg.publishOnly = {
         type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
       };
-      if (self._publishOnly.parentId) {
-        restartMsg.parentId = self._publishOnly.parentId;
-      }
+    }
+
+    if (self._parentId) {
+      restartMsg.parentId = self._parentId;
     }
 
     self._peerEndOfCandidatesCounter[peerId] = self._peerEndOfCandidatesCounter[peerId] || {};
@@ -17023,10 +18663,23 @@ Skylink.prototype._removePeer = function(peerId) {
 
   var peerInfo = clone(this.getPeerInfo(peerId)) || {
     userData: '',
-    settings: {},
-    mediaStatus: {},
-    agent: {},
-    config: {},
+    settings: { audio: false, video: false, data: false },
+    mediaStatus: { audioMuted: true, videoMuted: true },
+    agent: {
+      name: 'unknown',
+      version: 0,
+      os: '',
+      pluginVersion: null
+    },
+    config: {
+      enableDataChannel: true,
+      enableIceRestart: false,
+      enableIceTrickle: true,
+      priorityWeight: 0,
+      publishOnly: false,
+      receiveOnly: true
+    },
+    parentId: null,
     room: clone(this._selectedRoom)
   };
 
@@ -17039,43 +18692,64 @@ Skylink.prototype._removePeer = function(peerId) {
   }
 
   // check if health timer exists
-  if (typeof this._peerConnections[peerId] !== 'undefined') {
-    // new flag to check if datachannels are all closed
-    this._peerConnections[peerId].dataChannelClosed = true;
-
-    if (this._peerConnections[peerId].signalingState !== 'closed') {
+  if (this._peerConnections[peerId]) {
+    if (this._peerConnections[peerId].signalingState !== this.PEER_CONNECTION_STATE.CLOSED) {
       this._peerConnections[peerId].close();
     }
-
     if (peerId !== 'MCU') {
       this._handleEndedStreams(peerId);
     }
-
     delete this._peerConnections[peerId];
   }
   // remove peer informations session
-  if (typeof this._peerInformations[peerId] !== 'undefined') {
+  if (this._peerInformations[peerId]) {
     delete this._peerInformations[peerId];
   }
   // remove peer messages stamps session
-  if (typeof this._peerMessagesStamps[peerId] !== 'undefined') {
+  if (this._peerMessagesStamps[peerId]) {
     delete this._peerMessagesStamps[peerId];
   }
   // remove peer streams session
-  if (typeof this._streamsSession[peerId] !== 'undefined') {
+  if (this._streamsSession[peerId]) {
     delete this._streamsSession[peerId];
   }
   // remove peer streams session
-  if (typeof this._peerEndOfCandidatesCounter[peerId] !== 'undefined') {
+  if (this._peerEndOfCandidatesCounter[peerId]) {
     delete this._peerEndOfCandidatesCounter[peerId];
   }
-
+  // remove peer queued ICE candidates
+  if (this._peerCandidatesQueue[peerId]) {
+    delete this._peerCandidatesQueue[peerId];
+  }
+  // remove peer sdp session
+  if (this._sdpSessions[peerId]) {
+    delete this._sdpSessions[peerId];
+  }
+  // remove peer stats session
+  if (this._peerStats[peerId]) {
+    delete this._peerStats[peerId];
+  }
+  // remove peer bandwidth stats
+  if (this._peerBandwidth[peerId]) {
+    delete this._peerBandwidth[peerId];
+  }
+  // remove peer ICE candidates
+  if (this._gatheredCandidates[peerId]) {
+    delete this._gatheredCandidates[peerId];
+  }
+  // remove peer ICE candidates
+  if (this._peerCustomConfigs[peerId]) {
+    delete this._peerCustomConfigs[peerId];
+  }
+  // remove peer connection config
+  if (this._peerConnStatus[peerId]) {
+    delete this._peerConnStatus[peerId];
+  }
   // close datachannel connection
   if (this._dataChannels[peerId]) {
     this._closeDataChannel(peerId);
   }
-
-  log.log([peerId, null, null, 'Successfully removed peer']);
+  log.log([peerId, 'RTCPeerConnection', null, 'Successfully removed peer']);
 };
 
 /**
@@ -17085,28 +18759,49 @@ Skylink.prototype._removePeer = function(peerId) {
  * @for Skylink
  * @since 0.5.1
  */
-Skylink.prototype._createPeerConnection = function(targetMid, isScreenSharing) {
+Skylink.prototype._createPeerConnection = function(targetMid, isScreenSharing, cert) {
   var pc, self = this;
+  if (!self._inRoom || !(self._room && self._room.connection &&
+    self._room.connection.peerConfig && Array.isArray(self._room.connection.peerConfig.iceServers))) {
+    return;
+  }
+
+  var constraints = {
+    iceServers: self._room.connection.peerConfig.iceServers,
+    iceTransportPolicy: self._filterCandidatesType.host && self._filterCandidatesType.srflx &&
+      !self._filterCandidatesType.relay ? 'relay' : 'all',
+    bundlePolicy: self._peerConnectionConfig.bundlePolicy === self.BUNDLE_POLICY.NONE ?
+      self.BUNDLE_POLICY.BALANCED : self._peerConnectionConfig.bundlePolicy,
+    rtcpMuxPolicy: self._peerConnectionConfig.rtcpMuxPolicy,
+    iceCandidatePoolSize: self._peerConnectionConfig.iceCandidatePoolSize
+  };
+  var optional = {
+    optional: [
+      { DtlsSrtpKeyAgreement: true },
+      { googIPv6: true }
+    ]
+  };
+
+  if (cert) {
+    constraints.certificates = [cert];
+  }
+
+  if (self._peerConnStatus[targetMid]) {
+    self._peerConnStatus[targetMid].constraints = constraints;
+    self._peerConnStatus[targetMid].optional = optional;
+  }
+
   // currently the AdapterJS 0.12.1-2 causes an issue to prevent firefox from
   // using .urls feature
   try {
-    pc = new RTCPeerConnection({
-      iceServers: self._room.connection.peerConfig.iceServers,
-      iceTransportPolicy: self._filterCandidatesType.host && self._filterCandidatesType.srflx &&
-        !self._filterCandidatesType.relay ? 'relay' : 'all',
-      bundlePolicy: 'max-bundle',
-      rtcpMuxPolicy: 'require'
-    }, {
-      optional: [
-        { DtlsSrtpKeyAgreement: true },
-        { googIPv6: true }
-      ]
+    log.debug([targetMid, 'RTCPeerConnection', null, 'Creating peer connection ->'], {
+      constraints: constraints,
+      optional: optional
     });
-    log.info([targetMid, null, null, 'Created peer connection']);
-    log.debug([targetMid, null, null, 'Peer connection config:'], self._room.connection.peerConfig);
-    log.debug([targetMid, null, null, 'Peer connection constraints:'], self._room.connection.peerConstraints);
+    pc = new RTCPeerConnection(constraints, optional);
   } catch (error) {
     log.error([targetMid, null, null, 'Failed creating peer connection:'], error);
+    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
     return null;
   }
   // attributes (added on by Temasys)
@@ -17129,6 +18824,9 @@ Skylink.prototype._createPeerConnection = function(targetMid, isScreenSharing) {
 
   self._streamsSession[targetMid] = self._streamsSession[targetMid] || {};
   self._peerEndOfCandidatesCounter[targetMid] = self._peerEndOfCandidatesCounter[targetMid] || {};
+  self._sdpSessions[targetMid] = { local: {}, remote: {} };
+  self._peerBandwidth[targetMid] = {};
+  var bandwidth = null;
 
   // callbacks
   // standard not implemented: onnegotiationneeded,
@@ -17156,6 +18854,10 @@ Skylink.prototype._createPeerConnection = function(targetMid, isScreenSharing) {
   };
 
   pc.onaddstream = function(event) {
+    if (!self._peerConnections[targetMid]) {
+      return;
+    }
+
     var stream = event.stream || event;
     var streamId = stream.id || stream.label;
 
@@ -17185,7 +18887,6 @@ Skylink.prototype._createPeerConnection = function(targetMid, isScreenSharing) {
     pc.hasScreen = !!hasScreenshare;
 
     self._streamsSession[targetMid][streamId] = peerSettings;
-
     self._onRemoteStreamAdded(targetMid, stream, !!hasScreenshare);
   };
 
@@ -17194,12 +18895,90 @@ Skylink.prototype._createPeerConnection = function(targetMid, isScreenSharing) {
   };
 
   pc.oniceconnectionstatechange = function(evt) {
-    log.debug([targetMid, 'RTCIceConnectionState', null, 'Ice connection state changed ->'], pc.iceConnectionState);
+    var iceConnectionState = pc.iceConnectionState;
 
-    self._trigger('iceConnectionState', pc.iceConnectionState, targetMid);
+    log.debug([targetMid, 'RTCIceConnectionState', null, 'Ice connection state changed ->'], iceConnectionState);
 
-    if (pc.iceConnectionState === self.ICE_CONNECTION_STATE.FAILED && self._enableIceTrickle) {
+    if (window.webrtcDetectedBrowser === 'edge') {
+      if (iceConnectionState === 'connecting') {
+        iceConnectionState = self.ICE_CONNECTION_STATE.CHECKING;
+      } else if (iceConnectionState === 'new') {
+        iceConnectionState = self.ICE_CONNECTION_STATE.FAILED;
+      }
+    }
+
+    self._trigger('iceConnectionState', iceConnectionState, targetMid);
+
+    if (iceConnectionState === self.ICE_CONNECTION_STATE.FAILED && self._enableIceTrickle) {
       self._trigger('iceConnectionState', self.ICE_CONNECTION_STATE.TRICKLE_FAILED, targetMid);
+    }
+
+    if (self._peerConnStatus[targetMid]) {
+      self._peerConnStatus[targetMid].connected = [self.ICE_CONNECTION_STATE.COMPLETED,
+        self.ICE_CONNECTION_STATE.CONNECTED].indexOf(iceConnectionState) > -1;
+    }
+
+    if (!self._hasMCU && [self.ICE_CONNECTION_STATE.CONNECTED, self.ICE_CONNECTION_STATE.COMPLETED].indexOf(
+      iceConnectionState) > -1 && !!self._bandwidthAdjuster && !bandwidth && window.webrtcDetectedBrowser !== 'edge' &&
+      (((self._peerInformations[targetMid] || {}).agent || {}).name || 'edge') !== 'edge') {
+      var currentBlock = 0;
+      var formatTotalFn = function (arr) {
+        var total = 0;
+        for (var i = 0; i < arr.length; i++) {
+          total += arr[i];
+        }
+        return total / arr.length;
+      };
+      bandwidth = {
+        audio: { send: [], recv: [] },
+        video: { send: [], recv: [] }
+      };
+      var pullInterval = setInterval(function () {
+        if (!(self._peerConnections[targetMid] && self._peerConnections[targetMid].signalingState !==
+          self.PEER_CONNECTION_STATE.CLOSED) || !self._bandwidthAdjuster || !self._peerBandwidth[targetMid]) {
+          clearInterval(pullInterval);
+          return;
+        }
+        self._retrieveStats(targetMid, function (err, stats) {
+          if (!(self._peerConnections[targetMid] && self._peerConnections[targetMid].signalingState !==
+            self.PEER_CONNECTION_STATE.CLOSED) || !self._bandwidthAdjuster) {
+            clearInterval(pullInterval);
+            return;
+          }
+          if (err) {
+            bandwidth.audio.send.push(0);
+            bandwidth.audio.recv.push(0);
+            bandwidth.video.send.push(0);
+            bandwidth.video.recv.push(0);
+          } else {
+            bandwidth.audio.send.push(stats.audio.sending.bytes * 8);
+            bandwidth.audio.recv.push(stats.audio.receiving.bytes * 8);
+            bandwidth.video.send.push(stats.video.sending.bytes * 8);
+            bandwidth.video.recv.push(stats.video.receiving.bytes * 8);
+          }
+          currentBlock++;
+          if (currentBlock === self._bandwidthAdjuster.interval) {
+            currentBlock = 0;
+            var totalAudioBw = formatTotalFn(bandwidth.audio.send);
+            var totalVideoBw = formatTotalFn(bandwidth.video.send);
+            if (!self._bandwidthAdjuster.useUploadBwOnly) {
+              totalAudioBw += formatTotalFn(bandwidth.audio.recv);
+              totalVideoBw += formatTotalFn(bandwidth.video.recv);
+              totalAudioBw = totalAudioBw / 2;
+              totalVideoBw = totalVideoBw / 2;
+            }
+            totalAudioBw = parseInt((totalAudioBw * (self._bandwidthAdjuster.limitAtPercentage / 100)) / 1000, 10);
+            totalVideoBw = parseInt((totalVideoBw * (self._bandwidthAdjuster.limitAtPercentage / 100)) / 1000, 10);
+            bandwidth = {
+              audio: { send: [], recv: [] },
+              video: { send: [], recv: [] }
+            };
+            self.refreshConnection(targetMid, {
+              bandwidth: { audio: totalAudioBw, video: totalVideoBw }
+            });
+          }
+        }, true, true);
+      }, 1000);
     }
   };
 
@@ -17239,7 +19018,7 @@ Skylink.prototype._createPeerConnection = function(targetMid, isScreenSharing) {
  * @for Skylink
  * @since 0.6.1
  */
-Skylink.prototype._restartMCUConnection = function(callback, doIceRestart) {
+Skylink.prototype._restartMCUConnection = function(callback, doIceRestart, bwOptions) {
   var self = this;
   var listOfPeers = Object.keys(self._peerConnections);
   var listOfPeerRestartErrors = {};
@@ -17251,7 +19030,7 @@ Skylink.prototype._restartMCUConnection = function(callback, doIceRestart) {
       agent: window.webrtcDetectedBrowser,
       version: (window.webrtcDetectedVersion || 0).toString(),
       os: window.navigator.platform,
-      userInfo: self._getUserInfo(),
+      userInfo: self._getUserInfo(peerId),
       target: peerId,
       weight: self._peerPriorityWeight,
       receiveOnly: self.getPeerInfo().config.receiveOnly,
@@ -17271,15 +19050,38 @@ Skylink.prototype._restartMCUConnection = function(callback, doIceRestart) {
       restartMsg.publishOnly = {
         type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
       };
-      if (self._publishOnly.parentId) {
-        restartMsg.parentId = self._publishOnly.parentId;
-      }
     }
 
-    log.log([listOfPeers[i], 'RTCPeerConnection', null, 'Sending restart message to signaling server ->'], restartMsg);
+    if (self._parentId) {
+      restartMsg.parentId = self._parentId;
+    }
+
+    log.log([peerId, 'RTCPeerConnection', null, 'Sending restart message to signaling server ->'], restartMsg);
 
     self._sendChannelMessage(restartMsg);
   };
+
+  // Toggle the main bandwidth options.
+  if (bwOptions.bandwidth && typeof bwOptions.bandwidth === 'object') {
+    if (typeof bwOptions.bandwidth.audio === 'number') {
+      self._streamsBandwidthSettings.bAS.audio = bwOptions.bandwidth.audio;
+    }
+    if (typeof bwOptions.bandwidth.video === 'number') {
+      self._streamsBandwidthSettings.bAS.video = bwOptions.bandwidth.video;
+    }
+    if (typeof bwOptions.bandwidth.data === 'number') {
+      self._streamsBandwidthSettings.bAS.data = bwOptions.bandwidth.data;
+    }
+  }
+
+  if (bwOptions.googleXBandwidth && typeof bwOptions.googleXBandwidth === 'object') {
+    if (typeof bwOptions.googleXBandwidth.min === 'number') {
+      self._streamsBandwidthSettings.googleX.min = bwOptions.googleXBandwidth.min;
+    }
+    if (typeof bwOptions.googleXBandwidth.max === 'number') {
+      self._streamsBandwidthSettings.googleX.max = bwOptions.googleXBandwidth.max;
+    }
+  }
 
   for (var i = 0; i < listOfPeers.length; i++) {
     if (!self._peerConnections[listOfPeers[i]]) {
@@ -17340,7 +19142,15 @@ Skylink.prototype._restartMCUConnection = function(callback, doIceRestart) {
         }
       } else {
         //self._trigger('serverPeerLeft', 'MCU', self.SERVER_PEER_TYPE.MCU);
-        self.joinRoom(self._selectedRoom);
+        self.joinRoom(self._selectedRoom, {
+          bandwidth: bwOptions.bandwidth || {},
+          googleXBandwidth: bwOptions.googleXBandwidth || {},
+          sdpSettings: clone(self._sdpSettings),
+          voiceActivityDetection: self._voiceActivityDetection,
+          publishOnly: !!self._publishOnly,
+          parentId: self._parentId || null,
+          autoBandwidthAdjustment: self._bandwidthAdjuster
+        });
       }
     });
   }
@@ -17397,26 +19207,43 @@ Skylink.prototype._signalingEndOfCandidates = function(targetMid) {
         var mLineCounter = -1;
         var addedMids = [];
         var sdpLines = self._peerConnections[targetMid].remoteDescription.sdp.split('\r\n');
+        var rejected = false;
 
         for (var i = 0; i < sdpLines.length; i++) {
           if (sdpLines[i].indexOf('m=') === 0) {
+            rejected = sdpLines[i].split(' ')[1] === '0';
             mLineCounter++;
-          } else if (sdpLines[i].indexOf('a=mid:') === 0) {
+          } else if (sdpLines[i].indexOf('a=mid:') === 0 && !rejected) {
             var mid = sdpLines[i].split('a=mid:')[1] || '';
             if (mid && addedMids.indexOf(mid) === -1) {
               addedMids.push(mid);
-              self._peerConnections[targetMid].addIceCandidate(new RTCIceCandidate({
+              self._addIceCandidate(targetMid, 'endofcan-' + (new Date()).getTime(), new RTCIceCandidate({
                 sdpMid: mid,
                 sdpMLineIndex: mLineCounter,
                 candidate: 'candidate:1 1 udp 1 0.0.0.0 9 typ endOfCandidates'
               }));
+              // Start breaking after the first add because of max-bundle option
+              if (self._peerConnectionConfig.bundlePolicy === self.BUNDLE_POLICY.MAX_BUNDLE) {
+                break;
+              }
             }
           }
         }
 
-      } else {
+      } else if (AdapterJS && !self._isLowerThanVersion(AdapterJS.VERSION, '0.14.0')) {
         self._peerConnections[targetMid].addIceCandidate(null);
       }
+
+      if (self._gatheredCandidates[targetMid]) {
+        self._trigger('candidatesGathered', targetMid, {
+          expected: self._peerEndOfCandidatesCounter[targetMid].expectedLen || 0,
+          received: self._peerEndOfCandidatesCounter[targetMid].len || 0,
+          processed: self._gatheredCandidates[targetMid].receiving.srflx.length +
+            self._gatheredCandidates[targetMid].receiving.relay.length +
+            self._gatheredCandidates[targetMid].receiving.host.length
+        });
+      }
+
     } catch (error) {
       log.error([targetMid, 'RTCPeerConnection', null, 'Failed signaling end-of-candidates ->'], error);
     }
@@ -17568,6 +19395,42 @@ Skylink.prototype.getPeerInfo = function(peerId) {
       peerInfo.config.publishOnly = true;
     }
 
+    // If there is Peer ID (not broadcast ENTER message) and Peer is Edge browser and User is not
+    if (window.webrtcDetectedBrowser !== 'edge' && peerInfo.agent.name === 'edge' ?
+    // If User is IE/safari and does not have H264 support, remove video support
+      ['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1 && !this._currentCodecSupport.video.h264 :
+    // If User is Edge and Peer is not and no H264 support, remove video support
+      window.webrtcDetectedBrowser === 'edge' && peerInfo.agent.name !== 'edge' && !this._currentCodecSupport.video.h264) {
+      peerInfo.settings.video = false;
+      peerInfo.mediaStatus.videoMuted = true;
+    }
+
+    if (!this._sdpSettings.direction.audio.receive) {
+      peerInfo.settings.audio = false;
+      peerInfo.mediaStatus.audioMuted = true;
+    }
+
+    if (!this._sdpSettings.direction.video.receive) {
+      peerInfo.settings.video = false;
+      peerInfo.mediaStatus.videoMuted = true;
+    }
+
+    if (!this._sdpSettings.connection.audio) {
+      peerInfo.settings.audio = false;
+      peerInfo.mediaStatus.audioMuted = true;
+    }
+
+    if (!this._sdpSettings.connection.video) {
+      peerInfo.settings.video = false;
+      peerInfo.mediaStatus.videoMuted = true;
+    }
+
+    peerInfo.settings.data = !!(this._dataChannels[peerId] && this._dataChannels[peerId].main &&
+      this._dataChannels[peerId].main.channel &&
+      this._dataChannels[peerId].main.channel.readyState === this.DATA_CHANNEL_STATE.OPEN);
+    peerInfo.connected = this._peerConnStatus[peerId] && !!this._peerConnStatus[peerId].connected;
+    peerInfo.init = this._peerConnStatus[peerId] && !!this._peerConnStatus[peerId].init;
+
   } else {
     peerInfo = {
       userData: clone(this._userData),
@@ -17592,7 +19455,9 @@ Skylink.prototype.getPeerInfo = function(peerId) {
         priorityWeight: this._peerPriorityWeight,
         receiveOnly: false,
         publishOnly: !!this._publishOnly
-      }
+      },
+      connected: null,
+      init: null
     };
 
     if (!(peerInfo.userData !== null && typeof peerInfo.userData !== 'undefined')) {
@@ -17607,8 +19472,28 @@ Skylink.prototype.getPeerInfo = function(peerId) {
 
     peerInfo.settings.bandwidth = clone(this._streamsBandwidthSettings.bAS);
     peerInfo.settings.googleXBandwidth = clone(this._streamsBandwidthSettings.googleX);
-    peerInfo.parentId = this._publishOnly ? this._publishOnly.parentId || null : null;
+    peerInfo.parentId = this._parentId ? this._parentId : null;
     peerInfo.config.receiveOnly = !peerInfo.settings.video && !peerInfo.settings.audio;
+    peerInfo.settings.data = this._enableDataChannel && this._sdpSettings.connection.data;
+
+    if (peerInfo.settings.audio && typeof peerInfo.settings.audio === 'object') {
+      // Override the settings.audio.usedtx
+      if (typeof this._codecParams.audio.opus.stereo === 'boolean') {
+        peerInfo.settings.audio.stereo = this._codecParams.audio.opus.stereo;
+      }
+      // Override the settings.audio.usedtx
+      if (typeof this._codecParams.audio.opus.usedtx === 'boolean') {
+        peerInfo.settings.audio.usedtx = this._codecParams.audio.opus.usedtx;
+      }
+      // Override the settings.audio.maxplaybackrate
+      if (typeof this._codecParams.audio.opus.maxplaybackrate === 'number') {
+        peerInfo.settings.audio.maxplaybackrate = this._codecParams.audio.opus.maxplaybackrate;
+      }
+      // Override the settings.audio.useinbandfec
+      if (typeof this._codecParams.audio.opus.useinbandfec === 'boolean') {
+        peerInfo.settings.audio.useinbandfec = this._codecParams.audio.opus.useinbandfec;
+      }
+    }
   }
 
   if (!peerInfo.settings.audio) {
@@ -17617,6 +19502,11 @@ Skylink.prototype.getPeerInfo = function(peerId) {
 
   if (!peerInfo.settings.video) {
     peerInfo.mediaStatus.videoMuted = true;
+  }
+
+  if (!peerInfo.settings.audio && !peerInfo.settings.video) {
+    peerInfo.config.receiveOnly = true;
+    peerInfo.config.publishOnly = false;
   }
 
   return peerInfo;
@@ -17663,7 +19553,7 @@ Skylink.prototype.getPeersInRoom = function() {
  *   <li><code>isSelf</code><var><b>{</b>Boolean<b>}</b></var><p>The flag if Peer is User.</p></li>
  *   </p></li></ul></li></ul>
  * @example
- *   // Example 1: Get the list of currently connected Peers in the same Room
+ *   // Example 1: Get the list of current Peers Streams in the same Room
  *   var streams = skylinkDemo.getPeersStream();
  * @for Skylink
  * @since 0.6.16
@@ -17717,6 +19607,266 @@ Skylink.prototype.getPeersStream = function() {
 };
 
 /**
+ * Function that gets the current list of connected Peers Datachannel connections in the Room.
+ * @method getPeersDatachannels
+ * @return {JSON} The list of Peers Stream. <ul>
+ *   <li><code>#peerId</code><var><b>{</b>JSON<b>}</b></var><p>The Peer Datachannels information.</p><ul>
+ *   <li><code>#channelName</code><var><b>{</b>JSON<b>}</b></var><p>The Datachannel information.</p><ul>
+ *   <li><code>channelName</code><var><b>{</b>String<b>}</b></var><p>The Datachannel ID..</p><ul>
+ *   <li><code>channelType</code><var><b>{</b>String<b>}</b></var><p>The Datachannel type.
+ *   [Rel: Skylink.DATA_CHANNEL_TYPE]</p></li>
+ *   <li><code>channelProp</code><var><b>{</b>String<b>}</b></var><p>The Datachannel property.</p></li>
+ *   <li><code>currentTransferId</code><var><b>{</b>String<b>}</b></var><p>The Datachannel connection
+ *   current progressing transfer session. <small>Defined as <code>null</code> when there is
+ *   currently no transfer session progressing on the Datachannel connection.</small></p></li>
+ *   <li><code>currentStreamId</code><var><b>{</b>String<b>}</b></var><p>The Datachannel connection
+ *   current data streaming session ID. <small>Defined as <code>null</code> when there is currently
+ *   no data streaming session on the Datachannel connection.</small></p></li>
+ *   <li><code>readyState</code><var><b>{</b>String<b>}</b></var><p>The Datachannel connection readyState.
+ *   [Rel: Skylink.DATA_CHANNEL_STATE]</p></li>
+ *   <li><code>bufferedAmountLow</code><var><b>{</b>Number<b>}</b></var><p>The Datachannel buffered amount.</p></li>
+ *   <li><code>bufferedAmountLowThreshold</code><var><b>{</b>Number<b>}</b></var><p>The Datachannel
+ *   buffered amount threshold.</p></li>
+ *   </p></li></p></li></ul></li></ul></li></ul>
+ * @example
+ *   // Example 1: Get the list of current Peers Datachannels in the same Room
+ *   var channels = skylinkDemo.getPeersDatachannels();
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.getPeersDatachannels = function() {
+  var listOfPeersDatachannels = {};
+  var listOfPeers = Object.keys(this._peerConnections);
+
+  for (var i = 0; i < listOfPeers.length; i++) {
+    listOfPeersDatachannels[listOfPeers[i]] = {};
+
+    if (this._dataChannels[listOfPeers[i]]) {
+      for (var channelProp in this._dataChannels[listOfPeers[i]]) {
+        if (this._dataChannels[listOfPeers[i]].hasOwnProperty(channelProp) &&
+          this._dataChannels[listOfPeers[i]][channelProp]) {
+          var channel = this._dataChannels[listOfPeers[i]][channelProp];
+          listOfPeersDatachannels[listOfPeers[i]][channel.channelName] = this._getDataChannelBuffer(listOfPeers[i], channelProp);
+          listOfPeersDatachannels[listOfPeers[i]][channel.channelName].channelName = channel.channelName;
+          listOfPeersDatachannels[listOfPeers[i]][channel.channelName].channelType = channel.channelType;
+          listOfPeersDatachannels[listOfPeers[i]][channel.channelName].channelProp = channelProp;
+          listOfPeersDatachannels[listOfPeers[i]][channel.channelName].currentTransferId = channel.transferId;
+          listOfPeersDatachannels[listOfPeers[i]][channel.channelName].currentStreamId = channel.streamId;
+          listOfPeersDatachannels[listOfPeers[i]][channel.channelName].readyState = channel.channel ?
+            channel.channel.readyState : self.DATA_CHANNEL_STATE.CREATE_ERROR;
+        }
+      }
+    }
+  }
+
+  return listOfPeersDatachannels;
+};
+
+/**
+ * Function that gets the list of current data transfers.
+ * @method getCurrentDataTransfers
+ * @return {JSON} The list of Peers Stream. <ul>
+ *   <li><code>#transferId</code><var><b>{</b>JSON<b>}</b></var><p>The data transfer session.</p><ul>
+ *   <li><code>transferInfo</code><var><b>{</b>JSON<b>}</b></var><p>The data transfer information.
+ *   <small>Object signature matches the <code>transferInfo</code> parameter payload received in the
+ *   <a href="#event_dataTransferState"><code>dataTransferState</code> event</a>
+ *   except without the <code>data</code> property.</small></p></li>
+ *   <li><code>peerId</code><var><b>{</b>String<b>}</b></var><p>The sender Peer ID.</p></li>
+ *   <li><code>isSelf</code><var><b>{</b>Boolean<b>}</b></var><p>The flag if Peer is User.</p></li>
+ *   </p></li></ul></li></ul>
+ * @example
+ *   // Example 1: Get the list of current data transfers in the same Room
+ *   var currentTransfers = skylinkDemo.getCurrentDataTransfers();
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.getCurrentDataTransfers = function() {
+  var listOfDataTransfers = {};
+
+  if (!(this._user && this._user.sid)) {
+    return {};
+  }
+
+  for (var prop in this._dataTransfers) {
+    if (this._dataTransfers.hasOwnProperty(prop) && this._dataTransfers[prop]) {
+      listOfDataTransfers[prop] = {
+        transferInfo: this._getTransferInfo(prop, this._user.sid, true, true, true),
+        isSelf: this._dataTransfers[prop].senderPeerId === this._user.sid,
+        peerId: this._dataTransfers[prop].senderPeerId || this._user.sid
+      };
+    }
+  }
+
+  return listOfDataTransfers;
+};
+
+/**
+ * Function that gets the list of current data streaming sessions.
+ * @method getCurrentDataStreamsSession
+ * @return {JSON} The list of Peers Stream. <ul>
+ *   <li><code>#streamId</code><var><b>{</b>JSON<b>}</b></var><p>The data streaming session.</p><ul>
+ *   <li><code>streamInfo</code><var><b>{</b>JSON<b>}</b></var><p>The data streaming information.
+ *   <small>Object signature matches the <code>streamInfo</code> parameter payload received in the
+ *   <a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+ *   except without the <code>chunk</code> amd <code>chunkSize</code> property.</small></p></li>
+ *   <li><code>peerId</code><var><b>{</b>String<b>}</b></var><p>The sender Peer ID.</p></li>
+ *   <li><code>isSelf</code><var><b>{</b>Boolean<b>}</b></var><p>The flag if Peer is User.</p></li>
+ *   </p></li></ul></li></ul>
+ * @example
+ *   // Example 1: Get the list of current data streaming sessions in the same Room
+ *   var currentDataStreams = skylinkDemo.getCurrentDataStreamsSession();
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.getCurrentDataStreamsSession = function() {
+  var listOfDataStreams = {};
+
+  if (!(this._user && this._user.sid)) {
+    return {};
+  }
+
+  for (var prop in this._dataStreams) {
+    if (this._dataStreams.hasOwnProperty(prop) && this._dataStreams[prop]) {
+      listOfDataStreams[prop] = {
+        streamInfo: {
+          chunkType: this._dataStreams[prop].sessionChunkType === 'string' ? this.DATA_TRANSFER_DATA_TYPE.STRING :
+            this.DATA_TRANSFER_DATA_TYPE.BLOB,
+          isPrivate: this._dataStreams[prop].isPrivate,
+          isStringStream: this._dataStreams[prop].sessionChunkType === 'string',
+          senderPeerId: this._dataStreams[prop].senderPeerId
+        },
+        isSelf: this._dataStreams[prop].senderPeerId === this._user.sid,
+        peerId: this._dataStreams[prop].senderPeerId || this._user.sid
+      };
+    }
+  }
+
+  return listOfDataStreams;
+};
+
+/**
+ * Function that gets the list of current custom Peer settings sent and set.
+ * @method getPeerCustomSettings
+ * @return {JSON} The list of Peers custom settings sent and set. <ul>
+ *   <li><code>#peerId</code><var><b>{</b>JSON<b>}</b></var><p>The Peer settings sent and set.</p><ul>
+ *   <li><code>settings</code><var><b>{</b>JSON<b>}</b></var><p>The custom Peer settings.
+ *   <small>Object signature matches the <code>peerInfo.settings</code> parameter payload received in the
+ *   <a href="#event_peerJoined"><code>peerJoined</code> event</a>.</small></p></li>
+ *   <li><code>mediaStatus</code><var><b>{</b>JSON<b>}</b></var><p>The custom Peer Stream muted settings.
+ *   <small>Object signature matches the <code>peerInfo.mediaStatus</code> parameter payload received in the
+ *   <a href="#event_peerJoined"><code>peerJoined</code> event</a>.</small></p></li></ul></li></ul>
+ * @example
+ *   // Example 1: Get the list of current Peer custom settings
+ *   var currentPeerSettings = skylinkDemo.getPeersCustomSettings();
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.getPeersCustomSettings = function () {
+  var self = this;
+  var customSettingsList = {};
+
+  for (var peerId in self._peerInformations) {
+    if (self._peerInformations.hasOwnProperty(peerId) && self._peerInformations[peerId]) {
+      customSettingsList[peerId] = {
+        settings: {
+          audio: false,
+          video: false,
+          bandwidth: clone(self._streamsBandwidthSettings.bAS),
+          googleXBandwidth: clone(self._streamsBandwidthSettings.googleX)
+        },
+        mediaStatus: {
+          audioMuted: true,
+          videoMuted: true
+        }
+      };
+
+      if (self._peerConnections[peerId] && self._peerConnections[peerId].signalingState !== self.PEER_CONNECTION_STATE.CLOSED) {
+        var streams = self._peerConnections[peerId].getLocalStreams();
+
+        for (var s = 0; s < streams.length; s++) {
+          if (self._streams.screenshare && self._streams.screenshare.stream && (streams[s].id ||
+            streams[s].label) === (self._streams.screenshare.stream.id || self._streams.screenshare.stream.label)) {
+            customSettingsList[peerId].settings.audio = clone(self._streams.screenshare.settings.audio);
+            customSettingsList[peerId].settings.video = clone(self._streams.screenshare.settings.video);
+            customSettingsList[peerId].mediaStatus = clone(self._streamsMutedSettings);
+            break;
+          } else if (self._streams.userMedia && self._streams.userMedia.stream && (streams[s].id ||
+            streams[s].label) === (self._streams.userMedia.stream.id ||
+            self._streams.userMedia.stream.label)) {
+            customSettingsList[peerId].settings.audio = clone(self._streams.userMedia.settings.audio);
+            customSettingsList[peerId].settings.video = clone(self._streams.userMedia.settings.video);
+            customSettingsList[peerId].mediaStatus = clone(self._streamsMutedSettings);
+            break;
+          } else if (window.webrtcDetectedBrowser === 'edge') {
+            customSettingsList[peerId].settings.audio = clone(self._streams.userMedia.settings.audio);
+            customSettingsList[peerId].settings.video = clone(self._streams.userMedia.settings.video);
+            customSettingsList[peerId].mediaStatus = clone(self._streamsMutedSettings);
+            if (streams[s].getAudioTracks().length === 0) {
+              customSettingsList[peerId].settings.audio = false;
+              customSettingsList[peerId].mediaStatus.audioMuted = true;
+            }
+            if (streams[s].getVideoTracks().length === 0) {
+              customSettingsList[peerId].settings.video = false;
+              customSettingsList[peerId].mediaStatus.videoMuted = true;
+            }
+          }
+        }
+      }
+
+      if (self._peerCustomConfigs[peerId]) {
+        if (self._peerCustomConfigs[peerId].bandwidth &&
+          typeof self._peerCustomConfigs[peerId].bandwidth === 'object') {
+          if (typeof self._peerCustomConfigs[peerId].bandwidth.audio === 'number') {
+            customSettingsList[peerId].settings.bandwidth.audio = self._peerCustomConfigs[peerId].bandwidth.audio;
+          }
+          if (typeof self._peerCustomConfigs[peerId].bandwidth.video === 'number') {
+            customSettingsList[peerId].settings.bandwidth.video = self._peerCustomConfigs[peerId].bandwidth.video;
+          }
+          if (typeof self._peerCustomConfigs[peerId].bandwidth.data === 'number') {
+            customSettingsList[peerId].settings.bandwidth.data = self._peerCustomConfigs[peerId].bandwidth.data;
+          }
+        }
+        if (self._peerCustomConfigs[peerId].googleXBandwidth &&
+          typeof self._peerCustomConfigs[peerId].googleXBandwidth === 'object') {
+          if (typeof self._peerCustomConfigs[peerId].googleXBandwidth.min === 'number') {
+            customSettingsList[peerId].settings.googleXBandwidth.min = self._peerCustomConfigs[peerId].googleXBandwidth.min;
+          }
+          if (typeof self._peerCustomConfigs[peerId].googleXBandwidth.max === 'number') {
+            customSettingsList[peerId].settings.googleXBandwidth.max = self._peerCustomConfigs[peerId].googleXBandwidth.max;
+          }
+        }
+      }
+
+      var agent = ((self._peerInformations[peerId] || {}).agent || {}).name || '';
+
+      // If there is Peer ID (not broadcast ENTER message) and Peer is Edge browser and User is not
+      if (customSettingsList[peerId].settings.video && (peerId ?
+        (window.webrtcDetectedBrowser !== 'edge' && agent.name === 'edge' ?
+      // If User is IE/safari and does not have H264 support, remove video support
+        ['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1 && !self._currentCodecSupport.video.h264 :
+      // If User is Edge and Peer is not and no H264 support, remove video support
+        window.webrtcDetectedBrowser === 'edge' && agent.name !== 'edge' && !self._currentCodecSupport.video.h264) :
+      // If broadcast ENTER message and User is Edge and has no H264 support
+        window.webrtcDetectedBrowser === 'edge' && !self._currentCodecSupport.video.h264)) {
+        customSettingsList[peerId].settings.video = false;
+        customSettingsList[peerId].mediaStatus.videoMuted = true;
+      }
+
+      customSettingsList[peerId].settings.audio = !self._sdpSettings.connection.audio ? false :
+        customSettingsList[peerId].settings.audio;
+      customSettingsList[peerId].settings.video = !self._sdpSettings.connection.video ? false :
+        customSettingsList[peerId].settings.video;
+      customSettingsList[peerId].mediaStatus.audioMuted = !self._sdpSettings.connection.audio ? true :
+        customSettingsList[peerId].mediaStatus.audioMuted;
+      customSettingsList[peerId].mediaStatus.videoMuted = !self._sdpSettings.connection.video ? true :
+        customSettingsList[peerId].mediaStatus.videoMuted;
+    }
+  }
+
+  return customSettingsList;
+};
+
+/**
  * Function that returns the User session information to be sent to Peers.
  * @method _getUserInfo
  * @private
@@ -17725,6 +19875,7 @@ Skylink.prototype.getPeersStream = function() {
  */
 Skylink.prototype._getUserInfo = function(peerId) {
   var userInfo = clone(this.getPeerInfo());
+  var peerInfo = clone(this.getPeerInfo(peerId));
 
   // Adhere to SM protocol without breaking the other SDKs.
   if (userInfo.settings.video && typeof userInfo.settings.video === 'object') {
@@ -17758,8 +19909,33 @@ Skylink.prototype._getUserInfo = function(peerId) {
     delete userInfo.settings.bandwidth;
   }
 
+  // If there is Peer ID (not broadcast ENTER message) and Peer is Edge browser and User is not
+  if (peerId ? (window.webrtcDetectedBrowser !== 'edge' && peerInfo.agent.name === 'edge' ?
+  // If User is IE/safari and does not have H264 support, remove video support
+    ['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1 && !this._currentCodecSupport.video.h264 :
+  // If User is Edge and Peer is not and no H264 support, remove video support
+    window.webrtcDetectedBrowser === 'edge' && peerInfo.agent.name !== 'edge' && !this._currentCodecSupport.video.h264) :
+  // If broadcast ENTER message and User is Edge and has no H264 support
+    window.webrtcDetectedBrowser === 'edge' && !this._currentCodecSupport.video.h264) {
+    userInfo.settings.video = false;
+    userInfo.mediaStatus.videoMuted = true;
+  }
+
+  if (!this._sdpSettings.connection.audio) {
+    userInfo.settings.audio = false;
+    userInfo.mediaStatus.audioMuted = true;
+  }
+
+  if (!this._sdpSettings.connection.video) {
+    userInfo.settings.video = false;
+    userInfo.mediaStatus.videoMuted = true;
+  }
+
   delete userInfo.agent;
   delete userInfo.room;
+  delete userInfo.config;
+  delete userInfo.parentId;
+  delete userInfo.settings.data;
   return userInfo;
 };
 
@@ -17780,7 +19956,7 @@ Skylink.prototype.HANDSHAKE_PROGRESS = {
  */
 Skylink.prototype._doOffer = function(targetMid, iceRestart, peerBrowser) {
   var self = this;
-  var pc = self._peerConnections[targetMid] || self._addPeer(targetMid, peerBrowser);
+  var pc = self._peerConnections[targetMid];
 
   log.log([targetMid, null, null, 'Checking caller status'], peerBrowser);
 
@@ -17799,46 +19975,33 @@ Skylink.prototype._doOffer = function(targetMid, iceRestart, peerBrowser) {
     return;
   }
 
-  var peerIceRestartSupport = !!((self._peerInformations[targetMid] || {}).config || {}).enableIceRestart;
+  var peerAgent = ((self._peerInformations[targetMid] || {}).agent || {}).name || '';
+  var doIceRestart = !!((self._peerInformations[targetMid] || {}).config || {}).enableIceRestart &&
+    iceRestart && self._enableIceRestart;
+  var offerToReceiveAudio = !(!self._sdpSettings.connection.audio && targetMid !== 'MCU');
+  var offerToReceiveVideo = !(!self._sdpSettings.connection.video && targetMid !== 'MCU') &&
+    ((window.webrtcDetectedBrowser === 'edge' && peerAgent !== 'edge') ||
+    (['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1 && peerAgent === 'edge') ?
+    !!self._currentCodecSupport.video.h264 : true);
 
   var offerConstraints = {
-    offerToReceiveAudio: true,
-    offerToReceiveVideo: true,
-    iceRestart: self._enableIceRestart && peerIceRestartSupport ? iceRestart === true : false
+    offerToReceiveAudio: offerToReceiveAudio,
+    offerToReceiveVideo: offerToReceiveVideo,
+    iceRestart: doIceRestart,
+    voiceActivityDetection: self._voiceActivityDetection
   };
-
-  // NOTE: Removing ICE restart functionality as of now since Firefox does not support it yet
-  // Check if ICE connection failed or disconnected, and if so, do an ICE restart
-  /*if ([self.ICE_CONNECTION_STATE.DISCONNECTED, self.ICE_CONNECTION_STATE.FAILED].indexOf(pc.iceConnectionState) > -1) {
-    offerConstraints.iceRestart = true;
-  }*/
 
   // Prevent undefined OS errors
   peerBrowser.os = peerBrowser.os || '';
-
-  /*
-    Ignoring these old codes as Firefox 39 and below is no longer supported
-    if (window.webrtcDetectedType === 'moz' && peerBrowser.agent === 'MCU') {
-      unifiedOfferConstraints.mandatory = unifiedOfferConstraints.mandatory || {};
-      unifiedOfferConstraints.mandatory.MozDontOfferDataChannel = true;
-      beOfferer = true;
-    }
-
-    if (window.webrtcDetectedBrowser === 'firefox' && window.webrtcDetectedVersion >= 32) {
-      unifiedOfferConstraints = {
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: true
-      };
-    }
-  */
 
   // Fallback to use mandatory constraints for plugin based browsers
   if (['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1) {
     offerConstraints = {
       mandatory: {
-        OfferToReceiveAudio: true,
-        OfferToReceiveVideo: true,
-        iceRestart: self._enableIceRestart && peerIceRestartSupport ? iceRestart === true : false
+        OfferToReceiveAudio: offerToReceiveAudio,
+        OfferToReceiveVideo: offerToReceiveVideo,
+        iceRestart: doIceRestart,
+        voiceActivityDetection: self._voiceActivityDetection
       }
     };
   }
@@ -17849,7 +20012,8 @@ Skylink.prototype._doOffer = function(targetMid, iceRestart, peerBrowser) {
   }
 
   if (self._enableDataChannel && self._peerInformations[targetMid] &&
-    self._peerInformations[targetMid].config.enableDataChannel) {
+    self._peerInformations[targetMid].config.enableDataChannel &&
+    !(!self._sdpSettings.connection.data && targetMid !== 'MCU')) {
     // Edge doesn't support datachannels yet
     if (!(self._dataChannels[targetMid] && self._dataChannels[targetMid].main)) {
       self._createDataChannel(targetMid);
@@ -17860,6 +20024,10 @@ Skylink.prototype._doOffer = function(targetMid, iceRestart, peerBrowser) {
   log.debug([targetMid, null, null, 'Creating offer with config:'], offerConstraints);
 
   pc.endOfCandidates = false;
+
+  if (self._peerConnStatus[targetMid]) {
+    self._peerConnStatus[targetMid].sdpConstraints = offerConstraints;
+  }
 
   pc.createOffer(function(offer) {
     log.debug([targetMid, null, null, 'Created offer'], offer);
@@ -17904,8 +20072,24 @@ Skylink.prototype._doAnswer = function(targetMid) {
   }
 
   // Add stream only at offer/answer end
-  if (!self._hasMCU || targetMid === 'MCU') {
+  if ((!self._hasMCU || targetMid === 'MCU') && window.webrtcDetectedBrowser !== 'edge') {
     self._addLocalMediaStreams(targetMid);
+  }
+
+  var peerAgent = ((self._peerInformations[targetMid] || {}).agent || {}).name || '';
+  var offerToReceiveAudio = !(!self._sdpSettings.connection.audio && targetMid !== 'MCU');
+  var offerToReceiveVideo = !(!self._sdpSettings.connection.video && targetMid !== 'MCU') &&
+    ((window.webrtcDetectedBrowser === 'edge' && peerAgent !== 'edge') ||
+    (['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1 && peerAgent === 'edge') ?
+    !!self._currentCodecSupport.video.h264 : true);
+  var answerConstraints = window.webrtcDetectedBrowser === 'edge' ? {
+    offerToReceiveVideo: offerToReceiveVideo,
+    offerToReceiveAudio: offerToReceiveAudio,
+    voiceActivityDetection: self._voiceActivityDetection
+  } : undefined;
+
+  if (self._peerConnStatus[targetMid]) {
+    self._peerConnStatus[targetMid].sdpConstraints = answerConstraints;
   }
 
   // No ICE restart constraints for createAnswer as it fails in chrome 48
@@ -17916,7 +20100,7 @@ Skylink.prototype._doAnswer = function(targetMid) {
   }, function(error) {
     log.error([targetMid, null, null, 'Failed creating an answer:'], error);
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
-  });
+  }, answerConstraints);
 };
 
 /**
@@ -17966,14 +20150,20 @@ Skylink.prototype._setLocalAndSendMessage = function(targetMid, sessionDescripti
 
   pc.processingLocalSDP = true;
 
+  // Set them as first
+  if (window.webrtcDetectedBrowser === 'edge') {
+    sessionDescription.sdp = self._setSDPCodec(targetMid, sessionDescription, {
+      audio: self.AUDIO_CODEC.OPUS,
+      video: self.VIDEO_CODEC.H264
+    });
+  }
+
   // Sets and expected receiving codecs etc.
-  //sessionDescription.sdp = self._setSDPOpusConfig(targetMid, sessionDescription);
-  //sessionDescription.sdp = self._setSDPCodec(targetMid, sessionDescription);
   sessionDescription.sdp = self._removeSDPFirefoxH264Pref(targetMid, sessionDescription);
-  sessionDescription.sdp = self._removeSDPH264VP9AptRtxForOlderPlugin(targetMid, sessionDescription);
+  sessionDescription.sdp = self._setSDPCodecParams(targetMid, sessionDescription);
+  sessionDescription.sdp = self._removeSDPUnknownAptRtx(targetMid, sessionDescription);
   sessionDescription.sdp = self._removeSDPCodecs(targetMid, sessionDescription);
-  sessionDescription.sdp = self._handleSDPConnectionSettings(targetMid, sessionDescription);
-  //sessionDescription.sdp = self._setSDPBitrate(targetMid, sessionDescription);
+  sessionDescription.sdp = self._handleSDPConnectionSettings(targetMid, sessionDescription, 'local');
   sessionDescription.sdp = self._removeSDPREMBPackets(targetMid, sessionDescription);
 
   log.log([targetMid, 'RTCSessionDescription', sessionDescription.type,
@@ -18005,7 +20195,7 @@ Skylink.prototype._setLocalAndSendMessage = function(targetMid, sessionDescripti
       mid: self._user.sid,
       target: targetMid,
       rid: self._room.id,
-      userInfo: self._getUserInfo()
+      userInfo: self._getUserInfo(targetMid)
     });
 
   }, function(error) {
@@ -18311,6 +20501,17 @@ Skylink.prototype.SYSTEM_ACTION_REASON = {
  *   <code>options.audio</code> is not defined, it will be defined as <code>false</code>.</small>
  *   <small>Object signature matches the <code>options.video</code> parameter in the
  *   <a href="#method_getUserMedia"><code>getUserMedia()</code> method</a>.</small>
+ * @param {Boolean} [options.voiceActivityDetection=true] The flag if voice activity detection should be enabled.
+ *   <small>This can only be toggled if User is and for the offerer, which is determined if User's
+ *   <code>peerInfo.config.priorityWeight</code> is higher than Peer's.</small>
+ *   <blockquote class="details">
+ *   This works hand-in-hand with the <code>options.disableComfortNoiseCodec</code> flag in the
+ *   <a href="#method_init"><code>init()</code> method</a> and the <code>options.audio.usedtx</code> setting in
+ *   <a href="#method_getUserMedia"><code>getUserMedia()</code> method</a>. VAD (voice activity detection)
+ *   detects if there is an active voice in the Stream, and if there is no active voice in the Stream, the
+ *   <code>options.audio.usedtx</code> (if enabled) would prevent sending these empty bits. To prevent huge differences
+ *   when there is a silence and an active voice later, the CN codec would produce an empty voice to
+ *   make it sound better.</blockquote>
  * @param {JSON} [options.bandwidth] <blockquote class="info">Note that this is currently not supported
  *   with Firefox browsers versions 48 and below as noted in an existing
  *   <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=976521#c21">bugzilla ticket here</a>.</blockquote>
@@ -18379,8 +20580,44 @@ Skylink.prototype.SYSTEM_ACTION_REASON = {
  *   Note that this feature is currently is beta, and for any enquiries on enabling and its support for MCU enabled
  *   Peer connections, please  contact <a href="http://support.temasys.io">our support portal</a>.</blockquote></blockquote>
  *   The config if Peer would publish only.
- * @param {String} [options.publishOnly.parentId] The parent Peer ID to match to when Peer is connected.
+ * @param {String} [options.publishOnly.parentId] <blockquote class="info"><b>Deprecation Warning!</b>
+ *   This property has been deprecated. Use <code>options.parentId</code> instead.
+ *   </blockquote> The parent Peer ID to match to when Peer is connected.
  *   <small>This is useful for identification for users connecting the Room twice simultaneously for multi-streaming.</small>
+ *   <small>If User Peer ID matches the parent Peer ID provided from Peer, User will not be connected to Peer.</small>
+ * @param {String} [options.parentId] The parent Peer ID to match to when Peer is connected.
+ *   <small>Note that configuring this value overrides the <code>options.publishOnly.parentId</code> value.</small>
+ *   <small>This is useful for identification for users connecting the Room twice simultaneously for multi-streaming.</small>
+ *   <small>If User Peer ID matches the parent Peer ID provided from Peer, User will not be connected to Peer.</small>
+ * @param {JSON} [options.peerConnection] <blockquote class="info">
+ *   Note that this is mainly used for debugging purposes, so it may cause disruptions in connections or
+ *   connectivity issues when configured. </blockquote> The Peer connection constraints settings.
+ * @param {String} [options.peerConnection.bundlePolicy] The Peer connection media bundle policy.
+ * - When not provided, its value is <code>BALANCED</code>.
+ *   [Rel: Skylink.BUNDLE_POLICY]
+ * @param {String} [options.peerConnection.rtcpMuxPolicy] The Peer connection RTP and RTCP ICE candidates mux policy.
+ * - When not provided, its value is <code>REQUIRE</code>.
+ *   [Rel: Skylink.RTCP_MUX_POLICY]
+ * @param {Number} [options.peerConnection.iceCandidatePoolSize=0] The number of ICE candidates to gather before
+ *   gathering it when setting local offer / answer session description.
+ * @param {String} [options.peerConnection.certificate] The type of certificate that Peer connection should
+ *   generate and use when available.
+ * - When not provided, its value is <code>AUTO</code>.
+ *   [Rel: Skylink.PEER_CERTIFICATE]
+ * @param {Boolean|JSON} [options.autoBandwidthAdjustment=false] <blockquote class="info">
+ *   Note that this is an experimental feature which may be removed or changed in the future releases.
+ *   This feature is also only available for non-MCU enabled Peer connections and Edge Peer connections.
+ *   </blockquote> The flag if Peer connections uploading and downloading bandwidth should be automatically adjusted
+ *   each time based on a specified interval.
+ *   <small>Note this would cause <a href="#event_peerRestart"><code>peerRestart</code> event</a> to be triggered
+ *   for each specified interval.</small>
+ * @param {Number} [options.autoBandwidthAdjustment.interval=10] The interval each time to adjust bandwidth
+ *   connections in seconds.
+ *   <small>Note that the minimum value is <code>10</code>.</small>
+ * @param {Number} [options.autoBandwidthAdjustment.limitAtPercentage=100] The percentage of the average bandwidth to adjust to.
+ *   <small>E.g. <code>avgBandwidth * (limitPercentage / 100)</code>.</small>
+ * @param {Boolean} [options.autoBandwidthAdjustment.useUploadBwOnly=false] The flag if average bandwidth computation
+ *   should only consist of the upload bandwidth.
  * @param {Function} [callback] The callback function fired when request has completed.
  *   <small>Function parameters signature is <code>function (error, success)</code></small>
  *   <small>Function request completion is determined by the <a href="#event_peerJoined">
@@ -18719,8 +20956,7 @@ Skylink.prototype.leaveRoom = function(stopMediaOptions, callback) {
   self._wait(function () {
     log.log([null, 'Room', previousRoom, 'User left the room']);
 
-    self._trigger('peerLeft', previousUserPeerId, self.getPeerInfo(), true,
-      self._publishOnly && self._publishOnly.parentId ? self._publishOnly.parentId : null);
+    self._trigger('peerLeft', previousUserPeerId, self.getPeerInfo(), true);
 
     if (typeof callback === 'function') {
       callback(null, {
@@ -18753,6 +20989,9 @@ Skylink.prototype.leaveRoom = function(stopMediaOptions, callback) {
  * @since 0.5.0
  */
 Skylink.prototype.lockRoom = function() {
+  if (!(this._user && this._user.sid)) {
+    return;
+  }
   log.log('Update to isRoomLocked status ->', true);
   this._sendChannelMessage({
     type: this._SIG_MESSAGE_TYPE.ROOM_LOCK,
@@ -18760,6 +20999,8 @@ Skylink.prototype.lockRoom = function() {
     rid: this._room.id,
     lock: true
   });
+  this._roomLocked = true;
+  this._trigger('roomLock', true, this._user.sid, this.getPeerInfo(), true);
 };
 
 /**
@@ -18782,6 +21023,9 @@ Skylink.prototype.lockRoom = function() {
  * @since 0.5.0
  */
 Skylink.prototype.unlockRoom = function() {
+  if (!(this._user && this._user.sid)) {
+    return;
+  }
   log.log('Update to isRoomLocked status ->', false);
   this._sendChannelMessage({
     type: this._SIG_MESSAGE_TYPE.ROOM_LOCK,
@@ -18789,6 +21033,8 @@ Skylink.prototype.unlockRoom = function() {
     rid: this._room.id,
     lock: false
   });
+  this._roomLocked = false;
+  this._trigger('roomLock', false, this._user.sid, this.getPeerInfo(), true);
 };
 
 /**
@@ -18825,6 +21071,15 @@ Skylink.prototype._waitForOpenChannel = function(mediaOptions, callback) {
           video: { send: true, receive: true }
         }
       };
+      self._voiceActivityDetection = typeof mediaOptions.voiceActivityDetection === 'boolean' ?
+        mediaOptions.voiceActivityDetection : true;
+      self._peerConnectionConfig = {
+        bundlePolicy: self.BUNDLE_POLICY.BALANCED,
+        rtcpMuxPolicy: self.RTCP_MUX_POLICY.REQUIRE,
+        iceCandidatePoolSize: 0,
+        certificate: self.PEER_CERTIFICATE.AUTO
+      };
+      self._bandwidthAdjuster = null;
 
       if (mediaOptions.bandwidth) {
         if (typeof mediaOptions.bandwidth.audio === 'number') {
@@ -18881,11 +21136,69 @@ Skylink.prototype._waitForOpenChannel = function(mediaOptions, callback) {
         self._sdpSettings.direction.audio.receive = false;
         self._sdpSettings.direction.video.send = true;
         self._sdpSettings.direction.video.receive = false;
-        self._publishOnly = { parentId: null };
+        self._publishOnly = true;
 
         if (typeof mediaOptions.publishOnly === 'object' && mediaOptions.publishOnly.parentId &&
           typeof mediaOptions.publishOnly.parentId === 'string') {
-          self._publishOnly.parentId = mediaOptions.publishOnly.parentId;
+          self._parentId = mediaOptions.publishOnly.parentId;
+        }
+      }
+
+      if (mediaOptions.parentId) {
+        self._parentId = mediaOptions.parentId;
+      }
+
+      if (mediaOptions.peerConnection && typeof mediaOptions.peerConnection === 'object') {
+        if (typeof mediaOptions.peerConnection.bundlePolicy === 'string') {
+          for (var bpProp in self.BUNDLE_POLICY) {
+            if (self.BUNDLE_POLICY.hasOwnProperty(bpProp) &&
+              self.BUNDLE_POLICY[bpProp] === mediaOptions.peerConnection.bundlePolicy) {
+              self._peerConnectionConfig.bundlePolicy = mediaOptions.peerConnection.bundlePolicy;
+            }
+          }
+        }
+        if (typeof mediaOptions.peerConnection.rtcpMuxPolicy === 'string') {
+          for (var rmpProp in self.RTCP_MUX_POLICY) {
+            if (self.RTCP_MUX_POLICY.hasOwnProperty(rmpProp) &&
+              self.RTCP_MUX_POLICY[rmpProp] === mediaOptions.peerConnection.rtcpMuxPolicy) {
+              self._peerConnectionConfig.rtcpMuxPolicy = mediaOptions.peerConnection.rtcpMuxPolicy;
+            }
+          }
+        }
+        if (typeof mediaOptions.peerConnection.iceCandidatePoolSize === 'number' &&
+          mediaOptions.peerConnection.iceCandidatePoolSize > 0) {
+          self._peerConnectionConfig.iceCandidatePoolSize = mediaOptions.peerConnection.iceCandidatePoolSize;
+        }
+        if (typeof mediaOptions.peerConnection.certificate === 'string') {
+          for (var pcProp in self.PEER_CERTIFICATE) {
+            if (self.PEER_CERTIFICATE.hasOwnProperty(pcProp) &&
+              self.PEER_CERTIFICATE[pcProp] === mediaOptions.peerConnection.certificate) {
+              self._peerConnectionConfig.certificate = mediaOptions.peerConnection.certificate;
+            }
+          }
+        }
+      }
+
+      if (mediaOptions.autoBandwidthAdjustment) {
+        self._bandwidthAdjuster = {
+          interval: 10,
+          limitAtPercentage: 100,
+          useUploadBwOnly: false
+        };
+
+        if (typeof mediaOptions.autoBandwidthAdjustment === 'object') {
+          if (typeof mediaOptions.autoBandwidthAdjustment.interval === 'number' &&
+            mediaOptions.autoBandwidthAdjustment.interval >= 10) {
+            self._bandwidthAdjuster.interval = mediaOptions.autoBandwidthAdjustment.interval;
+          }
+          if (typeof mediaOptions.autoBandwidthAdjustment.limitAtPercentage === 'number' &&
+            (mediaOptions.autoBandwidthAdjustment.limitAtPercentage >= 0 &&
+            mediaOptions.autoBandwidthAdjustment.limitAtPercentage <= 100)) {
+            self._bandwidthAdjuster.limitAtPercentage = mediaOptions.autoBandwidthAdjustment.limitAtPercentage;
+          }
+          if (typeof mediaOptions.autoBandwidthAdjustment.useUploadBwOnly === 'boolean') {
+            self._bandwidthAdjuster.useUploadBwOnly = mediaOptions.autoBandwidthAdjustment.useUploadBwOnly;
+          }
         }
       }
 
@@ -18949,7 +21262,7 @@ Skylink.prototype._waitForOpenChannel = function(mediaOptions, callback) {
 
 };
 
-Skylink.prototype.VERSION = '0.6.17';
+Skylink.prototype.VERSION = '0.6.19';
 
 /**
  * The list of <a href="#method_init"><code>init()</code> method</a> ready states.
@@ -19053,6 +21366,8 @@ Skylink.prototype.READY_STATE_CHANGE = {
  *   is not loaded.
  *   <small>To resolve this, ensure that the AdapterJS dependency is loaded before the Skylink dependency.
  *   You may use the provided AdapterJS <a href="https://github.com/Temasys/AdapterJS/">CDN here</a>.</small>
+ * @param {Number} PARSE_CODECS                <small>Value <code>8</code></small>
+ *   The value of the failure code when codecs support cannot be parsed and retrieved.
  * @type JSON
  * @readOnly
  * @for Skylink
@@ -19074,7 +21389,8 @@ Skylink.prototype.READY_STATE_CHANGE_ERROR = {
   NO_XMLHTTPREQUEST_SUPPORT: 2,
   NO_WEBRTC_SUPPORT: 3,
   NO_PATH: 4,
-  ADAPTER_NO_LOADED: 7
+  ADAPTER_NO_LOADED: 7,
+  PARSE_CODECS: 8
 };
 
 /**
@@ -19090,6 +21406,27 @@ Skylink.prototype.READY_STATE_CHANGE_ERROR = {
 Skylink.prototype.REGIONAL_SERVER = {
   APAC1: '',
   US1: ''
+};
+
+/**
+ * The list of User's priority weight schemes for <a href="#method_joinRoom">
+ * <code>joinRoom()</code> method</a> connections.
+ * @attribute PRIORITY_WEIGHT_SCHEME
+ * @param {String} ENFORCE_OFFERER  <small>Value <code>"enforceOfferer"</code></small>
+ *   The value of the priority weight scheme to enforce User as the offerer.
+ * @param {String} ENFORCE_ANSWERER <small>Value <code>"enforceAnswerer"</code></small>
+ *   The value of the priority weight scheme to enforce User as the answerer.
+ * @param {String} AUTO             <small>Value <code>"auto"</code></small>
+ *   The value of the priority weight scheme to let User be offerer or answerer based on Signaling server selection.
+ * @type JSON
+ * @readOnly
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype.PRIORITY_WEIGHT_SCHEME = {
+  ENFORCE_OFFERER: 'enforceOfferer',
+  ENFORCE_ANSWERER: 'enforceAnswerer',
+  AUTO: 'auto'
 };
 
 /**
@@ -19131,8 +21468,8 @@ Skylink.prototype.generateUUID = function() {
  * - When not provided or is provided as an empty string, its value is <code>options.appKey</code>.
  *   <small>Note that switching Rooms is not available when using <code>options.credentials</code> based authentication.
  *   The Room that User will be connected to is the <code>defaultRoom</code> provided.</small>
- * @param {String} [options.roomServer] The Auth server.
- * <small>Note that this is a debugging feature and is only used when instructed for debugging purposes.</small>
+ * @param {String} [options.roomServer] The Auth server for debugging purposes to use.
+ *   <small>Note that this is a debugging feature and is only used when instructed for debugging purposes.</small>
  * @param {Boolean} [options.enableIceTrickle=true] The flag if Peer connections should
  *   trickle ICE for faster connectivity.
  * @param {Boolean} [options.enableDataChannel=true] <blockquote class="info">
@@ -19143,9 +21480,7 @@ Skylink.prototype.generateUUID = function() {
  *   <a href="#method_sendP2PMessage"><code>sendP2PMessage()</code> method</a>.</small>
  * @param {Boolean} [options.enableTURNServer=true] The flag if TURN ICE servers should
  *   be used when constructing Peer connections to allow TURN connections when required and enabled for the App Key.
- * @param {Boolean} [options.enableSTUNServer=true] <blockquote class="info">
- *   Note that for Edge browsers, this value is overriden as <code>false</code> due to its supports.
- *   </blockquote> The flag if STUN ICE servers should
+ * @param {Boolean} [options.enableSTUNServer=true] The flag if STUN ICE servers should
  *   be used when constructing Peer connections to allow TURN connections when required.
  * @param {Boolean} [options.forceTURN=false] The flag if Peer connections should enforce
  *   connections over the TURN server.
@@ -19218,23 +21553,34 @@ Skylink.prototype.generateUUID = function() {
  *   during request to Auth server and socket connections to Signaling server
  *   when accessing <code>window.location.protocol</code> value is <code>"http:"</code>.
  *   <small>By default, <code>"https:"</code> protocol connections uses HTTPS connections.</small>
- * @param {String} [options.audioCodec] <blockquote class="info">
+ * @param {String|JSON} [options.audioCodec] <blockquote class="info">
  *   Note that if the audio codec is not supported, the SDK will not configure the local <code>"offer"</code> or
  *   <code>"answer"</code> session description to prefer the codec.<br>
  *   Note that for Edge browsers, this value is set as <code>OPUS</code> due to its supports.</blockquote>
  *   The option to configure the preferred audio codec to use to encode sending audio data when available for Peer connection.
  * - When not provided, its value is <code>AUTO</code>.
  *   [Rel: Skylink.AUDIO_CODEC]
- * @param {String} [options.videoCodec] <blockquote class="info">
+ * @param {String} options.audioCodec.codec The audio codec to prefer to encode sending audio data when available.
+ *   <small>The value must not be <code>AUTO</code>.</small>
+ *   [Rel: Skylink.AUDIO_CODEC]
+ * @param {Number} [options.audioCodec.samplingRate] The audio codec sampling to prefer to encode sending audio data when available.
+ * @param {Number} [options.audioCodec.channels] The audio codec channels to prefer to encode sending audio data when available.
+ * @param {String|JSON} [options.videoCodec] <blockquote class="info">
  *   Note that if the video codec is not supported, the SDK will not configure the local <code>"offer"</code> or
  *   <code>"answer"</code> session description to prefer the codec.<br>
  *   Note that for Edge browsers, this value is set as <code>H264</code> due to its supports.</blockquote>
  *   The option to configure the preferred video codec to use to encode sending video data when available for Peer connection.
  * - When not provided, its value is <code>AUTO</code>.
  *   [Rel: Skylink.VIDEO_CODEC]
+ * @param {String} options.videoCodec.codec The video codec to prefer to encode sending audio data when available.
+ *   <small>The value must not be <code>AUTO</code>.</small>
+ *   [Rel: Skylink.VIDEO_CODEC]
+ * @param {Number} [options.videoCodec.samplingRate] The video codec sampling to prefer to encode sending video data when available.
  * @param {Number} [options.socketTimeout=20000] The timeout for each attempts for socket connection
  *   with the Signaling server to indicate that connection has timed out and has failed to establish.
  *   <small>Note that the mininum timeout value is <code>5000</code>. If less, this value will be <code>5000</code>.</small>
+ *   <small>Note that it is recommended to use <code>12000</code> as the lowest timeout value if Peers are connecting
+ *   using Polling transports to prevent connection errors.</small>
  * @param {Boolean} [options.forceTURNSSL=false] <blockquote class="info">
  *   Note that currently Firefox does not support the TURNS protocol, and that if TURNS is required,
  *   TURN ICE servers using port <code>443</code> will be used instead.<br>
@@ -19267,6 +21613,111 @@ Skylink.prototype.generateUUID = function() {
  *   The flag if <a href="#method_refreshConnection"><code>
  *   refreshConnection()</code> method</a> should renegotiate like non-MCU enabled Peer connection for MCU
  *   enabled Peer connections instead of invoking <a href="#method_joinRoom"><code>joinRoom()</code> method</a> again.
+ * @param {String|Array} [options.iceServer] The ICE servers for debugging purposes to use.
+ *   - When defined as string, the value is considered as <code>[options.iceServer]</code>.
+ *   <small>Note that this is a debugging feature and is only used when instructed for debugging purposes.</small>
+ * @param {String} [options.iceServer.#index] The ICE server url for debugging purposes to use.
+ * @param {String|JSON} [options.socketServer] The Signaling server for debugging purposes to use.
+ *   - When defined as string, the value is considered as <code>{ url: options.socketServer }</code>.
+ *   <small>Note that this is a debugging feature and is only used when instructed for debugging purposes.</small>
+ * @param {String} options.socketServer.url The Signaling server URL for debugging purposes to use.
+ * @param {Array} [options.socketServer.ports] The list of Signaling server ports for debugging purposes to use.
+ *   <small>If not defined, it will use the default list of ports specified.</small>
+ * @param {Number} options.socketServer.ports.#index The Signaling server port to fallback and use for debugging purposes.
+ * @param {String} [options.socketServer.protocol] The Signaling server protocol for debugging purposes to use.
+ *   <small>If not defined, it will use the default protocol specified.</small>
+ * @param {JSON} [options.codecParams] <blockquote class="info">
+ *   Note that some of these parameters are mainly used for experimental or debugging purposes. Toggling any of
+ *   these feature may result in disruptions in connectivity.</blockquote>
+ *   The audio and video codecs parameters to configure.
+ * @param {JSON} [options.codecParams.video] The video codecs parameters to configure.
+ * @param {JSON} [options.codecParams.video.h264] The H264 video codec parameters to configure.
+ * @param {String} [options.codecParams.video.h264.profileLevelId] <blockquote class="info">
+ *   Note that this parameter should only be used for debugging purposes only.</blockquote>
+ *   The H264 video codec base16 encoded string which indicates the H264 baseline, main, or the extended profiles.
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Boolean} [options.codecParams.video.h264.levelAsymmetryAllowed] <blockquote class="info">
+ *   Note that this is an experimental parameter which may result in connectivity issues when toggled.</blockquote>
+ *   The flag if streaming H264 sending video data should be encoded at a different level
+ *   from receiving video data from Peer encoding to User when Peer is the offerer.
+ *   <small>If Peer is the offerer instead of the User, the Peer's <code>peerInfo.config.priorityWeight</code> will be
+ *   higher than User's <code>peerInfo.config.priorityWeight</code>.</small>
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Boolean} [options.codecParams.video.h264.packetizationMode] <blockquote class="info">
+ *   Note that this is an experimental parameter which may result in connectivity issues when enabled. It is
+ *   advisable to turn off this feature off when receiving H264 decoders do not support the packetization mode,
+ *   which may result in a blank receiving video stream.</blockquote>
+ *   The flag to enable H264 video codec packetization mode, which splits video frames that are larger
+ *   for a RTP packet into RTP packet chunks.
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {JSON} [options.codecParams.video.vp8] The VP8 video codec parameters to configure.
+ * @param {Number} [options.codecParams.video.vp8.maxFr] <blockquote class="info">
+ *   Note that this parameter should only be used for debugging purposes only. Do not toggle this otherwise.</blockquote>
+ *   The maximum number of fps (frames per second) that the VP8 video codec decoder is capable of
+ *   decoding when receiving encoded video data packets.
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Number} [options.codecParams.video.vp8.maxFs] <blockquote class="info">
+ *   Note that this parameter should only be used for debugging purposes only. Do not toggle this otherwise.</blockquote>
+ *   The maximum number of frame size macroblocks that the VP8 video codec decoder is capable of
+ *   decoding when receiving encoded video data packets.
+ *   <small>The value has to have the width and height of the frame in macroblocks less than the value of
+ *   <code>parseInt(Math.sqrt(maxFs * 8))</code>. E.g. If the value is <code>1200</code>, it is capable of
+ *   support <code>640x480</code> frame width and height, which heights up to <code>1552px</code>
+ *   (<code>97</code> macroblocks value.</small>
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {JSON} [options.codecParams.video.vp9] The VP9 video codec parameters to configure.
+ * @param {Number} [options.codecParams.video.vp9.maxFr] <blockquote class="info">
+ *   Note that this parameter should only be used for debugging purposes only. Do not toggle this otherwise.</blockquote>
+ *   The maximum number of fps (frames per second) that the VP9 video codec decoder is capable of
+ *   decoding when receiving encoded video data packets.
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Number} [options.codecParams.video.vp9.maxFs] <blockquote class="info">
+ *   Note that this parameter should only be used for debugging purposes only. Do not toggle this otherwise.</blockquote>
+ *   The maximum number of frame size macroblocks that the VP9 video codec decoder is capable of
+ *   decoding when receiving encoded video data packets.
+ *   <small>The value has to have the width and height of the frame in macroblocks less than the value of
+ *   <code>parseInt(Math.sqrt(maxFs * 8))</code>. E.g. If the value is <code>1200</code>, it is capable of
+ *   support <code>640x480</code> frame width and height, which heights up to <code>1552px</code>
+ *   (<code>97</code> macroblocks value.</small>
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {JSON} [options.codecParams.audio] The audio codecs parameters to configure.
+ * @param {JSON} [options.codecParams.audio.opus] <blockquote class="info">
+ *   Note that this is only applicable to OPUS audio codecs with a sampling rate of <code>48000</code> Hz (hertz).
+ *   </blockquote> The OPUS audio codec parameters to configure.
+ * @param {Boolean} [options.codecParams.audio.opus.stereo] The flag if OPUS audio codec stereo band
+ *   should be configured for sending encoded audio data.
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Boolean} [options.codecParams.audio.opus.usedtx] <blockquote class="info">
+ *   Note that this feature might not work depending on the browser support and implementation.</blockquote>
+ *   The flag if OPUS audio codec should enable DTX (Discontinuous Transmission) for sending encoded audio data.
+ *   <small>This might help to reduce bandwidth as it reduces the bitrate during silence or background noise, and
+ *   goes hand-in-hand with the <code>options.voiceActivityDetection</code> flag in <a href="#method_joinRoom">
+ *   <code>joinRoom()</code> method</a>.</small>
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Boolean} [options.codecParams.audio.opus.useinbandfec] <blockquote class="info">
+ *   Note that this parameter should only be used for debugging purposes only.</blockquote>
+ *   The flag if OPUS audio codec has the capability to take advantage of the in-band FEC
+ *   (Forward Error Correction) when sending encoded audio data.
+ *   <small>This helps to reduce the harm of packet loss by encoding information about the previous packet loss.</small>
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Number} [options.codecParams.audio.opus.maxplaybackrate] <blockquote class="info">
+ *   Note that this parameter should only be used for debugging purposes only.</blockquote>
+ *   The OPUS audio codec maximum output sampling rate in Hz (hertz) that is is capable of receiving
+ *   decoded audio data, to adjust to the hardware limitations and ensure that any sending audio data
+ *   would not encode at a higher sampling rate specified by this.
+ *   <small>This value must be between <code>8000</code> to <code>48000</code>.</small>
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Number} [options.codecParams.minptime] <blockquote class="info">
+ *   Note that this parameter should only be used for debugging purposes only.</blockquote>
+ *   The OPUS audio codec receiving audio data decoder minimum length of time in milleseconds should be
+ *   encapsulated in a single received encoded audio data packet.
+ *   <small>This value must be between <code>3</code> to <code>120</code></small>
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {String} [options.priorityWeightScheme] <blockquote class="info">
+ *   Note that this parameter should only be used for debugging purposes only and may not work when
+ *   internals change.</blockquote> The User's priority weight to enforce User as offerer or answerer.
+ * - When not provided, its value is <code>AUTO</code>.
+ *   [Rel: Skylink.PRIORITY_WEIGHT_SCHEME]
  * @param {Function} [callback] The callback function fired when request has completed.
  *   <small>Function parameters signature is <code>function (error, success)</code></small>
  *   <small>Function request completion is determined by the <a href="#event_readyStateChange">
@@ -19279,14 +21730,14 @@ Skylink.prototype.generateUUID = function() {
  * @param {Number} callback.error.errorCode The <a href="#event_readyStateChange"><code>readyStateChange</code>
  *   event</a> <code>error.errorCode</code> parameter payload value.
  *   [Rel: Skylink.READY_STATE_CHANGE_ERROR]
- * @param {Object} callback.error.error The <a href="#event_readyStateChange"><code>readyStateChange</code>
+ * @param {Error|String} callback.error.error The <a href="#event_readyStateChange"><code>readyStateChange</code>
  *   event</a> <code>error.content</code> parameter payload value.
  * @param {Number} callback.error.status The <a href="#event_readyStateChange"><code>readyStateChange</code>
  *   event</a> <code>error.status</code> parameter payload value.
  * @param {JSON} callback.success The success result in request.
  *   <small>Defined as <code>null</code> when there are errors in request</small>
  * @param {String} callback.success.serverUrl The constructed REST URL requested to Auth server.
- * @param {String} callback.success.readyState The current ready state.
+ * @param {Number} callback.success.readyState The current ready state.
  *   [Rel: Skylink.READY_STATE_CHANGE]
  * @param {String} callback.success.selectedRoom The Room based on the current Room session token retrieved for.
  * @param {String} callback.success.appKey The configured value of the <code>options.appKey</code>.
@@ -19299,8 +21750,8 @@ Skylink.prototype.generateUUID = function() {
  * @param {Boolean} callback.success.TURNTransport The configured value of the <code>options.TURNServerTransport</code>.
  * @param {Boolean} callback.success.audioFallback The configured value of the <code>options.audioFallback</code>.
  * @param {Boolean} callback.success.forceSSL The configured value of the <code>options.forceSSL</code>.
- * @param {String} callback.success.audioCodec The configured value of the <code>options.audioCodec</code>.
- * @param {String} callback.success.videoCodec The configured value of the <code>options.videoCodec</code>.
+ * @param {String|JSON} callback.success.audioCodec The configured value of the <code>options.audioCodec</code>.
+ * @param {String|JSON} callback.success.videoCodec The configured value of the <code>options.videoCodec</code>.
  * @param {Number} callback.success.socketTimeout The configured value of the <code>options.socketTimeout</code>.
  * @param {Boolean} callback.success.forceTURNSSL The configured value of the <code>options.forceTURNSSL</code>.
  * @param {Boolean} callback.success.forceTURN The configured value of the <code>options.forceTURN</code>.
@@ -19309,9 +21760,12 @@ Skylink.prototype.generateUUID = function() {
  * @param {Boolean} callback.success.disableComfortNoiseCodec The configured value of the <code>options.disableComfortNoiseCodec</code>.
  * @param {Boolean} callback.success.disableREMB The configured value of the <code>options.disableREMB</code>.
  * @param {JSON} callback.success.filterCandidatesType The configured value of the <code>options.filterCandidatesType</code>.
- * @param {Number} callback.success.throttleIntervals The configured value of the <code>options.throttleIntervals</code>.
- * @param {Number} callback.success.throttleShouldThrowError The configured value of the <code>options.throttleShouldThrowError</code>.
- * @param {Number} callback.success.mcuUseRenegoRestart The configured value of the <code>options.mcuUseRenegoRestart</code>.
+ * @param {JSON} callback.success.throttleIntervals The configured value of the <code>options.throttleIntervals</code>.
+ * @param {Boolean} callback.success.throttleShouldThrowError The configured value of the <code>options.throttleShouldThrowError</code>.
+ * @param {JSON} callback.success.mcuUseRenegoRestart The configured value of the <code>options.mcuUseRenegoRestart</code>.
+ * @param {JSON} callback.success.iceServer The configured value of the <code>options.iceServer</code>.
+ *   <small>See the <code>.urls</code> property in this object for configured value if defined.</small>
+ * @param {JSON|String} callback.success.socketServer The configured value of the <code>options.socketServer</code>.
  * @example
  *   // Example 1: Using CORS authentication and connection to default Room
  *   skylinkDemo(appKey, function (error, success) {
@@ -19421,6 +21875,13 @@ Skylink.prototype.init = function(options, callback) {
   };
   var throttleShouldThrowError = false;
   var mcuUseRenegoRestart = false;
+  var iceServer = null;
+  var socketServer = null;
+  var codecParams = {
+    audio: { opus: {} },
+    video: { h264: {}, vp8: {}, vp9: {} }
+  };
+  var priorityWeightScheme = self.PRIORITY_WEIGHT_SCHEME.AUTO;
 
   log.log('Provided init options:', options);
 
@@ -19467,12 +21928,6 @@ Skylink.prototype.init = function(options, callback) {
     // set the force turn ssl always option
     forceTURNSSL = (typeof options.forceTURNSSL === 'boolean') ?
       options.forceTURNSSL : forceTURNSSL;
-    // set the preferred audio codec
-    audioCodec = typeof options.audioCodec === 'string' ?
-      options.audioCodec : audioCodec;
-    // set the preferred video codec
-    videoCodec = typeof options.videoCodec === 'string' ?
-      options.videoCodec : videoCodec;
     // set the force turn server option
     forceTURN = (typeof options.forceTURN === 'boolean') ?
       options.forceTURN : forceTURN;
@@ -19491,6 +21946,9 @@ Skylink.prototype.init = function(options, callback) {
     // set the flag if throttling should throw error when called less than the interval timeout configured
     throttleShouldThrowError = (typeof options.throttleShouldThrowError === 'boolean') ?
       options.throttleShouldThrowError : throttleShouldThrowError;
+    // set the flag if MCU refreshConnection() should use renegotiation
+    mcuUseRenegoRestart = (typeof options.mcuUseRenegoRestart === 'boolean') ?
+      options.mcuUseRenegoRestart : mcuUseRenegoRestart;
     // set the flag if MCU refreshConnection() should use renegotiation
     mcuUseRenegoRestart = (typeof options.mcuUseRenegoRestart === 'boolean') ?
       options.mcuUseRenegoRestart : mcuUseRenegoRestart;
@@ -19513,19 +21971,169 @@ Skylink.prototype.init = function(options, callback) {
         options.throttleIntervals.getUserMedia : throttleIntervals.getUserMedia;
     }
 
+    // set the Signaling server url for debugging purposes
+    if (options.socketServer) {
+      if (typeof options.socketServer === 'string') {
+        socketServer = options.socketServer;
+      } else if (typeof options.socketServer === 'object' && options.socketServer.url &&
+        typeof options.socketServer.url === 'string') {
+        socketServer = {
+          url: options.socketServer.url,
+          ports: Array.isArray(options.socketServer.ports) && options.socketServer.ports.length > 0 ?
+            options.socketServer.ports : [],
+          protocol: options.socketServer.protocol && typeof options.socketServer.protocol === 'string' ?
+            options.socketServer.protocol : null
+        };
+      }
+    }
+
+    // set the Signaling server url for debugging purposes
+    if (options.iceServer) {
+      iceServer = typeof options.iceServer === 'string' ? { urls: [options.iceServer] } :
+        (Array.isArray(options.iceServer) && options.iceServer.length > 0 &&
+        options.iceServer[0] && typeof options.iceServer[0] === 'string' ? { urls: options.iceServer } : null);
+    }
+
     // set turn transport option
     if (typeof options.TURNServerTransport === 'string') {
       // loop out for every transport option
-      for (var type in self.TURN_TRANSPORT) {
-        if (self.TURN_TRANSPORT.hasOwnProperty(type)) {
-          // do a check if the transport option is valid
-          if (self.TURN_TRANSPORT[type] === options.TURNServerTransport) {
-            TURNTransport = options.TURNServerTransport;
+      for (var ttType in self.TURN_TRANSPORT) {
+        // do a check if the transport option is valid
+        if (self.TURN_TRANSPORT.hasOwnProperty(ttType) && self.TURN_TRANSPORT[ttType] === options.TURNServerTransport) {
+          TURNTransport = options.TURNServerTransport;
+          break;
+        }
+      }
+    }
+
+    // set the preferred audio codec
+    if (options.audioCodec && ((typeof options.audioCodec === 'string' &&
+      options.audioCodec !== self.AUDIO_CODEC.AUTO) || (typeof options.audioCodec === 'object' &&
+      options.audioCodec.codec && typeof options.audioCodec.codec === 'string' &&
+      options.audioCodec.codec !== self.AUDIO_CODEC.AUTO))) {
+      // loop out for every audio codec option
+      for (var acType in self.AUDIO_CODEC) {
+        // do a check if the audio codec option is valid
+        if (self.AUDIO_CODEC.hasOwnProperty(acType)) {
+          if (typeof options.audioCodec === 'string' && self.AUDIO_CODEC[acType] === options.audioCodec) {
+            audioCodec = options.audioCodec;
+            break;
+          } else if (typeof options.audioCodec === 'object' && self.AUDIO_CODEC[acType] === options.audioCodec.codec) {
+            audioCodec = {
+              codec: options.audioCodec.codec,
+              samplingRate: typeof options.audioCodec.samplingRate === 'number' &&
+                options.audioCodec.samplingRate > 0 ? options.audioCodec.samplingRate : null,
+              channels: typeof options.audioCodec.channels === 'number' &&
+                options.audioCodec.channels > 0 ? options.audioCodec.channels : null
+            };
             break;
           }
         }
       }
     }
+
+    // set the preferred video codec
+    if (options.videoCodec && ((typeof options.videoCodec === 'string' &&
+      options.videoCodec !== self.VIDEO_CODEC.AUTO) || (typeof options.videoCodec === 'object' &&
+      options.videoCodec.codec && typeof options.videoCodec.codec === 'string' &&
+      options.videoCodec.codec !== self.VIDEO_CODEC.AUTO))) {
+      // loop out for every video codec option
+      for (var vcType in self.VIDEO_CODEC) {
+        // do a check if the video codec option is valid
+        if (self.VIDEO_CODEC.hasOwnProperty(vcType)) {
+          if (typeof options.videoCodec === 'string' && self.VIDEO_CODEC[vcType] === options.videoCodec) {
+            videoCodec = options.videoCodec;
+            break;
+          } else if (typeof options.videoCodec === 'object' && self.VIDEO_CODEC[vcType] === options.videoCodec.codec) {
+            videoCodec = {
+              codec: options.videoCodec.codec,
+              samplingRate: typeof options.videoCodec.samplingRate === 'number' &&
+                options.videoCodec.samplingRate > 0 ? options.videoCodec.samplingRate : null
+            };
+            break;
+          }
+        }
+      }
+    }
+
+    // set the priority weight scheme
+    if (typeof options.priorityWeightScheme === 'string') {
+      // loop out for every transport option
+      for (var pwsType in self.PRIORITY_WEIGHT_SCHEME) {
+        // do a check if the transport option is valid
+        if (self.PRIORITY_WEIGHT_SCHEME.hasOwnProperty(pwsType) &&
+          self.PRIORITY_WEIGHT_SCHEME[pwsType] === options.priorityWeightScheme) {
+          priorityWeightScheme = options.priorityWeightScheme;
+          break;
+        }
+      }
+    }
+
+    // set the codec params
+    if (options.codecParams && typeof options.codecParams === 'object') {
+      // Set audio codecs params
+      if (options.codecParams.audio && typeof options.codecParams.audio === 'object') {
+        // Set the audio codec opus params
+        if (options.codecParams.audio.opus && typeof options.codecParams.audio.opus === 'object') {
+          codecParams.audio.opus = {
+            stereo: typeof options.codecParams.audio.opus.stereo === 'boolean' ?
+              options.codecParams.audio.opus.stereo : null,
+            usedtx: typeof options.codecParams.audio.opus.usedtx === 'boolean' ?
+              options.codecParams.audio.opus.usedtx : null,
+            useinbandfec: typeof options.codecParams.audio.opus.useinbandfec === 'boolean' ?
+              options.codecParams.audio.opus.useinbandfec : null,
+            maxplaybackrate: typeof options.codecParams.audio.opus.maxplaybackrate === 'number' &&
+              options.codecParams.audio.opus.maxplaybackrate >= 8000 &&
+              options.codecParams.audio.opus.maxplaybackrate <= 48000 ?
+              options.codecParams.audio.opus.maxplaybackrate : null,
+            minptime: typeof options.codecParams.audio.opus.minptime === 'number' &&
+              options.codecParams.audio.opus.minptime >= 3 ? options.codecParams.audio.opus.minptime : null
+          };
+        }
+      }
+      // Set video codecs params
+      if (options.codecParams.video && typeof options.codecParams.video === 'object') {
+        // Set the video codec H264 params
+        if (options.codecParams.video.h264 && typeof options.codecParams.video.h264 === 'object') {
+          codecParams.video.h264 = {
+            // Only allowing profile-level-id change for experimental fixes or changes incase..
+            // Strong NOT recommended, this is like an information
+            profileLevelId: options.codecParams.video.h264.profileLevelId &&
+              typeof options.codecParams.video.h264.profileLevelId === 'string' ?
+              options.codecParams.video.h264.profileLevelId : null,
+            levelAsymmetryAllowed: typeof options.codecParams.video.h264.levelAsymmetryAllowed === 'boolean' ?
+              options.codecParams.video.h264.levelAsymmetryAllowed : null,
+            packetizationMode: typeof options.codecParams.video.h264.packetizationMode === 'boolean' ?
+              options.codecParams.video.h264.packetizationMode : null
+          };
+        }
+        // Set the video codec VP8 params
+        if (options.codecParams.video.vp8 && typeof options.codecParams.video.vp8 === 'object') {
+          // Only allowing max-fs, max-fr change for experimental fixes or changes incase..
+          // (NOT used for any other purposes)!!!!
+          // Strong NOT recommended, this is like an information
+          codecParams.video.vp8 = {
+            maxFs: typeof options.codecParams.video.vp8.maxFs === 'number' ?
+              options.codecParams.video.vp8.maxFs : null,
+            maxFr: typeof options.codecParams.video.vp8.maxFr === 'number' ?
+              options.codecParams.video.vp8.maxFr : null
+          };
+        }
+        // Set the video codec VP9 params
+        if (options.codecParams.video.vp9 && typeof options.codecParams.video.vp9 === 'object') {
+          // Only allowing max-fs, max-fr change for experimental fixes or changes incase..
+          // (NOT used for any other purposes)!!!!
+          // Strong NOT recommended, this is like an information
+          codecParams.video.vp9 = {
+            maxFs: typeof options.codecParams.video.vp9.maxFs === 'number' ?
+              options.codecParams.video.vp9.maxFs : null,
+            maxFr: typeof options.codecParams.video.vp9.maxFr === 'number' ?
+              options.codecParams.video.vp9.maxFr : null
+          };
+        }
+      }
+    }
+
     // set audio fallback option
     audioFallback = options.audioFallback || audioFallback;
     // Custom default meeting timing and duration
@@ -19553,11 +22161,8 @@ Skylink.prototype.init = function(options, callback) {
   }
 
   if (window.webrtcDetectedBrowser === 'edge') {
-    enableSTUNServer = false;
     forceTURNSSL = false;
     TURNTransport = self.TURN_TRANSPORT.UDP;
-    audioCodec = self.AUDIO_CODEC.OPUS;
-    videoCodec = self.VIDEO_CODEC.H264;
     enableDataChannel = false;
   }
 
@@ -19599,6 +22204,10 @@ Skylink.prototype.init = function(options, callback) {
   self._throttlingShouldThrowError = throttleShouldThrowError;
   self._disableREMB = disableREMB;
   self._mcuUseRenegoRestart = mcuUseRenegoRestart;
+  self._iceServer = iceServer;
+  self._socketServer = socketServer;
+  self._codecParams = codecParams;
+  self._priorityWeightScheme = priorityWeightScheme;
 
   log.log('Init configuration:', {
     serverUrl: self._path,
@@ -19626,7 +22235,11 @@ Skylink.prototype.init = function(options, callback) {
     filterCandidatesType: self._filterCandidatesType,
     throttleIntervals: self._throttlingTimeouts,
     throttleShouldThrowError: self._throttlingShouldThrowError,
-    mcuUseRenegoRestart: self._mcuUseRenegoRestart
+    mcuUseRenegoRestart: self._mcuUseRenegoRestart,
+    iceServer: self._iceServer,
+    socketServer: self._socketServer,
+    codecParams: self._codecParams,
+    priorityWeightScheme: self._priorityWeightScheme
   });
   // trigger the readystate
   self._readyState = 0;
@@ -19668,7 +22281,11 @@ Skylink.prototype.init = function(options, callback) {
             filterCandidatesType: self._filterCandidatesType,
             throttleIntervals: self._throttlingTimeouts,
             throttleShouldThrowError: self._throttlingShouldThrowError,
-            mcuUseRenegoRestart: self._mcuUseRenegoRestart
+            mcuUseRenegoRestart: self._mcuUseRenegoRestart,
+            iceServer: self._iceServer,
+            socketServer: self._socketServer,
+            codecParams: self._codecParams,
+            priorityWeightScheme: self._priorityWeightScheme
           });
         } else if (readyState === self.READY_STATE_CHANGE.ERROR) {
           log.log([null, 'Socket', null, 'Firing callback. ' +
@@ -19788,10 +22405,7 @@ Skylink.prototype._parseInfo = function(info) {
 
   this._key = info.cid;
   this._appKeyOwner = info.apiOwner;
-
   this._signalingServer = info.ipSigserver;
-  this._signalingServerPort = null;
-
   this._isPrivileged = info.isPrivileged;
   this._autoIntroduce = info.autoIntroduce;
 
@@ -19899,34 +22513,77 @@ Skylink.prototype._loadInfo = function() {
   adapter.webRTCReady(function () {
     self._isUsingPlugin = !!adapter.WebRTCPlugin.plugin && !!adapter.WebRTCPlugin.plugin.VERSION;
 
-    if (!window.RTCPeerConnection) {
-      log.error('WebRTC not supported. Please upgrade your browser');
+    // Prevent empty object returned when constructing the RTCPeerConnection object
+    if (!(function () {
+      try {
+        var p = new window.RTCPeerConnection(null);
+        // IE returns as typeof object
+        return ['object', 'function'].indexOf(typeof p.createOffer) > -1 && p.createOffer !== null;
+      } catch (e) {
+        return false;
+      }
+    })()) {
+      if (window.RTCPeerConnection && self._isUsingPlugin) {
+        log.error('Plugin is not available. Please check plugin status.');
+      } else {
+        log.error('WebRTC not supported. Please upgrade your browser');
+      }
       self._readyState = -1;
       self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
         status: null,
-        content: 'WebRTC not available',
+        content: self._isUsingPlugin && window.RTCPeerConnection ? 'Plugin is not available' : 'WebRTC not available',
         errorCode: self.READY_STATE_CHANGE_ERROR.NO_WEBRTC_SUPPORT
       }, self._selectedRoom);
       return;
     }
-    self._readyState = 1;
-    self._trigger('readyStateChange', self.READY_STATE_CHANGE.LOADING, null, self._selectedRoom);
-    self._requestServerInfo('GET', self._path, function(status, response) {
-      if (status !== 200) {
-        // 403 - Room is locked
-        // 401 - API Not authorized
-        // 402 - run out of credits
-        var errorMessage = 'XMLHttpRequest status not OK\nStatus was: ' + status;
-        self._readyState = 0;
+
+    var getCodecsSupportCalled = false;
+    self._getCodecsSupport(function (error) {
+      if (getCodecsSupportCalled) {
+        return;
+      }
+      getCodecsSupportCalled = true;
+      if (error) {
+        log.error(error);
+        self._readyState = -1;
         self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
-          status: status,
-          content: (response) ? (response.info || errorMessage) : errorMessage,
-          errorCode: response.error ||
-            self.READY_STATE_CHANGE_ERROR.INVALID_XMLHTTPREQUEST_STATUS
+          status: null,
+          content: error.message || error.toString(),
+          errorCode: self.READY_STATE_CHANGE_ERROR.PARSE_CODECS
         }, self._selectedRoom);
         return;
       }
-      self._parseInfo(response);
+
+      if (Object.keys(self._currentCodecSupport.audio).length === 0 && Object.keys(self._currentCodecSupport.video).length === 0) {
+        log.error('No audio/video codecs available to start connection.');
+        self._readyState = -1;
+        self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
+          status: null,
+          content: 'No audio/video codecs available to start connection',
+          errorCode: self.READY_STATE_CHANGE_ERROR.PARSE_CODECS
+        }, self._selectedRoom);
+        return;
+      }
+
+      self._readyState = 1;
+      self._trigger('readyStateChange', self.READY_STATE_CHANGE.LOADING, null, self._selectedRoom);
+      self._requestServerInfo('GET', self._path, function(status, response) {
+        if (status !== 200) {
+          // 403 - Room is locked
+          // 401 - API Not authorized
+          // 402 - run out of credits
+          var errorMessage = 'XMLHttpRequest status not OK\nStatus was: ' + status;
+          self._readyState = 0;
+          self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
+            status: status,
+            content: (response) ? (response.info || errorMessage) : errorMessage,
+            errorCode: response.error ||
+              self.READY_STATE_CHANGE_ERROR.INVALID_XMLHTTPREQUEST_STATUS
+          }, self._selectedRoom);
+          return;
+        }
+        self._parseInfo(response);
+      });
     });
   });
 };
@@ -19968,7 +22625,11 @@ Skylink.prototype._initSelectedRoom = function(room, callback) {
     filterCandidatesType: self._filterCandidatesType,
     throttleIntervals: self._throttlingTimeouts,
     throttleShouldThrowError: self._throttlingShouldThrowError,
-    mcuUseRenegoRestart: self._mcuUseRenegoRestart
+    mcuUseRenegoRestart: self._mcuUseRenegoRestart,
+    iceServer: self._iceServer ? self._iceServer.urls : null,
+    socketServer: self._socketServer ? self._socketServer : null,
+    codecParams: self._codecParams ? self._codecParams : null,
+    priorityWeightScheme: self._priorityWeightScheme ? self._priorityWeightScheme : null
   };
   if (self._roomCredentials) {
     initOptions.credentials = {
@@ -20153,7 +22814,7 @@ var _printAllStoredLogsFn = function () {
  * @for Skylink
  * @since 0.5.5
  */
-window.SkylinkLogs = {
+var SkylinkLogs = {
   /**
    * Function that gets the current stored SDK <code>console</code> logs.
    * @property SkylinkLogs.getLogs
@@ -20408,6 +23069,13 @@ var _eventsDocs = {
   /**
    * Event triggered when socket connection to Signaling server has opened.
    * @event channelOpen
+   * @param {JSON} session The socket connection session information.
+   * @param {String} session.serverUrl The socket connection Signaling url used.
+   * @param {String} session.transportType The socket connection transport type used.
+   * @param {JSON} session.socketOptions The socket connection options.
+   * @param {Number} session.attempts The socket connection current reconnection attempts.
+   * @param {Number} session.finalAttempts The socket connection current last attempts
+   *   for the last available transports and port.
    * @for Skylink
    * @since 0.1.0
    */
@@ -20416,6 +23084,9 @@ var _eventsDocs = {
   /**
    * Event triggered when socket connection to Signaling server has closed.
    * @event channelClose
+   * @param {JSON} session The socket connection session information.
+   *   <small>Object signature matches the <code>session</code> parameter payload received in the
+   *   <a href="#event_channelOpen"><code>channelOpen</code> event</a>.</small>
    * @for Skylink
    * @since 0.1.0
    */
@@ -20428,6 +23099,9 @@ var _eventsDocs = {
    * Event triggered when receiving socket message from the Signaling server.
    * @event channelMessage
    * @param {JSON} message The socket message object.
+   * @param {JSON} session The socket connection session information.
+   *   <small>Object signature matches the <code>session</code> parameter payload received in the
+   *   <a href="#event_channelOpen"><code>channelOpen</code> event</a>.</small>
    * @for Skylink
    * @since 0.1.0
    */
@@ -20442,6 +23116,9 @@ var _eventsDocs = {
    * Event triggered when socket connection encountered exception.
    * @event channelError
    * @param {Error|String} error The error object.
+   * @param {JSON} session The socket connection session information.
+   *   <small>Object signature matches the <code>session</code> parameter payload received in the
+   *   <a href="#event_channelOpen"><code>channelOpen</code> event</a>.</small>
    * @for Skylink
    * @since 0.1.0
    */
@@ -20452,7 +23129,10 @@ var _eventsDocs = {
    * @event channelRetry
    * @param {String} fallbackType The current fallback state.
    *   [Rel: Skylink.SOCKET_FALLBACK]
-   * @param {Number} currentAttempt The current reconnection attempt.
+   * @param {Number} currentAttempt The current socket reconnection attempt.
+   * @param {JSON} session The socket connection session information.
+   *   <small>Object signature matches the <code>session</code> parameter payload received in the
+   *   <a href="#event_channelOpen"><code>channelOpen</code> event</a>.</small>
    * @for Skylink
    * @since 0.5.6
    */
@@ -20466,6 +23146,9 @@ var _eventsDocs = {
    * @param {Error|String|Number} error The error object.
    * @param {String} type The fallback state of the socket connection attempt.
    *   [Rel: Skylink.SOCKET_FALLBACK]
+   * @param {JSON} session The socket connection session information.
+   *   <small>Object signature matches the <code>session</code> parameter payload received in the
+   *   <a href="#event_channelOpen"><code>channelOpen</code> event</a>.</small>
    * @for Skylink
    * @since 0.5.5
    */
@@ -20637,6 +23320,12 @@ var _eventsDocs = {
    * @param {JSON} peerInfo The Peer session information.
    * @param {JSON|String} peerInfo.userData The Peer current custom data.
    * @param {JSON} peerInfo.settings The Peer sending Stream settings.
+   * @param {Boolean|JSON} peerInfo.settings.data The flag if Peer has any Datachannel connections enabled.
+   *   <small>If <code>isSelf</code> value is <code>true</code>, this determines if User allows
+   *   Datachannel connections, else if value is <code>false</code>, this determines if Peer has any active
+   *   Datachannel connections (where <a href="#event_dataChannelState"><code>dataChannelState</code> event</a>
+   *   triggers <code>state</code> as <code>OPEN</code> and <code>channelType</code> as
+   *   <code>MESSAGING</code> for Peer) with Peer.</small>
    * @param {Boolean|JSON} peerInfo.settings.audio The Peer Stream audio settings.
    *   <small>When defined as <code>false</code>, it means there is no audio being sent from Peer.</small>
    *   <small>When defined as <code>true</code>, the <code>peerInfo.settings.audio.stereo</code> value is
@@ -20724,6 +23413,8 @@ var _eventsDocs = {
    *  <small>Data may be accessing OS platform version from Web SDK.</small>
    * @param {String} [peerInfo.agent.pluginVersion] The Peer Temasys Plugin version.
    *  <small>Defined only when Peer is using the Temasys Plugin (IE / Safari).</small>
+   * @param {String} peerInfo.agent.DTProtocolVersion The Peer data transfer (DT) protocol version.
+   * @param {String} peerInfo.agent.SMProtocolVersion The Peer signaling message (SM) protocol version.
    * @param {String} peerInfo.room The Room Peer is from.
    * @param {JSON} peerInfo.config The Peer connection configuration.
    * @param {Boolean} peerInfo.config.enableIceTrickle The flag if Peer connection has
@@ -20737,6 +23428,10 @@ var _eventsDocs = {
    * @param {Boolean} peerInfo.config.publishOnly The flag if Peer is publishing only stream but not receiving streams.
    * @param {Boolean} peerInfo.config.receiveOnly The flag if Peer is receiving only streams but not publishing stream.
    * @param {String} [peerInfo.parentId] The parent Peer ID that it is matched to for multi-streaming connections.
+   * @param {Boolean} [peerInfo.connected] The flag if Peer ICE connection has been established successfully.
+   *  <small>Defined only when <code>isSelf</code> payload value is <code>false</code>.</small>
+   * @param {Boolean} [peerInfo.init] The flag if Peer connection has been created successfully.
+   *  <small>Defined only when <code>isSelf</code> payload value is <code>false</code>.</small>
    * @param {Boolean} isSelf The flag if Peer is User.
    * @for Skylink
    * @since 0.5.2
@@ -20851,13 +23546,13 @@ var _eventsDocs = {
    * @param {String} peerId The Peer ID.
    * @param {JSON} transferInfo The data transfer information.
    *   <small>Object signature matches the <code>transferInfo</code> parameter payload received in the
-   *   <a href="#event_dataTransferState"><code>dataTransferState</code> event</a>.</small>
+   *   <a href="#event_dataTransferState"><code>dataTransferState</code> event</a>
+   *   except without the <code>data</code> property.</small>
    * @param {Boolean} isSelf The flag if Peer is User.
    * @for Skylink
    * @since 0.6.1
    */
   incomingData: [],
-
 
   /**
    * Event triggered when receiving upload data transfer from Peer.
@@ -20866,12 +23561,62 @@ var _eventsDocs = {
    * @param {String} peerId The Peer ID.
    * @param {String} transferInfo The data transfer information.
    *   <small>Object signature matches the <code>transferInfo</code> parameter payload received in the
-   *   <a href="#event_dataTransferState"><code>dataTransferState</code> event</a>.</small>
+   *   <a href="#event_dataTransferState"><code>dataTransferState</code> event</a>
+   *   except without the <code>data</code> property.</small>
    * @param {Boolean} isSelf The flag if Peer is User.
    * @for Skylink
    * @since 0.6.1
    */
   incomingDataRequest: [],
+
+  /**
+   * Event triggered when data streaming session has been started from Peer to User.
+   * @event incomingDataStreamStarted
+   * @param {String} streamId The data streaming session ID.
+   * @param {String} peerId The Peer ID.
+   * @param {JSON} streamInfo The data streaming session information.
+   *   <small>Object signature matches the <code>streamInfo</code> parameter payload received in the
+   *   <a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+   *   except without the <code>chunk</code> property.</small>
+   * @param {Boolean} isSelf The flag if Peer is User.
+   * @beta
+   * @for Skylink
+   * @since 0.6.18
+   */
+  incomingDataStreamStarted: [],
+
+  /**
+   * Event triggered when data streaming session has been stopped from Peer to User.
+   * @event incomingDataStreamStopped
+   * @param {String} streamId The data streaming session ID.
+   * @param {String} peerId The Peer ID.
+   * @param {JSON} streamInfo The data streaming session information.
+   *   <small>Object signature matches the <code>streamInfo</code> parameter payload received in the
+   *   <a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+   *   except without the <code>chunk</code> property.</small>
+   * @param {Boolean} isSelf The flag if Peer is User.
+   * @beta
+   * @for Skylink
+   * @since 0.6.18
+   */
+  incomingDataStreamStopped: [],
+
+  /**
+   * Event triggered when data streaming session has been stopped from Peer to User.
+   * @event incomingDataStream
+   * @param {Blob|String} chunk The data chunk received.
+   * @param {String} streamId The data streaming session ID.
+   * @param {String} peerId The Peer ID.
+   * @param {JSON} streamInfo The data streaming session information.
+   *   <small>Object signature matches the <code>streamInfo</code> parameter payload received in the
+   *   <a href="#event_dataStreamState"><code>dataStreamState</code> event</a>
+   *   except without the <code>chunk</code> property.</small>
+   * @param {Boolean} isSelf The flag if Peer is User.
+   * @beta
+   * @for Skylink
+   * @since 0.6.18
+   */
+  incomingDataStream: [],
 
   /**
    * Event triggered when Room locked status has changed.
@@ -20901,6 +23646,9 @@ var _eventsDocs = {
    * @param {String} messageType The Datachannel sending Datachannel message error type.
    *   <small>Defined only when <cod>state</code> payload is <code>SEND_MESSAGE_ERROR</code>.</small>
    *   [Rel: Skylink.DATA_CHANNEL_MESSAGE_ERROR]
+   * @param {JSON} bufferAmount The Datachannel buffered amount information.
+   * @param {Number} bufferAmount.bufferedAmountLow The size of currently queued data to send on the Datachannel connection.
+   * @param {Number} bufferAmount.bufferedAmountLowThreshold The current buffered amount low threshold configured.
    * @for Skylink
    * @since 0.1.0
    */
@@ -20912,7 +23660,10 @@ var _eventsDocs = {
    * @param {String} state The current data transfer state.
    *   [Rel: Skylink.DATA_TRANSFER_STATE]
    * @param {String} transferId The data transfer ID.
+   *   <small>Note that this is defined as <code>null</code> when <code>state</code> payload is <code>START_ERROR</code>.</small>
    * @param {String} peerId The Peer ID.
+   *   <small>Note that this could be defined as <code>null</code> when <code>state</code> payload is
+   *   <code>START_ERROR</code> and there is no Peers to start data transfer with.</small>
    * @param {JSON} transferInfo The data transfer information.
    * @param {Blob|String} [transferInfo.data] The data object.
    *   <small>Defined only when <code>state</code> payload is <code>UPLOAD_STARTED</code> or
@@ -20933,7 +23684,7 @@ var _eventsDocs = {
    *   data object sent MIME type information is defined.</small>
    * @param {Number} transferInfo.chunkSize The data transfer data chunk size.
    * @param {Number} transferInfo.percentage The data transfer percentage of completion progress.
-   * @param {Number} transferInfo.timeout The flag if message is targeted or not, basing
+   * @param {Number} transferInfo.timeout The flag if data transfer is targeted or not, basing
    *   off the <code>targetPeerId</code> parameter being defined in
    *   <a href="#method_sendURLData"><code>sendURLData()</code> method</a> or
    *   <a href="#method_sendBlobData"><code>sendBlobData()</code> method</a>.
@@ -20945,7 +23696,7 @@ var _eventsDocs = {
    *   [Rel: Skylink.DATA_TRANSFER_TYPE]
    * @param {JSON} [error] The error result.
    *   <small>Defined only when <code>state</code> payload is <code>ERROR</code>, <code>CANCEL</code>,
-   *   <code>REJECTED</code> or <code>USER_REJECTED</code>.</small>
+   *   <code>REJECTED</code>, <code>START_ERROR</code> or <code>USER_REJECTED</code>.</small>
    * @param {Error|String} error.message The error object.
    * @param {String} error.transferType The data transfer direction from where the error occurred.
    *   [Rel: Skylink.DATA_TRANSFER_TYPE]
@@ -20953,6 +23704,37 @@ var _eventsDocs = {
    * @since 0.4.1
    */
   dataTransferState: [],
+
+  /**
+   * Event triggered when a data streaming state has changed.
+   * @event dataStreamState
+   * @param {String} state The current data streaming state.
+   *   [Rel: Skylink.DATA_STREAM_STATE]
+   * @param {String} streamId The data streaming session ID.
+   *   <small>Note that this is defined as <code>null</code> when <code>state</code> payload is <code>START_ERROR</code>.</small>
+   * @param {String} peerId The Peer ID.
+   *   <small>Note that this could be defined as <code>null</code> when <code>state</code> payload is
+   *   <code>START_ERROR</code> and there is no Peers to start data streaming with.</small>
+   * @param {JSON} streamInfo The data streaming information.
+   * @param {Blob|String} [streamInfo.chunk] The data chunk received.
+   *   <small>Defined only when <code>state</code> payload is <code>RECEIVED</code> or <code>SENT</code>.</small>
+   * @param {Number} streamInfo.chunkSize The data streaming data chunk size received.
+   * @param {String} streamInfo.chunkType The data streaming data chunk type received.
+   *   <small>The initial data chunks value may change depending on the currently received data chunk type or the
+   *   agent supported sending type of data chunks.</small>
+   *   [Rel: Skylink.DATA_TRANSFER_DATA_TYPE]
+   * @param {String} streamInfo.isStringStream The flag if data streaming data chunks are strings.
+   * @param {Boolean} streamInfo.isPrivate The flag if data streaming is targeted or not, basing
+   *   off the <code>targetPeerId</code> parameter being defined in
+   *   <a href="#method_startStreamingData"><code>startStreamingData()</code> method</a>.
+   * @param {String} streamInfo.senderPeerId The sender Peer ID.
+   * @param {Error} [error] The error object.
+   *   <small>Defined only when <code>state</code> payload is <code>ERROR</code> or <code>START_ERROR</code>,.</small>
+   * @beta
+   * @for Skylink
+   * @since 0.6.18
+   */
+  dataStreamState: [],
 
   /**
    * Event triggered when Signaling server reaction state has changed.
@@ -21099,14 +23881,26 @@ var _eventsDocs = {
    *   <small>Note that value is in bytes so you have to convert that to bits for displaying for an example kbps.</small>
    * @param {Number} stats.audio.sending.packets The Peer connection current sending audio streaming packets.
    * @param {Number} stats.audio.sending.totalPackets The Peer connection total sending audio streaming packets.
-   * @param {Number} stats.audio.sending.packetsLost The Peer connection current sending audio streaming packets lost.
-   * @param {Number} stats.audio.sending.totalPacketsLost The Peer connection total sending audio streaming packets lost.
+   * @param {Number} stats.audio.sending.packetsLost <blockquote class="info">
+   *   This property has been deprecated and would be removed in future releases
+   *   as it should not be in <code>sending</code> property.
+   *   </blockquote> The Peer connection current sending audio streaming packets lost.
+   * @param {Number} stats.audio.sending.totalPacketsLost <blockquote class="info">
+   *   This property has been deprecated and would be removed in future releases
+   *   as it should not be in <code>sending</code> property.
+   *   </blockquote> The Peer connection total sending audio streaming packets lost.
    * @param {Number} stats.audio.sending.ssrc The Peer connection sending audio streaming RTP packets SSRC.
    * @param {Number} stats.audio.sending.rtt The Peer connection sending audio streaming RTT (Round-trip delay time).
    *   <small>Defined as <code>0</code> if it's not present in original raw stats before parsing.</small>
-   * @param {Number} stats.audio.sending.jitter The Peer connection sending audio streaming RTP packets jitter in seconds.
+   * @param {Number} stats.audio.sending.jitter <blockquote class="info">
+   *   This property has been deprecated and would be removed in future releases
+   *   as it should not be in <code>sending</code> property.
+   *   </blockquote> The Peer connection sending audio streaming RTP packets jitter in seconds.
    *   <small>Defined as <code>0</code> if it's not present in original raw stats before parsing.</small>
-   * @param {Number} [stats.audio.sending.jitterBufferMs] The Peer connection sending audio streaming
+   * @param {Number} [stats.audio.sending.jitterBufferMs] <blockquote class="info">
+   *   This property has been deprecated and would be removed in future releases
+   *   as it should not be in <code>sending</code> property.
+   *   </blockquote> The Peer connection sending audio streaming
    *   RTP packets jitter buffer in miliseconds.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {JSON} [stats.audio.sending.codec] The Peer connection sending audio streaming selected codec information.
@@ -21137,7 +23931,10 @@ var _eventsDocs = {
    * @param {Number} stats.audio.receiving.packets The Peer connection current receiving audio streaming packets.
    * @param {Number} stats.audio.receiving.totalPackets The Peer connection total receiving audio streaming packets.
    * @param {Number} stats.audio.receiving.packetsLost The Peer connection current receiving audio streaming packets lost.
+   * @param {Number} stats.audio.receiving.fractionLost The Peer connection current receiving audio streaming fraction packets lost.
+   * @param {Number} stats.audio.receiving.packetsDiscarded The Peer connection current receiving audio streaming packets discarded.
    * @param {Number} stats.audio.receiving.totalPacketsLost The Peer connection total receiving audio streaming packets lost.
+   * @param {Number} stats.audio.receiving.totalPacketsDiscarded The Peer connection total receiving audio streaming packets discarded.
    * @param {Number} stats.audio.receiving.ssrc The Peer connection receiving audio streaming RTP packets SSRC.
    * @param {Number} stats.audio.receiving.jitter The Peer connection receiving audio streaming RTP packets jitter in seconds.
    *   <small>Defined as <code>0</code> if it's not present in original raw stats before parsing.</small>
@@ -21169,15 +23966,28 @@ var _eventsDocs = {
    *   <small>Note that value is in bytes so you have to convert that to bits for displaying for an example kbps.</small>
    * @param {Number} stats.video.sending.packets The Peer connection current sending video streaming packets.
    * @param {Number} stats.video.sending.totalPackets The Peer connection total sending video streaming packets.
-   * @param {Number} stats.video.sending.packetsLost The Peer connection current sending video streaming packets lost.
-   * @param {Number} stats.video.sending.totalPacketsLost The Peer connection total sending video streaming packets lost.
+   * @param {Number} stats.video.sending.packetsLost <blockquote class="info">
+   *   This property has been deprecated and would be removed in future releases
+   *   as it should not be in <code>sending</code> property.
+   *   </blockquote> The Peer connection current sending video streaming packets lost.
+   * @param {Number} stats.video.sending.totalPacketsLost <blockquote class="info">
+   *   This property has been deprecated and would be removed in future releases
+   *   as it should not be in <code>sending</code> property.
+   *   </blockquote> The Peer connection total sending video streaming packets lost.
    * @param {Number} stats.video.sending.ssrc The Peer connection sending video streaming RTP packets SSRC.
    * @param {Number} stats.video.sending.rtt The Peer connection sending video streaming RTT (Round-trip delay time).
    *   <small>Defined as <code>0</code> if it's not present in original raw stats before parsing.</small>
-   * @param {Number} stats.video.sending.jitter The Peer connection sending video streaming RTP packets jitter in seconds.
+   * @param {Number} stats.video.sending.jitter <blockquote class="info">
+   *   This property has been deprecated and would be removed in future releases
+   *   as it should not be in <code>sending</code> property.
+   *   </blockquote> The Peer connection sending video streaming RTP packets jitter in seconds.
    *   <small>Defined as <code>0</code> if it's not present in original raw stats before parsing.</small>
-   * @param {Number} [stats.video.sending.jitterBufferMs] The Peer connection sending video streaming
-   *   RTP packets jitter buffer in miliseconds.
+   * @param {Number} [stats.video.sending.jitterBufferMs] <blockquote class="info">
+   *   This property has been deprecated and would be removed in future releases
+   *   as it should not be in <code>sending</code> property.
+   *   </blockquote> The Peer connection sending video streaming RTP packets jitter buffer in miliseconds.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.sending.qpSum] The Peer connection sending video streaming sum of the QP values of frames passed.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {JSON} [stats.video.sending.codec] The Peer connection sending video streaming selected codec information.
    *   <small>Defined as <code>null</code> if local session description is not available before parsing.</small>
@@ -21194,13 +24004,23 @@ var _eventsDocs = {
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.sending.frames] The Peer connection sending video streaming frames.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
-   * @param {Number} [stats.video.sending.framesInput] The Peer connection sending video streaming frames input.
+   * @param {Number} [stats.video.sending.frameRateInput] The Peer connection sending video streaming fps input.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.sending.frameRateInput] The Peer connection sending video streaming fps input.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.sending.framesDropped] The Peer connection sending video streaming frames dropped.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.sending.frameRateMean] The Peer connection sending video streaming fps mean.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.sending.frameRateStdDev] The Peer connection sending video streaming fps standard deviation.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.sending.framesPerSecond] The Peer connection sending video streaming fps.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.sending.framesDecoded] The Peer connection sending video streaming frames decoded.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.sending.framesCorrupted] The Peer connection sending video streaming frames corrupted.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.sending.totalFrames] The Peer connection total sending video streaming frames.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.sending.nacks] The Peer connection current sending video streaming nacks.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
@@ -21214,6 +24034,10 @@ var _eventsDocs = {
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.sending.totalFirs] The Peer connection total sending video streaming firs.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.sending.slis] The Peer connection current sending video streaming slis.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.sending.totalSlis] The Peer connection total sending video streaming slis.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {JSON} stats.video.receiving The Peer connection receiving video streaming stats.
    * @param {Number} stats.video.receiving.bytes The Peer connection current receiving video streaming bytes.
    *   <small>Note that value is in bytes so you have to convert that to bits for displaying for an example kbps.</small>
@@ -21222,9 +24046,12 @@ var _eventsDocs = {
    * @param {Number} stats.video.receiving.packets The Peer connection current receiving video streaming packets.
    * @param {Number} stats.video.receiving.totalPackets The Peer connection total receiving video streaming packets.
    * @param {Number} stats.video.receiving.packetsLost The Peer connection current receiving video streaming packets lost.
+   * @param {Number} stats.video.receiving.fractionLost The Peer connection current receiving video streaming fraction packets lost.
+   * @param {Number} stats.video.receiving.packetsDiscarded The Peer connection current receiving video streaming packets discarded.
    * @param {Number} stats.video.receiving.totalPacketsLost The Peer connection total receiving video streaming packets lost.
+   * @param {Number} stats.video.receiving.totalPacketsDiscarded The Peer connection total receiving video streaming packets discarded.
    * @param {Number} stats.video.receiving.ssrc The Peer connection receiving video streaming RTP packets SSRC.
-   * @param {Number} stats.video.receiving.e2eDelay The Peer connection receiving video streaming e2e delay.
+   * @param {Number} [stats.video.receiving.e2eDelay] The Peer connection receiving video streaming e2e delay.
    *   <small>Defined as <code>null</code> if it's not present in original raw stats before parsing, and that
    *   it finds any existing audio, video or object (plugin) DOM elements that has set with the
    *   Peer remote stream object to parse current time. Note that <code>document.getElementsByTagName</code> function
@@ -21251,7 +24078,7 @@ var _eventsDocs = {
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.receiving.frames] The Peer connection receiving video streaming frames.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
-   * @param {Number} [stats.video.receiving.framesOutput] The Peer connection receiving video streaming frames output.
+   * @param {Number} [stats.video.receiving.framesOutput] The Peer connection receiving video streaming fps output.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.receiving.framesDecoded] The Peer connection receiving video streaming frames decoded.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
@@ -21259,17 +24086,29 @@ var _eventsDocs = {
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.receiving.frameRateStdDev] The Peer connection receiving video streaming fps standard deviation.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.receiving.framesPerSecond] The Peer connection receiving video streaming fps.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.receiving.framesDecoded] The Peer connection receiving video streaming frames decoded.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.receiving.framesCorrupted] The Peer connection receiving video streaming frames corrupted.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.receiving.totalFrames] The Peer connection total receiving video streaming frames.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.receiving.nacks] The Peer connection current receiving video streaming nacks.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.receiving.totalNacks] The Peer connection total receiving video streaming nacks.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.receiving.plis] The Peer connection current receiving video streaming plis.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
-   * @param {Number} [stats.video.receiving.totalPlis] The Peer connection totally receiving video streaming plis.
+   * @param {Number} [stats.video.receiving.totalPlis] The Peer connection total receiving video streaming plis.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.receiving.firs] The Peer connection current receiving video streaming firs.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {Number} [stats.video.receiving.totalFirs] The Peer connection total receiving video streaming firs.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.receiving.slis] The Peer connection current receiving video streaming slis.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Number} [stats.video.receiving.totalPlis] The Peer connection total receiving video streaming slis.
    *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {JSON} stats.selectedCandidate The Peer connection selected ICE candidate pair stats.
    * @param {JSON} stats.selectedCandidate.local The Peer connection selected local ICE candidate.
@@ -21281,6 +24120,10 @@ var _eventsDocs = {
    *   local ICE candidate IP transport type.
    * @param {String} stats.selectedCandidate.local.candidateType The Peer connection selected
    *   local ICE candidate type.
+   * @param {String} [stats.selectedCandidate.local.turnMediaTransport] The Peer connection possible
+   *   transport used when relaying local media to TURN server.
+   *   <small>Types are <code>"UDP"</code> (UDP connections), <code>"TCP"</code> (TCP connections) and
+   *   <code>"TCP/TLS"</code> (TCP over TLS connections).</small>
    * @param {JSON} stats.selectedCandidate.remote The Peer connection selected remote ICE candidate.
    * @param {String} stats.selectedCandidate.remote.ipAddress The Peer connection selected
    *   remote ICE candidate IP address.
@@ -21290,6 +24133,73 @@ var _eventsDocs = {
    *   remote ICE candidate IP transport type.
    * @param {String} stats.selectedCandidate.remote.candidateType The Peer connection selected
    *   remote ICE candidate type.
+   * @param {Boolean} [stats.selectedCandidate.writable] The flag if Peer has gotten ACK to an ICE request.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {Boolean} [stats.selectedCandidate.readable] The flag if Peer has gotten a valid incoming ICE request.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.rtt] The current STUN connectivity checks RTT (Round-trip delay time).
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.totalRtt] The total STUN connectivity checks RTT (Round-trip delay time).
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {JSON} stats.selectedCandidate.requests The ICE connectivity check requests.
+   * @param {String} [stats.selectedCandidate.requests.received] The current ICE connectivity check requests received.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.requests.sent] The current ICE connectivity check requests sent.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.requests.totalReceived] The total ICE connectivity check requests received.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.requests.totalSent] The total ICE connectivity check requests sent.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {JSON} stats.selectedCandidate.responses The ICE connectivity check responses.
+   * @param {String} [stats.selectedCandidate.responses.received] The current ICE connectivity check responses received.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.responses.sent] The current ICE connectivity check responses sent.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.responses.totalReceived] The total ICE connectivity check responses received.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.responses.totalSent] The total ICE connectivity check responses sent.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {JSON} stats.selectedCandidate.consentRequests The current ICE consent requests.
+   * @param {String} [stats.selectedCandidate.consentRequests.received] The current ICE consent requests received.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.consentRequests.sent] The current ICE consent requests sent.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.consentRequests.totalReceived] The total ICE consent requests received.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.consentRequests.totalSent] The total ICE consent requests sent.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {JSON} stats.selectedCandidate.consentResponses The current ICE consent responses.
+   * @param {String} [stats.selectedCandidate.consentResponses.received] The current ICE consent responses received.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.consentResponses.sent] The current ICE consent responses sent.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.consentResponses.totalReceived] The total ICE consent responses received.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.selectedCandidate.consentResponses.totalSent] The total ICE consent responses sent.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {JSON} stats.certificate The Peer connection DTLS/SRTP exchanged certificates information.
+   * @param {JSON} stats.certificate.local The Peer connection local certificate information.
+   * @param {String} [stats.certificate.local.fingerprint] The Peer connection local certificate fingerprint.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.certificate.local.fingerprintAlgorithm] The Peer connection local
+   *   certificate fingerprint algorithm.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.certificate.local.derBase64] The Peer connection local
+   *   base64 certificate in binary DER format encoded in base64.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {JSON} stats.certificate.remote The Peer connection remote certificate information.
+   * @param {String} [stats.certificate.remote.fingerprint] The Peer connection remote certificate fingerprint.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.certificate.remote.fingerprintAlgorithm] The Peer connection remote
+   *   certificate fingerprint algorithm.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.certificate.remote.derBase64] The Peer connection remote
+   *   base64 certificate in binary DER format encoded in base64.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.certificate.srtpCipher] The certificates SRTP cipher.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
+   * @param {String} [stats.certificate.dtlsCipher] The certificates DTLS cipher.
+   *   <small>Defined as <code>null</code> if it's not available in original raw stats before parsing.</small>
    * @param {JSON} stats.connection The Peer connection object stats.
    * @param {String} stats.connection.iceConnectionState The Peer connection ICE connection state.
    * @param {String} stats.connection.iceGatheringState The Peer connection ICE gathering state.
@@ -21383,6 +24293,12 @@ var _eventsDocs = {
    * @param {String} stats.connection.dataChannels.#channelName.currentTransferId The Peer connection
    *   Datachannel connection current progressing transfer session ID.
    *   <small>Defined as <code>null</code> when there is currently no transfer session progressing on the Datachannel connection.</small>
+   * @param {String} stats.connection.dataChannels.#channelName.currentStreamId The Peer connection
+   *   Datachannel connection current data streaming session ID.
+   *   <small>Defined as <code>null</code> when there is currently no data streaming session on the Datachannel connection.</small>
+   * @param {JSON} stats.connection.constraints The constraints passed in when constructing the Peer connection object.
+   * @param {JSON} stats.connection.optional The optional constraints passed in when constructing the Peer connection object.
+   * @param {JSON} [stats.connection.sdpConstraints] The constraints passed in when creating Peer connection offer or answer.
    * @param {Error} error The error object received.
    *   <small>Defined only when <code>state</code> payload is <code>RETRIEVE_ERROR</code>.</small>
    * @for Skylink
@@ -21433,7 +24349,26 @@ var _eventsDocs = {
    * @for Skylink
    * @since 0.6.16
    */
-  candidateProcessingState: []
+  candidateProcessingState: [],
+
+  /**
+   * <blockquote class="info">
+   *   Learn more about how ICE works in this
+   *   <a href="https://temasys.com.sg/ice-what-is-this-sorcery/">article here</a>.<br>
+   *   Note that this event may not be triggered for MCU enabled Peer connections as ICE candidates
+   *   may be received in the session description instead.
+   * </blockquote>
+   * Event triggered when all remote ICE candidates gathering has completed and been processed.
+   * @event candidatesGathered
+   * @param {String} peerId The Peer ID.
+   * @param {JSON} length The remote ICE candidates length.
+   * @param {Number} length.expected The expected total number of remote ICE candidates to be received.
+   * @param {Number} length.received The actual total number of remote ICE candidates received.
+   * @param {Number} length.processed The total number of remote ICE candidates processed.
+   * @for Skylink
+   * @since 0.6.18
+   */
+  candidatesGathered: []
 };
 
 /**
@@ -21507,9 +24442,6 @@ Skylink.prototype.once = function(eventName, callback, condition, fireAlways) {
   } : condition;
 
   if (typeof callback === 'function') {
-
-    this._EVENTS[eventName] = this._EVENTS[eventName] || [];
-    // prevent undefined error
     this._onceEvents[eventName] = this._onceEvents[eventName] || [];
     this._onceEvents[eventName].push([callback, condition, fireAlways]);
     log.log([null, 'Event', eventName, 'Event is subscribed on condition']);
@@ -21521,7 +24453,8 @@ Skylink.prototype.once = function(eventName, callback, condition, fireAlways) {
 /**
  * Function that unsubscribes listeners from an event.
  * @method off
- * @param {String} eventName The event.
+ * @param {String} [eventName] The event.
+ * - When not provided, all listeners to all events will be unsubscribed.
  * @param {Function} [callback] The listener to unsubscribe.
  * - When not provided, all listeners associated to the event will be unsubscribed.
  * @example
@@ -21538,30 +24471,35 @@ Skylink.prototype.once = function(eventName, callback, condition, fireAlways) {
  * @since 0.5.5
  */
 Skylink.prototype.off = function(eventName, callback) {
-  if (callback === undefined) {
-    this._EVENTS[eventName] = [];
-    this._onceEvents[eventName] = [];
-    log.log([null, 'Event', eventName, 'All events are unsubscribed']);
-    return;
-  }
-  var arr = this._EVENTS[eventName];
-  var once = this._onceEvents[eventName];
-
-  // unsubscribe events that is triggered always
-  for (var i = 0; i < arr.length; i++) {
-    if (arr[i] === callback) {
-      log.log([null, 'Event', eventName, 'Event is unsubscribed']);
-      arr.splice(i, 1);
-      break;
+  if (!(eventName && typeof eventName === 'string')) {
+    this._EVENTS = {};
+    this._onceEvents = {};
+  } else {
+    if (callback === undefined) {
+      this._EVENTS[eventName] = [];
+      this._onceEvents[eventName] = [];
+      log.log([null, 'Event', eventName, 'All events are unsubscribed']);
+      return;
     }
-  }
-  // unsubscribe events fired only once
-  if(once !== undefined) {
-    for (var j = 0; j < once.length; j++) {
-      if (once[j][0] === callback) {
-        log.log([null, 'Event', eventName, 'One-time Event is unsubscribed']);
-        once.splice(j, 1);
+    var arr = this._EVENTS[eventName] || [];
+    var once = this._onceEvents[eventName] || [];
+
+    // unsubscribe events that is triggered always
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i] === callback) {
+        log.log([null, 'Event', eventName, 'Event is unsubscribed']);
+        arr.splice(i, 1);
         break;
+      }
+    }
+    // unsubscribe events fired only once
+    if(once !== undefined) {
+      for (var j = 0; j < once.length; j++) {
+        if (once[j][0] === callback) {
+          log.log([null, 'Event', eventName, 'One-time Event is unsubscribed']);
+          once.splice(j, 1);
+          break;
+        }
       }
     }
   }
@@ -21615,7 +24553,6 @@ Skylink.prototype._trigger = function(eventName) {
       }
     }
   }
-
   log.log([null, 'Event', eventName, 'Event is triggered']);
 };
 
@@ -21704,6 +24641,8 @@ Skylink.prototype._throttle = function(func, prop, wait){
     func(false);
   }
 };
+
+
 Skylink.prototype.SOCKET_ERROR = {
   CONNECTION_FAILED: 0,
   RECONNECTION_FAILED: -1,
@@ -21727,7 +24666,7 @@ Skylink.prototype.SOCKET_ERROR = {
  * @param {String} LONG_POLLING      <small>Value <code>"fallbackLongPollingNonSSL"</code></small>
  *   The value of the reconnection state when <code>joinRoom()</code> socket connection is reconnecting with
  *   another new HTTP port using Polling transports to attempt to establish connection with Signaling server.
- * @param {String} LONG_POLLING      <small>Value <code>"fallbackLongPollingSSL"</code></small>
+ * @param {String} LONG_POLLING_SSL  <small>Value <code>"fallbackLongPollingSSL"</code></small>
  *   The value of the reconnection state when <code>joinRoom()</code> socket connection is reconnecting with
  *   another new HTTPS port using Polling transports to attempt to establish connection with Signaling server.
  * @type JSON
@@ -21756,7 +24695,7 @@ Skylink.prototype._sendChannelMessage = function(message) {
   var throughput = 16;
 
   if (!self._channelOpen || !self._user || !self._socket) {
-    log.warn([null, 'Socket', null, 'Dropping of message as Socket connection is not opened or is at ' +
+    log.warn([message.target || 'Server', 'Socket', message.type, 'Dropping of message as Socket connection is not opened or is at ' +
       'incorrect step ->'], message);
     return;
   }
@@ -21822,10 +24761,6 @@ Skylink.prototype._sendChannelMessage = function(message) {
         isDataChannel: false,
         senderPeerId: self._user.sid
       }, self._user.sid, self.getPeerInfo(), true);
-
-    } else if (eventMessage.type === self._SIG_MESSAGE_TYPE.ROOM_LOCK) {
-      self._roomLocked = !!eventMessage.lock;
-      self._trigger('roomLock', !!eventMessage.lock, self._user.sid, self.getPeerInfo(), true);
     }
   };
 
@@ -21833,7 +24768,7 @@ Skylink.prototype._sendChannelMessage = function(message) {
     self._socketMessageTimeout = null;
 
     if (!self._channelOpen || !(self._user && self._user.sid) || !self._socket) {
-      log.warn([null, 'Socket', null, 'Dropping of group messages as Socket connection is not opened or is at ' +
+      log.warn([message.target || 'Server', 'Socket', null, 'Dropping of group messages as Socket connection is not opened or is at ' +
         'incorrect step ->'], groupMessageList);
       return;
     }
@@ -21870,7 +24805,8 @@ Skylink.prototype._sendChannelMessage = function(message) {
           groupMessageList[i].stamp < stamps.audioMuted) ||
           (groupMessageList[i].type === self._SIG_MESSAGE_TYPE.MUTE_VIDEO &&
           groupMessageList[i].stamp < stamps.videoMuted)) {
-        log.warn([null, 'Socket', null, 'Dropping of outdated status message ->'], clone(groupMessageList[i]));
+        log.warn([message.target || 'Server', 'Socket', groupMessageList[i], 'Dropping of outdated status message ->'],
+          clone(groupMessageList[i]));
         groupMessageList.splice(i, 1);
         i--;
         continue;
@@ -21886,7 +24822,8 @@ Skylink.prototype._sendChannelMessage = function(message) {
         rid: self._room.id
       };
 
-      log.debug([null, 'Socket', null, 'Sending queued messages (max: 16 per group) ->'], groupMessage);
+      log.debug([message.target || 'Server', 'Socket', groupMessage.type,
+        'Sending queued grouped message (max: 16 per group) ->'], clone(groupMessage));
 
       self._socket.send(JSON.stringify(groupMessage));
       self._timestamp.socketMessage = (new Date()).getTime();
@@ -21912,12 +24849,13 @@ Skylink.prototype._sendChannelMessage = function(message) {
   if (self._groupMessageList.indexOf(message.type) > -1) {
     if (!(self._timestamp.socketMessage && ((new Date ()).getTime() - self._timestamp.socketMessage) <= interval)) {
       if (!checkStampFn(message)) {
-        log.warn([null, 'Socket', null, 'Dropping of outdated status message ->'], message);
+        log.warn([message.target || 'Server', 'Socket', message.type, 'Dropping of outdated status message ->'], clone(message));
         return;
       }
       if (self._socketMessageTimeout) {
         clearTimeout(self._socketMessageTimeout);
       }
+      log.warn([message.target || 'Server', 'Socket', message.type, 'Sending message ->'], clone(message));
       self._socket.send(JSON.stringify(message));
       setStampFn(message);
       triggerEventFn(message);
@@ -21925,7 +24863,8 @@ Skylink.prototype._sendChannelMessage = function(message) {
       self._timestamp.socketMessage = (new Date()).getTime();
 
     } else {
-      log.warn([null, 'Socket', null, 'Queueing socket message to prevent message drop ->'], message);
+      log.warn([message.target || 'Server', 'Socket', message.type,
+        'Queueing socket message to prevent message drop ->'], clone(message));
 
       self._socketMessageQueue.push(message);
 
@@ -21934,7 +24873,15 @@ Skylink.prototype._sendChannelMessage = function(message) {
       }
     }
   } else {
+    log.debug([message.target || 'Server', 'Socket', message.type, 'Sending message ->'], clone(message));
     self._socket.send(JSON.stringify(message));
+
+    // If Peer sends "bye" on its own, we trigger it as session disconnected abruptly
+    if (message.type === self._SIG_MESSAGE_TYPE.BYE && self._inRoom &&
+      self._user && self._user.sid && message.mid === self._user.sid) {
+      self.leaveRoom(false);
+      self._trigger('sessionDisconnect', self._user.sid, self.getPeerInfo());
+    }
   }
 };
 
@@ -21947,158 +24894,169 @@ Skylink.prototype._sendChannelMessage = function(message) {
  */
 Skylink.prototype._createSocket = function (type) {
   var self = this;
-
   var options = {
     forceNew: true,
-    //'sync disconnect on unload' : true,
-    reconnection: false,
-    timeout: self._socketTimeout
+    reconnection: true,
+    timeout: self._socketTimeout,
+    reconnectionAttempts: 2,
+    reconnectionDelayMax: 5000,
+    reconnectionDelay: 1000,
+    transports: ['websocket']
   };
-
-  var ports = self._socketPorts[self._signalingServerProtocol];
-  var connectionType = null;
+  var ports = self._socketServer && typeof self._socketServer === 'object' && Array.isArray(self._socketServer.ports) &&
+    self._socketServer.ports.length > 0 ? self._socketServer.ports : self._socketPorts[self._signalingServerProtocol];
+  var fallbackType = null;
 
   // just beginning
   if (self._signalingServerPort === null) {
     self._signalingServerPort = ports[0];
-    connectionType = self.SOCKET_FALLBACK.NON_FALLBACK;
+    fallbackType = self.SOCKET_FALLBACK.NON_FALLBACK;
 
   // reached the end of the last port for the protocol type
-  } else if ( ports.indexOf(self._signalingServerPort) === ports.length - 1 ) {
-
+  } else if (ports.indexOf(self._signalingServerPort) === ports.length - 1 || typeof self._socketServer === 'string') {
     // re-refresh to long-polling port
     if (type === 'WebSocket') {
       type = 'Polling';
       self._signalingServerPort = ports[0];
-
-    } else if (type === 'Polling') {
-      options.reconnection = true;
-      options.reconnectionAttempts = 4;
-      options.reconectionDelayMax = 1000;
+    } else {
+      self._socketSession.finalAttempts++;
     }
-
   // move to the next port
   } else {
     self._signalingServerPort = ports[ ports.indexOf(self._signalingServerPort) + 1 ];
   }
 
-  var url = self._signalingServerProtocol + '//' + self._signalingServer + ':' + self._signalingServerPort;
-    //'http://ec2-52-8-93-170.us-west-1.compute.amazonaws.com:6001';
-
-  if (type === 'WebSocket') {
-    options.transports = ['websocket'];
-  } else if (type === 'Polling') {
+  if (type === 'Polling') {
+    options.reconnectionDelayMax = 1000;
+    options.reconnectionAttempts = 4;
     options.transports = ['xhr-polling', 'jsonp-polling', 'polling'];
+  }
+
+  var url = self._signalingServerProtocol + '//' + self._signalingServer + ':' + self._signalingServerPort;
+  var retries = 0;
+
+  if (self._socketServer) {
+    // Provided as string, make it as just the fixed server
+    url = typeof self._socketServer === 'string' ? self._socketServer :
+      (self._socketServer.protocol ? self._socketServer.protocol : self._signalingServerProtocol) + '//' +
+      self._socketServer.url + ':' + self._signalingServerPort;
+  }
+
+  self._socketSession.transportType = type;
+  self._socketSession.socketOptions = options;
+  self._socketSession.socketServer = url;
+
+  if (fallbackType === null) {
+    fallbackType = self._signalingServerProtocol === 'http:' ?
+      (type === 'Polling' ? self.SOCKET_FALLBACK.LONG_POLLING : self.SOCKET_FALLBACK.FALLBACK_PORT) :
+      (type === 'Polling' ? self.SOCKET_FALLBACK.LONG_POLLING_SSL : self.SOCKET_FALLBACK.FALLBACK_SSL_PORT);
+
+    self._socketSession.attempts++;
+    self._trigger('socketError', self.SOCKET_ERROR.RECONNECTION_ATTEMPT, null, fallbackType, clone(self._socketSession));
+    self._trigger('channelRetry', fallbackType, self._socketSession.attempts, clone(self._socketSession));
   }
 
   // if socket instance already exists, exit
   if (self._socket) {
-    self._socket.removeAllListeners('connect_error');
-    self._socket.removeAllListeners('reconnect_attempt');
-    self._socket.removeAllListeners('reconnect_error');
-    self._socket.removeAllListeners('reconnect_failed');
-    self._socket.removeAllListeners('connect');
-    self._socket.removeAllListeners('reconnect');
-    self._socket.removeAllListeners('error');
-    self._socket.removeAllListeners('disconnect');
-    self._socket.removeAllListeners('message');
-    self._socket.disconnect();
-    self._socket = null;
+    self._closeChannel();
   }
 
   self._channelOpen = false;
 
-  log.log('Opening channel with signaling server url:', {
-    url: url,
-    useXDR: self._socketUseXDR,
-    options: options
-  });
+  log.log('Opening channel with signaling server url:', clone(self._socketSession));
 
-  self._socketSession = {
-    type: type,
-    options: options,
-    url: url
-  };
-
-  self._socket = io.connect(url, options);
-
-  if (connectionType === null) {
-    connectionType = self._signalingServerProtocol === 'http:' ?
-      (type === 'Polling' ? self.SOCKET_FALLBACK.LONG_POLLING :
-        self.SOCKET_FALLBACK.FALLBACK_PORT) :
-      (type === 'Polling' ? self.SOCKET_FALLBACK.LONG_POLLING_SSL :
-        self.SOCKET_FALLBACK.FALLBACK_SSL_PORT);
+  try {
+    self._socket = io.connect(url, options);
+  } catch (error){
+    log.error('Failed creating socket connection object ->', error);
+    if (fallbackType === self.SOCKET_FALLBACK.NON_FALLBACK) {
+      self._trigger('socketError', self.SOCKET_ERROR.CONNECTION_FAILED, error, fallbackType, clone(self._socketSession));
+    } else {
+      self._trigger('socketError', self.SOCKET_ERROR.RECONNECTION_FAILED, error, fallbackType, clone(self._socketSession));
+    }
+    self._trigger('socketError', self.SOCKET_ERROR.RECONNECTION_ABORTED, new Error('Reconnection aborted as ' +
+      'there no more available ports, transports and final attempts left.'), fallbackType, clone(self._socketSession));
+    return;
   }
 
-  self._socket.on('connect_error', function (error) {
-    self._channelOpen = false;
-
-    self._trigger('socketError', self.SOCKET_ERROR.CONNECTION_FAILED,
-      error, connectionType);
-
-    self._trigger('channelRetry', connectionType, 1);
-
-    if (options.reconnection === false) {
-      self._createSocket(type);
-    }
-  });
-
   self._socket.on('reconnect_attempt', function (attempt) {
-    self._channelOpen = false;
-    self._trigger('socketError', self.SOCKET_ERROR.RECONNECTION_ATTEMPT,
-      attempt, connectionType);
-
-    self._trigger('channelRetry', connectionType, attempt);
+    retries++;
+    self._socketSession.attempts++;
+    self._trigger('channelRetry', fallbackType, self._socketSession.attempts, clone(self._socketSession));
   });
 
-  self._socket.on('reconnect_error', function (error) {
-    self._channelOpen = false;
-    self._trigger('socketError', self.SOCKET_ERROR.RECONNECTION_FAILED,
-      error, connectionType);
-  });
+  self._socket.on('reconnect_failed', function () {
+    if (fallbackType === self.SOCKET_FALLBACK.NON_FALLBACK) {
+      self._trigger('socketError', self.SOCKET_ERROR.CONNECTION_FAILED, new Error('Failed connection with transport "' +
+        type + '" and port ' + self._signalingServerPort + '.'), fallbackType, clone(self._socketSession));
+    } else {
+      self._trigger('socketError', self.SOCKET_ERROR.RECONNECTION_FAILED, new Error('Failed reconnection with transport "' +
+        type + '" and port ' + self._signalingServerPort + '.'), fallbackType, clone(self._socketSession));
+    }
 
-  self._socket.on('reconnect_failed', function (error) {
-    self._channelOpen = false;
-    self._trigger('socketError', self.SOCKET_ERROR.RECONNECTION_ABORTED,
-      error, connectionType);
+    if (self._socketSession.finalAttempts < 2) {
+      self._createSocket(type);
+    } else {
+      self._trigger('socketError', self.SOCKET_ERROR.RECONNECTION_ABORTED, new Error('Reconnection aborted as ' +
+        'there no more available ports, transports and final attempts left.'), fallbackType, clone(self._socketSession));
+    }
   });
 
   self._socket.on('connect', function () {
     if (!self._channelOpen) {
-      self._channelOpen = true;
-      self._trigger('channelOpen');
       log.log([null, 'Socket', null, 'Channel opened']);
+      self._channelOpen = true;
+      self._trigger('channelOpen', clone(self._socketSession));
     }
   });
 
   self._socket.on('reconnect', function () {
     if (!self._channelOpen) {
-      self._channelOpen = true;
-      self._trigger('channelOpen');
       log.log([null, 'Socket', null, 'Channel opened']);
+      self._channelOpen = true;
+      self._trigger('channelOpen', clone(self._socketSession));
     }
   });
 
   self._socket.on('error', function(error) {
-    self._channelOpen = false;
-    self._trigger('channelError', error);
-    log.error([null, 'Socket', null, 'Exception occurred:'], error);
+    if (error ? error.message.indexOf('xhr poll error') > -1 : false) {
+      log.error([null, 'Socket', null, 'XHR poll connection unstable. Disconnecting.. ->'], error);
+      self._closeChannel();
+      return;
+    }
+    log.error([null, 'Socket', null, 'Exception occurred ->'], error);
+    self._trigger('channelError', error, clone(self._socketSession));
   });
 
   self._socket.on('disconnect', function() {
-    self._channelOpen = false;
-    self._trigger('channelClose');
-    log.log([null, 'Socket', null, 'Channel closed']);
+    if (self._channelOpen) {
+      self._channelOpen = false;
+      self._trigger('channelClose', clone(self._socketSession));
+      log.log([null, 'Socket', null, 'Channel closed']);
 
-    if (self._inRoom) {
-      self.leaveRoom(false);
-      self._trigger('sessionDisconnect', self._user.sid, self.getPeerInfo());
+      if (self._inRoom && self._user && self._user.sid) {
+        self.leaveRoom(false);
+        self._trigger('sessionDisconnect', self._user.sid, self.getPeerInfo());
+      }
     }
   });
 
-  self._socket.on('message', function(message) {
-    log.log([null, 'Socket', null, 'Received message']);
-    self._processSigMessage(message);
+  self._socket.on('message', function(messageStr) {
+    var message = JSON.parse(messageStr);
+
+    log.log([null, 'Socket', null, 'Received message ->'], message);
+
+    if (message.type === self._SIG_MESSAGE_TYPE.GROUP) {
+      log.debug('Bundle of ' + message.lists.length + ' messages');
+      for (var i = 0; i < message.lists.length; i++) {
+        var indiMessage = JSON.parse(message.lists[i]);
+        self._processSigMessage(indiMessage);
+        self._trigger('channelMessage', indiMessage, clone(self._socketSession));
+      }
+    } else {
+      self._processSigMessage(message);
+      self._trigger('channelMessage', message, clone(self._socketSession));
+    }
   });
 };
 
@@ -22138,6 +25096,8 @@ Skylink.prototype._openChannel = function() {
     socketType = 'Polling';
   }
 
+  self._socketSession.finalAttempts = 0;
+  self._socketSession.attempts = 0;
   self._signalingServerPort = null;
 
   // Begin with a websocket connection
@@ -22152,9 +25112,6 @@ Skylink.prototype._openChannel = function() {
  * @since 0.5.5
  */
 Skylink.prototype._closeChannel = function() {
-  if (!this._channelOpen) {
-    return;
-  }
   if (this._socket) {
     this._socket.removeAllListeners('connect_error');
     this._socket.removeAllListeners('reconnect_attempt');
@@ -22165,11 +25122,25 @@ Skylink.prototype._closeChannel = function() {
     this._socket.removeAllListeners('error');
     this._socket.removeAllListeners('disconnect');
     this._socket.removeAllListeners('message');
-    this._socket.disconnect();
-    this._socket = null;
   }
-  this._channelOpen = false;
-  this._trigger('channelClose');
+
+  if (this._channelOpen) {
+    if (this._socket) {
+      this._socket.disconnect();
+    }
+
+    log.log([null, 'Socket', null, 'Channel closed']);
+
+    this._channelOpen = false;
+    this._trigger('channelClose', clone(this._socketSession));
+
+    if (this._inRoom && this._user && this._user.sid) {
+      this.leaveRoom(false);
+      this._trigger('sessionDisconnect', this._user.sid, this.getPeerInfo());
+    }
+  }
+
+  this._socket = null;
 };
 Skylink.prototype.SM_PROTOCOL_VERSION = '0.1.2.3';
 
@@ -22593,42 +25564,22 @@ Skylink.prototype.getRecordings = function () {
 };
 
 /**
- * Function that process and parses the socket message string received from the Signaling.
+ * Function that handles and processes the socket message received.
  * @method _processSigMessage
  * @private
  * @for Skylink
  * @since 0.1.0
  */
-Skylink.prototype._processSigMessage = function(messageString) {
-  var message = JSON.parse(messageString);
-  if (message.type === this._SIG_MESSAGE_TYPE.GROUP) {
-    log.debug('Bundle of ' + message.lists.length + ' messages');
-    for (var i = 0; i < message.lists.length; i++) {
-      this._processSingleMessage(JSON.parse(message.lists[i]));
-    }
-  } else {
-    this._processSingleMessage(message);
-  }
-};
-
-/**
- * Function that handles and processes the socket message received.
- * @method _processingSingleMessage
- * @private
- * @for Skylink
- * @since 0.1.0
- */
-Skylink.prototype._processSingleMessage = function(message) {
-  this._trigger('channelMessage', message);
+Skylink.prototype._processSigMessage = function(message, session) {
   var origin = message.mid;
   if (!origin || origin === this._user.sid) {
     origin = 'Server';
   }
-  log.debug([origin, null, null, 'Received from peer ->'], message.type);
+  log.debug([origin, 'Socket', message.type, 'Received from peer ->'], clone(message));
   if (message.mid === this._user.sid &&
     message.type !== this._SIG_MESSAGE_TYPE.REDIRECT &&
     message.type !== this._SIG_MESSAGE_TYPE.IN_ROOM) {
-    log.debug([origin, null, null, 'Ignoring message ->'], message.type);
+    log.debug([origin, 'Socket', message.type, 'Ignoring message ->'], clone(message));
     return;
   }
   switch (message.type) {
@@ -22698,7 +25649,7 @@ Skylink.prototype._processSingleMessage = function(message) {
     this._endOfCandidatesHandler(message);
     break;
   default:
-    log.error([message.mid, null, null, 'Unsupported message ->'], message.type);
+    log.error([message.mid, 'Socket', message.type, 'Unsupported message ->'], clone(message));
     break;
   }
 };
@@ -22796,9 +25747,10 @@ Skylink.prototype._approachEventHandler = function(message){
     enterMsg.publishOnly = {
       type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
     };
-    if (self._publishOnly.parentId) {
-      enterMsg.parentId = self._publishOnly.parentId;
-    }
+  }
+
+  if (self._parentId) {
+    enterMsg.parentId = self._parentId;
   }
 
   self._sendChannelMessage(enterMsg);
@@ -23154,7 +26106,8 @@ Skylink.prototype._inRoomHandler = function(message) {
   self._room.connection.peerConfig = self._setIceServers(message.pc_config);
   self._inRoom = true;
   self._user.sid = message.sid;
-  self._peerPriorityWeight = message.tieBreaker;
+  self._peerPriorityWeight = message.tieBreaker + (self._priorityWeightScheme === self.PRIORITY_WEIGHT_SCHEME.AUTO ?
+    0 : (self._priorityWeightScheme === self.PRIORITY_WEIGHT_SCHEME.ENFORCE_OFFERER ? 2e+15 : -(2e+15)));
 
   self._trigger('peerJoined', self._user.sid, self.getPeerInfo(), true);
   self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ENTER, self._user.sid);
@@ -23195,9 +26148,10 @@ Skylink.prototype._inRoomHandler = function(message) {
     enterMsg.publishOnly = {
       type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
     };
-    if (self._publishOnly.parentId) {
-      enterMsg.parentId = self._publishOnly.parentId;
-    }
+  }
+
+  if (self._parentId) {
+    enterMsg.parentId = self._parentId;
   }
 
   self._sendChannelMessage(enterMsg);
@@ -23252,82 +26206,109 @@ Skylink.prototype._enterHandler = function(message) {
     SMProtocolVersion: message.SMProtocolVersion && typeof message.SMProtocolVersion === 'string' ?
       message.SMProtocolVersion : '0.1.1',
     DTProtocolVersion: message.DTProtocolVersion && typeof message.DTProtocolVersion === 'string' ?
-      message.DTProtocolVersion : '0.1.0'
+      message.DTProtocolVersion : (self._hasMCU || targetMid === 'MCU' ? '0.1.2' : '0.1.0')
   };
 
   log.log([targetMid, 'RTCPeerConnection', null, 'Peer "enter" received ->'], message);
 
-  if (self._publishOnly && ((self._hasMCU && targetMid !== 'MCU') || (self._publishOnly.parentId &&
-    self._publishOnly.parentId === targetMid))) {
-    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "enter" for publishOnly case ->'], message);
+  if (targetMid !== 'MCU' && self._parentId && self._parentId === targetMid) {
+    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "enter" for parentId case ->'], message);
     return;
   }
 
-  if (!self._peerInformations[targetMid]) {
-    isNewPeer = true;
+  var processPeerFn = function (cert) {
+    if (!self._peerInformations[targetMid]) {
+      isNewPeer = true;
 
-    self._peerInformations[targetMid] = userInfo;
+      self._peerInformations[targetMid] = userInfo;
 
-    var hasScreenshare = userInfo.settings.video && typeof userInfo.settings.video === 'object' &&
-      !!userInfo.settings.video.screenshare;
+      var hasScreenshare = userInfo.settings.video && typeof userInfo.settings.video === 'object' &&
+        !!userInfo.settings.video.screenshare;
 
-    self._addPeer(targetMid, {
-      agent: userInfo.agent.name,
-      version: userInfo.agent.version,
-      os: userInfo.agent.os
-    }, false, false, message.receiveOnly, hasScreenshare);
+      self._addPeer(targetMid, cert || null, {
+        agent: userInfo.agent.name,
+        version: userInfo.agent.version,
+        os: userInfo.agent.os
+      }, message.receiveOnly, hasScreenshare);
 
-    if (targetMid === 'MCU') {
-      log.info([targetMid, 'RTCPeerConnection', null, 'MCU feature has been enabled']);
+      if (targetMid === 'MCU') {
+        log.info([targetMid, 'RTCPeerConnection', null, 'MCU feature has been enabled']);
 
-      self._hasMCU = true;
-      self._trigger('serverPeerJoined', targetMid, self.SERVER_PEER_TYPE.MCU);
+        self._hasMCU = true;
+        self._trigger('serverPeerJoined', targetMid, self.SERVER_PEER_TYPE.MCU);
 
-    } else {
-      self._trigger('peerJoined', targetMid, self.getPeerInfo(targetMid), false);
+      } else {
+        self._trigger('peerJoined', targetMid, self.getPeerInfo(targetMid), false);
+      }
+
+      self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ENTER, targetMid);
     }
 
-    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ENTER, targetMid);
-  }
-
-  self._peerMessagesStamps[targetMid] = self._peerMessagesStamps[targetMid] || {
-    userData: 0,
-    audioMuted: 0,
-    videoMuted: 0
-  };
-
-  var welcomeMsg = {
-    type: self._SIG_MESSAGE_TYPE.WELCOME,
-    mid: self._user.sid,
-    rid: self._room.id,
-    enableIceTrickle: self._enableIceTrickle,
-    enableDataChannel: self._enableDataChannel,
-    enableIceRestart: self._enableIceRestart,
-    agent: window.webrtcDetectedBrowser,
-    version: (window.webrtcDetectedVersion || 0).toString(),
-    receiveOnly: self.getPeerInfo().config.receiveOnly,
-    os: window.navigator.platform,
-    userInfo: self._getUserInfo(),
-    target: targetMid,
-    weight: self._peerPriorityWeight,
-    temasysPluginVersion: AdapterJS.WebRTCPlugin.plugin ? AdapterJS.WebRTCPlugin.plugin.VERSION : null,
-    SMProtocolVersion: self.SM_PROTOCOL_VERSION,
-    DTProtocolVersion: self.DT_PROTOCOL_VERSION
-  };
-
-  if (self._publishOnly) {
-    welcomeMsg.publishOnly = {
-      type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
+    self._peerMessagesStamps[targetMid] = self._peerMessagesStamps[targetMid] || {
+      userData: 0,
+      audioMuted: 0,
+      videoMuted: 0
     };
-    if (self._publishOnly.parentId) {
-      welcomeMsg.parentId = self._publishOnly.parentId;
+
+    var welcomeMsg = {
+      type: self._SIG_MESSAGE_TYPE.WELCOME,
+      mid: self._user.sid,
+      rid: self._room.id,
+      enableIceTrickle: self._enableIceTrickle,
+      enableDataChannel: self._enableDataChannel,
+      enableIceRestart: self._enableIceRestart,
+      agent: window.webrtcDetectedBrowser,
+      version: (window.webrtcDetectedVersion || 0).toString(),
+      receiveOnly: self.getPeerInfo().config.receiveOnly,
+      os: window.navigator.platform,
+      userInfo: self._getUserInfo(targetMid),
+      target: targetMid,
+      weight: self._peerPriorityWeight,
+      temasysPluginVersion: AdapterJS.WebRTCPlugin.plugin ? AdapterJS.WebRTCPlugin.plugin.VERSION : null,
+      SMProtocolVersion: self.SM_PROTOCOL_VERSION,
+      DTProtocolVersion: self.DT_PROTOCOL_VERSION
+    };
+
+    if (self._publishOnly) {
+      welcomeMsg.publishOnly = {
+        type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
+      };
     }
-  }
 
-  self._sendChannelMessage(welcomeMsg);
+    if (self._parentId) {
+      welcomeMsg.parentId = self._parentId;
+    }
 
-  if (isNewPeer) {
-    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.WELCOME, targetMid);
+    self._sendChannelMessage(welcomeMsg);
+
+    if (isNewPeer) {
+      self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.WELCOME, targetMid);
+    }
+  };
+
+  if (self._peerConnectionConfig.certificate !== self.PEER_CERTIFICATE.AUTO &&
+    typeof RTCPeerConnection.generateCertificate === 'function') {
+    var certOptions = {};
+    if (self._peerConnectionConfig.certificate === self.PEER_CERTIFICATE.ECDSA) {
+      certOptions = {
+        name: 'ECDSA',
+        namedCurve: 'P-256'
+      };
+    } else {
+      certOptions = {
+        name: 'RSASSA-PKCS1-v1_5',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: 'SHA-256'
+      };
+    }
+    RTCPeerConnection.generateCertificate(certOptions).then(function (cert) {
+      processPeerFn(cert);
+    }, function () {
+      processPeerFn();
+    });
+  } else {
+    processPeerFn();
   }
 };
 
@@ -23379,13 +26360,18 @@ Skylink.prototype._restartHandler = function(message){
     SMProtocolVersion: message.SMProtocolVersion && typeof message.SMProtocolVersion === 'string' ?
       message.SMProtocolVersion : '0.1.1',
     DTProtocolVersion: message.DTProtocolVersion && typeof message.DTProtocolVersion === 'string' ?
-      message.DTProtocolVersion : '0.1.0'
+      message.DTProtocolVersion : (self._hasMCU || targetMid === 'MCU' ? '0.1.2' : '0.1.0')
   };
 
   log.log([targetMid, 'RTCPeerConnection', null, 'Peer "restart" received ->'], message);
 
   if (!self._peerInformations[targetMid]) {
     log.error([targetMid, 'RTCPeerConnection', null, 'Peer does not have an existing session. Ignoring restart process.']);
+    return;
+  }
+
+  if (targetMid !== 'MCU' && self._parentId && self._parentId === targetMid) {
+    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "restart" for parentId case ->'], message);
     return;
   }
 
@@ -23406,7 +26392,7 @@ Skylink.prototype._restartHandler = function(message){
   self._peerEndOfCandidatesCounter[targetMid].len = 0;
 
   // Make peer with highest weight do the offer
-  if (self._hasMCU ? message.isRestartResend : self._peerPriorityWeight > message.weight) {
+  if (self._peerPriorityWeight > message.weight) {
     log.debug([targetMid, 'RTCPeerConnection', null, 'Re-negotiating new offer/answer.']);
 
     if (self._peerMessagesStamps[targetMid].hasRestart) {
@@ -23431,7 +26417,7 @@ Skylink.prototype._restartHandler = function(message){
       agent: window.webrtcDetectedBrowser,
       version: (window.webrtcDetectedVersion || 0).toString(),
       os: window.navigator.platform,
-      userInfo: self._getUserInfo(),
+      userInfo: self._getUserInfo(targetMid),
       target: targetMid,
       weight: self._peerPriorityWeight,
       enableIceTrickle: self._enableIceTrickle,
@@ -23449,9 +26435,10 @@ Skylink.prototype._restartHandler = function(message){
       restartMsg.publishOnly = {
         type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
       };
-      if (self._publishOnly.parentId) {
-        restartMsg.parentId = self._publishOnly.parentId;
-      }
+    }
+
+    if (self._parentId) {
+      restartMsg.parentId = self._parentId;
     }
 
     self._sendChannelMessage(restartMsg);
@@ -23509,99 +26496,126 @@ Skylink.prototype._welcomeHandler = function(message) {
     SMProtocolVersion: message.SMProtocolVersion && typeof message.SMProtocolVersion === 'string' ?
       message.SMProtocolVersion : '0.1.1',
     DTProtocolVersion: message.DTProtocolVersion && typeof message.DTProtocolVersion === 'string' ?
-      message.DTProtocolVersion : '0.1.0'
+      message.DTProtocolVersion : (self._hasMCU || targetMid === 'MCU' ? '0.1.2' : '0.1.0')
   };
 
   log.log([targetMid, 'RTCPeerConnection', null, 'Peer "welcome" received ->'], message);
 
-  if (self._publishOnly && ((self._hasMCU && targetMid !== 'MCU') || (self._publishOnly.parentId &&
-    self._publishOnly.parentId === targetMid))) {
-    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "welcome" for publishOnly case ->'], message);
+  if (targetMid !== 'MCU' && self._parentId && self._parentId === targetMid) {
+    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "welcome" for parentId case ->'], message);
     return;
   }
 
-  if (!self._peerInformations[targetMid]) {
-    isNewPeer = true;
+  var processPeerFn = function (cert) {
+    if (!self._peerInformations[targetMid]) {
+      isNewPeer = true;
 
-    self._peerInformations[targetMid] = userInfo;
+      self._peerInformations[targetMid] = userInfo;
 
-    var hasScreenshare = userInfo.settings.video && typeof userInfo.settings.video === 'object' &&
-      !!userInfo.settings.video.screenshare;
+      var hasScreenshare = userInfo.settings.video && typeof userInfo.settings.video === 'object' &&
+        !!userInfo.settings.video.screenshare;
 
-    self._addPeer(targetMid, {
-      agent: userInfo.agent.name,
-      version: userInfo.agent.version,
-      os: userInfo.agent.os
-    }, false, false, message.receiveOnly, hasScreenshare);
+      self._addPeer(targetMid, cert || null, {
+        agent: userInfo.agent.name,
+        version: userInfo.agent.version,
+        os: userInfo.agent.os
+      }, message.receiveOnly, hasScreenshare);
 
-    if (targetMid === 'MCU') {
-      log.info([targetMid, 'RTCPeerConnection', null, 'MCU feature has been enabled']);
+      if (targetMid === 'MCU') {
+        log.info([targetMid, 'RTCPeerConnection', null, 'MCU feature has been enabled']);
 
-      self._hasMCU = true;
-      self._trigger('serverPeerJoined', targetMid, self.SERVER_PEER_TYPE.MCU);
+        self._hasMCU = true;
+        self._trigger('serverPeerJoined', targetMid, self.SERVER_PEER_TYPE.MCU);
 
-    } else {
-      self._trigger('peerJoined', targetMid, self.getPeerInfo(targetMid), false);
+      } else {
+        self._trigger('peerJoined', targetMid, self.getPeerInfo(targetMid), false);
+      }
+
+      self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ENTER, targetMid);
+      self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.WELCOME, targetMid);
     }
 
-    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ENTER, targetMid);
-    self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.WELCOME, targetMid);
-  }
-
-  self._peerMessagesStamps[targetMid] = self._peerMessagesStamps[targetMid] || {
-    userData: 0,
-    audioMuted: 0,
-    videoMuted: 0,
-    hasWelcome: false
-  };
-
-  if (self._hasMCU || self._peerPriorityWeight > message.weight) {
-    if (self._peerMessagesStamps[targetMid].hasWelcome) {
-      log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding extra "welcome" received.']);
-      return;
-    }
-
-    log.debug([targetMid, 'RTCPeerConnection', null, 'Starting negotiation']);
-
-    self._peerMessagesStamps[targetMid].hasWelcome = true;
-    self._doOffer(targetMid, false, {
-      agent: userInfo.agent.name,
-      version: userInfo.agent.version,
-      os: userInfo.agent.os
-    }, true);
-
-  } else {
-    log.debug([targetMid, 'RTCPeerConnection', null, 'Waiting for peer to start negotiation.']);
-
-    var welcomeMsg = {
-      type: self._SIG_MESSAGE_TYPE.WELCOME,
-      mid: self._user.sid,
-      rid: self._room.id,
-      enableIceTrickle: self._enableIceTrickle,
-      enableDataChannel: self._enableDataChannel,
-      enableIceRestart: self._enableIceRestart,
-      receiveOnly: self.getPeerInfo().config.receiveOnly,
-      agent: window.webrtcDetectedBrowser,
-      version: (window.webrtcDetectedVersion || 0).toString(),
-      os: window.navigator.platform,
-      userInfo: self._getUserInfo(),
-      target: targetMid,
-      weight: self._peerPriorityWeight,
-      temasysPluginVersion: AdapterJS.WebRTCPlugin.plugin ? AdapterJS.WebRTCPlugin.plugin.VERSION : null,
-      SMProtocolVersion: self.SM_PROTOCOL_VERSION,
-      DTProtocolVersion: self.DT_PROTOCOL_VERSION
+    self._peerMessagesStamps[targetMid] = self._peerMessagesStamps[targetMid] || {
+      userData: 0,
+      audioMuted: 0,
+      videoMuted: 0,
+      hasWelcome: false
     };
 
-    if (self._publishOnly) {
-      welcomeMsg.publishOnly = {
-        type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
-      };
-      if (self._publishOnly.parentId) {
-        welcomeMsg.parentId = self._publishOnly.parentId;
+    if (self._hasMCU || self._peerPriorityWeight > message.weight) {
+      if (self._peerMessagesStamps[targetMid].hasWelcome) {
+        log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding extra "welcome" received.']);
+        return;
       }
-    }
 
-    self._sendChannelMessage(welcomeMsg);
+      log.debug([targetMid, 'RTCPeerConnection', null, 'Starting negotiation']);
+
+      self._peerMessagesStamps[targetMid].hasWelcome = true;
+      self._doOffer(targetMid, false, {
+        agent: userInfo.agent.name,
+        version: userInfo.agent.version,
+        os: userInfo.agent.os
+      }, true);
+
+    } else {
+      log.debug([targetMid, 'RTCPeerConnection', null, 'Waiting for peer to start negotiation.']);
+
+      var welcomeMsg = {
+        type: self._SIG_MESSAGE_TYPE.WELCOME,
+        mid: self._user.sid,
+        rid: self._room.id,
+        enableIceTrickle: self._enableIceTrickle,
+        enableDataChannel: self._enableDataChannel,
+        enableIceRestart: self._enableIceRestart,
+        receiveOnly: self.getPeerInfo().config.receiveOnly,
+        agent: window.webrtcDetectedBrowser,
+        version: (window.webrtcDetectedVersion || 0).toString(),
+        os: window.navigator.platform,
+        userInfo: self._getUserInfo(targetMid),
+        target: targetMid,
+        weight: self._peerPriorityWeight,
+        temasysPluginVersion: AdapterJS.WebRTCPlugin.plugin ? AdapterJS.WebRTCPlugin.plugin.VERSION : null,
+        SMProtocolVersion: self.SM_PROTOCOL_VERSION,
+        DTProtocolVersion: self.DT_PROTOCOL_VERSION
+      };
+
+      if (self._publishOnly) {
+        welcomeMsg.publishOnly = {
+          type: self._streams.screenshare && self._streams.screenshare.stream ? 'screenshare' : 'video'
+        };
+      }
+
+      if (self._parentId) {
+        welcomeMsg.parentId = self._parentId;
+      }
+
+      self._sendChannelMessage(welcomeMsg);
+    }
+  };
+
+  if (self._peerConnectionConfig.certificate !== self.PEER_CERTIFICATE.AUTO &&
+    typeof RTCPeerConnection.generateCertificate === 'function') {
+    var certOptions = {};
+    if (self._peerConnectionConfig.certificate === self.PEER_CERTIFICATE.ECDSA) {
+      certOptions = {
+        name: 'ECDSA',
+        namedCurve: 'P-256'
+      };
+    } else {
+      certOptions = {
+        name: 'RSASSA-PKCS1-v1_5',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: 'SHA-256'
+      };
+    }
+    RTCPeerConnection.generateCertificate(certOptions).then(function (cert) {
+      processPeerFn(cert);
+    }, function () {
+      processPeerFn();
+    });
+  } else {
+    processPeerFn();
   }
 };
 
@@ -23644,8 +26658,8 @@ Skylink.prototype._offerHandler = function(message) {
     'Session description:'], clone(message));
 
   var offer = new RTCSessionDescription({
-    type: message.type,
-    sdp: self._hasMCU ? message.sdp.split('\n').join('\r\n') : message.sdp
+    type: 'offer',
+    sdp: self._hasMCU ? message.sdp.replace(/\r\n/g, '\n').split('\n').join('\r\n') : message.sdp
   });
   log.log([targetMid, 'RTCSessionDescription', message.type,
     'Session description object created'], offer);
@@ -23653,9 +26667,10 @@ Skylink.prototype._offerHandler = function(message) {
   offer.sdp = self._removeSDPFilteredCandidates(targetMid, offer);
   offer.sdp = self._setSDPCodec(targetMid, offer);
   offer.sdp = self._setSDPBitrate(targetMid, offer);
-  offer.sdp = self._setSDPOpusConfig(targetMid, offer);
+  offer.sdp = self._setSDPCodecParams(targetMid, offer);
   offer.sdp = self._removeSDPCodecs(targetMid, offer);
   offer.sdp = self._removeSDPREMBPackets(targetMid, offer);
+  offer.sdp = self._handleSDPConnectionSettings(targetMid, offer, 'remote');
 
   log.log([targetMid, 'RTCSessionDescription', message.type, 'Updated remote offer ->'], offer.sdp);
 
@@ -23679,6 +26694,11 @@ Skylink.prototype._offerHandler = function(message) {
 
   pc.processingRemoteSDP = true;
 
+  // Edge FIXME problem: Add stream only at offer/answer end
+  if (window.webrtcDetectedBrowser === 'edge' && (!self._hasMCU || targetMid === 'MCU')) {
+    self._addLocalMediaStreams(targetMid);
+  }
+
   pc.setRemoteDescription(offer, function() {
     log.debug([targetMid, 'RTCSessionDescription', message.type, 'Remote description set']);
     pc.setOffer = 'remote';
@@ -23691,7 +26711,11 @@ Skylink.prototype._offerHandler = function(message) {
 
     pc.processingRemoteSDP = false;
 
-    log.error([targetMid, null, message.type, 'Failed setting remote description:'], error);
+    log.error([targetMid, null, message.type, 'Failed setting remote description:'], {
+      error: error,
+      state: pc.signalingState,
+      offer: offer
+    });
   });
 };
 
@@ -23738,7 +26762,7 @@ Skylink.prototype._candidateHandler = function(message) {
   if (!(this._peerConnections[targetMid] &&
     this._peerConnections[targetMid].signalingState !== this.PEER_CONNECTION_STATE.CLOSED)) {
     log.warn([targetMid, 'RTCIceCandidate', canId + ':' + candidateType, 'Dropping ICE candidate ' +
-      'as Peer connection does not exists or is closed'], this._peerConnections[targetMid].signalingState);
+      'as Peer connection does not exists or is closed']);
     this._trigger('candidateProcessingState', this.CANDIDATE_PROCESSING_STATE.DROPPED,
       targetMid, canId, candidateType, {
       candidate: candidate.candidate,
@@ -23825,8 +26849,8 @@ Skylink.prototype._answerHandler = function(message) {
   }
 
   var answer = new RTCSessionDescription({
-    type: message.type,
-    sdp: self._hasMCU ? message.sdp.split('\n').join('\r\n') : message.sdp
+    type: 'answer',
+    sdp: self._hasMCU ? message.sdp.replace(/\r\n/g, '\n').split('\n').join('\r\n') : message.sdp
   });
 
   log.log([targetMid, 'RTCSessionDescription', message.type,
@@ -23847,9 +26871,10 @@ Skylink.prototype._answerHandler = function(message) {
   answer.sdp = self._removeSDPFilteredCandidates(targetMid, answer);
   answer.sdp = self._setSDPCodec(targetMid, answer);
   answer.sdp = self._setSDPBitrate(targetMid, answer);
-  answer.sdp = self._setSDPOpusConfig(targetMid, answer);
+  answer.sdp = self._setSDPCodecParams(targetMid, answer);
   answer.sdp = self._removeSDPCodecs(targetMid, answer);
   answer.sdp = self._removeSDPREMBPackets(targetMid, answer);
+  answer.sdp = self._handleSDPConnectionSettings(targetMid, answer, 'remote');
 
   log.log([targetMid, 'RTCSessionDescription', message.type, 'Updated remote answer ->'], answer.sdp);
 
@@ -23885,6 +26910,12 @@ Skylink.prototype._answerHandler = function(message) {
       self._peerMessagesStamps[targetMid].hasRestart = false;
     }
 
+    if (self._dataChannels[targetMid] && (pc.remoteDescription.sdp.indexOf('m=application') === -1 ||
+      pc.remoteDescription.sdp.indexOf('m=application 0') > 0)) {
+      log.warn([targetMid, 'RTCPeerConnection', null, 'Closing all datachannels as they were rejected.']);
+      self._closeDataChannel(targetMid);
+    }
+
   }, function(error) {
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
 
@@ -23892,7 +26923,8 @@ Skylink.prototype._answerHandler = function(message) {
 
     log.error([targetMid, null, message.type, 'Failed setting remote description:'], {
       error: error,
-      state: pc.signalingState
+      state: pc.signalingState,
+      answer: answer
     });
   });
 };
@@ -23941,8 +26973,14 @@ Skylink.prototype.VIDEO_CODEC = {
  *   The value of the option to prefer the <a href="https://en.wikipedia.org/wiki/Opus_(audio_format)">OPUS</a> audio codec.
  * @param {String} ISAC <small>Value <code>"ISAC"</code></small>
  *   The value of the option to prefer the <a href="https://en.wikipedia.org/wiki/Internet_Speech_Audio_Codec">ISAC</a> audio codec.
+ * @param {String} ILBC <small>Value <code>"ILBC"</code></small>
+ *   The value of the option to prefer the <a href="https://en.wikipedia.org/wiki/Internet_Low_Bitrate_Codec">iLBC</a> audio codec.
  * @param {String} G722 <small>Value <code>"G722"</code></small>
  *   The value of the option to prefer the <a href="https://en.wikipedia.org/wiki/G.722">G722</a> audio codec.
+ * @param {String} PCMA <small>Value <code>"PCMA"</code></small>
+ *   The value of the option to prefer the <a href="https://en.wikipedia.org/wiki/G.711">G711u</a> audio codec.
+ * @param {String} PCMU <small>Value <code>"PCMU"</code></small>
+ *   The value of the option to prefer the <a href="https://en.wikipedia.org/wiki/G.711">G711a</a> audio codec.
  * @type JSON
  * @readOnly
  * @for Skylink
@@ -23952,9 +26990,10 @@ Skylink.prototype.AUDIO_CODEC = {
   AUTO: 'auto',
   ISAC: 'ISAC',
   OPUS: 'opus',
-  //ILBC: 'ILBC',
-  //G711: 'G711',
-  G722: 'G722'
+  ILBC: 'ILBC',
+  G722: 'G722',
+  PCMU: 'PCMU',
+  PCMA: 'PCMA',
   //SILK: 'SILK'
 };
 
@@ -24146,30 +27185,46 @@ Skylink.prototype.RECORDING_STATE = {
  *    Note that the current Edge browser implementation does not support the <code>options.audio.optional</code>,
  *    <code>options.audio.deviceId</code>, <code>options.audio.echoCancellation</code>.</blockquote>
  *    The audio configuration options.
- * @param {Boolean} [options.audio.stereo=false] The flag if stereo band should be configured
- *   when encoding audio codec is <a href="#attr_AUDIO_CODEC"><code>OPUS</code></a> for sending / receiving audio data.
- *   <small>Note that Peers may override the "receiving" <code>stereo</code> config depending on the Peers configuration.</small>
- * @param {Boolean} [options.audio.usedtx] <blockquote class="info">
- *   Note that this feature might not work depending on the browser support and implementation.</blockquote>
- *   The flag if DTX (Discontinuous Transmission) should be configured when encoding audio codec
- *   is <a href="#attr_AUDIO_CODEC"><code>OPUS</code></a> for sending / receiving audio data.
- *   <small>This might help to reduce bandwidth it reduces the bitrate during silence or background noise.</small>
+ * @param {Boolean} [options.audio.stereo=false] <blockquote class="info"><b>Deprecation Warning!</b>
+ *   This property has been deprecated. Configure this with the <code>options.codecParams.audio.opus.stereo</code>
+ *   parameter in the <a href="#method_init"><code>init()</code> method</a> instead. If the
+ *   <code>options.codecParams.audio.opus.stereo</code> is configured, this overrides the
+ *   <code>options.audio.stereo</code> setting.</blockquote>
+ *   The flag if OPUS audio codec stereo band should be configured for sending encoded audio data.
  *   <small>When not provided, the default browser configuration is used.</small>
- *   <small>Note that Peers may override the "receiving" <code>usedtx</code> config depending on the Peers configuration.</small>
- * @param {Boolean} [options.audio.useinbandfec] <blockquote class="info">
- *   Note that this feature might not work depending on the browser support and implementation.</blockquote>
- *   The flag if capability to take advantage of in-band FEC (Forward Error Correction) should be
- *   configured when encoding audio codec is <a href="#attr_AUDIO_CODEC"><code>OPUS</code></a> for sending / receiving audio data.
- *   <small>This might help to reduce the harm of packet loss by encoding information about the previous packet.</small>
+ * @param {Boolean} [options.audio.usedtx] <blockquote class="info"><b>Deprecation Warning!</b>
+ *   This property has been deprecated. Configure this with the <code>options.codecParams.audio.opus.stereo</code>
+ *   parameter in the <a href="#method_init"><code>init()</code> method</a> instead. If the
+ *   <code>options.codecParams.audio.opus.stereo</code> is configured, this overrides the
+ *   <code>options.audio.stereo</code> setting.  Note that this feature might
+ *   not work depending on the browser support and implementation.</blockquote>
+ *   The flag if OPUS audio codec should enable DTX (Discontinuous Transmission) for sending encoded audio data.
+ *   <small>This might help to reduce bandwidth as it reduces the bitrate during silence or background noise, and
+ *   goes hand-in-hand with the <code>options.voiceActivityDetection</code> flag in <a href="#method_joinRoom">
+ *   <code>joinRoom()</code> method</a>.</small>
  *   <small>When not provided, the default browser configuration is used.</small>
- *   <small>Note that Peers may override the "receiving" <code>useinbandfec</code> config depending on the Peers configuration.</small>
- * @param {Number} [options.audio.maxplaybackrate] <blockquote class="info">
- *   Note that this feature might not work depending on the browser support and implementation.</blockquote>
- *   The maximum output sampling rate rendered in Hertz (Hz) when encoding audio codec is
- *   <a href="#attr_AUDIO_CODEC"><code>OPUS</code></a> for sending / receiving audio data.
+ * @param {Boolean} [options.audio.useinbandfec] <blockquote class="info"><b>Deprecation Warning!</b>
+ *   This property has been deprecated. Configure this with the <code>options.codecParams.audio.opus.useinbandfec</code>
+ *   parameter in the <a href="#method_init"><code>init()</code> method</a> instead. If the
+ *   <code>options.codecParams.audio.opus.useinbandfec</code> is configured, this overrides the
+ *   <code>options.audio.useinbandfec</code> setting. Note that this parameter should only be used
+ *   for debugging purposes only.</blockquote>
+ *   The flag if OPUS audio codec has the capability to take advantage of the in-band FEC
+ *   (Forward Error Correction) when sending encoded audio data.
+ *   <small>This helps to reduce the harm of packet loss by encoding information about the previous packet loss.</small>
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Number} [options.audio.maxplaybackrate] <blockquote class="info"><b>Deprecation Warning!</b>
+ *   This property has been deprecated. Configure this with the <code>options.codecParams.audio.opus.maxplaybackrate</code>
+ *   parameter in the <a href="#method_init"><code>init()</code> method</a> instead. If the
+ *   <code>options.codecParams.audio.opus.maxplaybackrate</code> is configured, this overrides the
+ *   <code>options.audio.maxplaybackrate</code> setting.  Note that this feature might
+ *   not work depending on the browser support and implementation.
+ *   Note that this parameter should only be used for debugging purposes only.</blockquote>
+ *   The OPUS audio codec maximum output sampling rate in Hz (hertz) that is is capable of receiving
+ *   decoded audio data, to adjust to the hardware limitations and ensure that any sending audio data
+ *   would not encode at a higher sampling rate specified by this.
  *   <small>This value must be between <code>8000</code> to <code>48000</code>.</small>
  *   <small>When not provided, the default browser configuration is used.</small>
- *   <small>Note that Peers may override the "receiving" <code>maxplaybackrate</code> config depending on the Peers configuration.</small>
  * @param {Boolean} [options.audio.mute=false] The flag if audio tracks should be muted upon receiving them.
  *   <small>Providing the value as <code>false</code> does nothing to <code>peerInfo.mediaStatus.audioMuted</code>,
  *   but when provided as <code>true</code>, this sets the <code>peerInfo.mediaStatus.audioMuted</code> value to
@@ -24186,7 +27241,10 @@ Skylink.prototype.RECORDING_STATE = {
  *   <small>The list of available audio source ID can be retrieved by the <a href="https://developer.
  * mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices"><code>navigator.mediaDevices.enumerateDevices</code>
  *   API</a>.</small>
- * @param {Boolean} [options.audio.echoCancellation=false] The flag to enable audio tracks echo cancellation.
+ * @param {Boolean} [options.audio.echoCancellation=true] <blockquote class="info">
+ *   For Chrome/Opera/IE/Safari/Bowser, the echo cancellation functionality may not work and may produce a terrible
+ *   feedback. It is recommended to use headphones or other microphone devices rather than the device
+ *   in-built microphones.</blockquote> The flag to enable echo cancellation for audio track.
  * @param {Boolean|JSON} [options.video=false] <blockquote class="info">
  *    Note that the current Edge browser implementation does not support the <code>options.video.optional</code>,
  *    <code>options.video.deviceId</code>, <code>options.video.resolution</code> and
@@ -24599,7 +27657,7 @@ Skylink.prototype.sendStream = function(options, callback) {
       }
 
       if (Object.keys(self._peerConnections).length > 0 || self._hasMCU) {
-        self._refreshPeerConnection(Object.keys(self._peerConnections), false, function (err, success) {
+        self._refreshPeerConnection(Object.keys(self._peerConnections), false, {}, function (err, success) {
           if (err) {
             log.error('Failed refreshing connections for sendStream() ->', err);
             if (typeof callback === 'function') {
@@ -24637,6 +27695,15 @@ Skylink.prototype.sendStream = function(options, callback) {
     log.error(notInRoomError, options);
     if (typeof callback === 'function'){
       callback(new Error(notInRoomError),null);
+    }
+    return;
+  }
+
+  if (window.webrtcDetectedBrowser === 'edge') {
+    var edgeNotSupportError = 'Edge browser currently does not support renegotiation.';
+    log.error(edgeNotSupportError, options);
+    if (typeof callback === 'function'){
+      callback(new Error(edgeNotSupportError),null);
     }
     return;
   }
@@ -24983,27 +28050,50 @@ Skylink.prototype.disableVideo = function() {
  * Function that retrieves screensharing Stream.
  * @method shareScreen
  * @param {JSON|Boolean} [enableAudio=false] The flag if audio tracks should be retrieved.
- * @param {Boolean} [enableAudio.stereo=false] The flag if stereo band should be configured
- *   when encoding audio codec is <a href="#attr_AUDIO_CODEC"><code>OPUS</code></a> for sending audio data.
- * @param {Boolean} [enableAudio.usedtx] <blockquote class="info">
- *   Note that this feature might not work depending on the browser support and implementation.</blockquote>
- *   The flag if DTX (Discontinuous Transmission) should be configured when encoding audio codec
- *   is <a href="#attr_AUDIO_CODEC"><code>OPUS</code></a> for sending audio data.
- *   <small>This might help to reduce bandwidth it reduces the bitrate during silence or background noise.</small>
+ * @param {Boolean} [enableAudio.stereo=false] <blockquote class="info"><b>Deprecation Warning!</b>
+ *   This property has been deprecated. Configure this with the <code>options.codecParams.audio.opus.stereo</code>
+ *   parameter in the <a href="#method_init"><code>init()</code> method</a> instead. If the
+ *   <code>options.codecParams.audio.opus.stereo</code> is configured, this overrides the
+ *   <code>options.audio.stereo</code> setting.</blockquote>
+ *   The flag if OPUS audio codec stereo band should be configured for sending encoded audio data.
  *   <small>When not provided, the default browser configuration is used.</small>
- * @param {Boolean} [enableAudio.useinbandfec] <blockquote class="info">
- *   Note that this feature might not work depending on the browser support and implementation.</blockquote>
- *   The flag if capability to take advantage of in-band FEC (Forward Error Correction) should be
- *   configured when encoding audio codec is <a href="#attr_AUDIO_CODEC"><code>OPUS</code></a> for sending audio data.
- *   <small>This might help to reduce the harm of packet loss by encoding information about the previous packet.</small>
+ * @param {Boolean} [enableAudio.usedtx] <blockquote class="info"><b>Deprecation Warning!</b>
+ *   This property has been deprecated. Configure this with the <code>options.codecParams.audio.opus.stereo</code>
+ *   parameter in the <a href="#method_init"><code>init()</code> method</a> instead. If the
+ *   <code>options.codecParams.audio.opus.stereo</code> is configured, this overrides the
+ *   <code>options.audio.stereo</code> setting.  Note that this feature might
+ *   not work depending on the browser support and implementation.</blockquote>
+ *   The flag if OPUS audio codec should enable DTX (Discontinuous Transmission) for sending encoded audio data.
+ *   <small>This might help to reduce bandwidth as it reduces the bitrate during silence or background noise, and
+ *   goes hand-in-hand with the <code>options.voiceActivityDetection</code> flag in <a href="#method_joinRoom">
+ *   <code>joinRoom()</code> method</a>.</small>
  *   <small>When not provided, the default browser configuration is used.</small>
- * @param {Number} [enableAudio.maxplaybackrate] <blockquote class="info">
- *   Note that this feature might not work depending on the browser support and implementation.</blockquote>
- *   The maximum output sampling rate rendered in Hertz (Hz) when encoding audio codec is
- *   <a href="#attr_AUDIO_CODEC"><code>OPUS</code></a> for sending audio data.
+ * @param {Boolean} [enableAudio.useinbandfec] <blockquote class="info"><b>Deprecation Warning!</b>
+ *   This property has been deprecated. Configure this with the <code>options.codecParams.audio.opus.useinbandfec</code>
+ *   parameter in the <a href="#method_init"><code>init()</code> method</a> instead. If the
+ *   <code>options.codecParams.audio.opus.useinbandfec</code> is configured, this overrides the
+ *   <code>options.audio.useinbandfec</code> setting. Note that this parameter should only be used
+ *   for debugging purposes only.</blockquote>
+ *   The flag if OPUS audio codec has the capability to take advantage of the in-band FEC
+ *   (Forward Error Correction) when sending encoded audio data.
+ *   <small>This helps to reduce the harm of packet loss by encoding information about the previous packet loss.</small>
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Number} [enableAudio.maxplaybackrate] <blockquote class="info"><b>Deprecation Warning!</b>
+ *   This property has been deprecated. Configure this with the <code>options.codecParams.audio.opus.maxplaybackrate</code>
+ *   parameter in the <a href="#method_init"><code>init()</code> method</a> instead. If the
+ *   <code>options.codecParams.audio.opus.maxplaybackrate</code> is configured, this overrides the
+ *   <code>options.audio.maxplaybackrate</code> setting.  Note that this feature might
+ *   not work depending on the browser support and implementation.
+ *   Note that this parameter should only be used for debugging purposes only.</blockquote>
+ *   The OPUS audio codec maximum output sampling rate in Hz (hertz) that is is capable of receiving
+ *   decoded audio data, to adjust to the hardware limitations and ensure that any sending audio data
+ *   would not encode at a higher sampling rate specified by this.
  *   <small>This value must be between <code>8000</code> to <code>48000</code>.</small>
  *   <small>When not provided, the default browser configuration is used.</small>
- * @param {Boolean} [enableAudio.echoCancellation=false] The flag to enable audio tracks echo cancellation.
+ * @param {Boolean} [enableAudio.echoCancellation=true] <blockquote class="info">
+ *   For Chrome/Opera/IE/Safari/Bowser, the echo cancellation functionality may not work and may produce a terrible
+ *   feedback. It is recommended to use headphones or other microphone devices rather than the device
+ *   in-built microphones.</blockquote> The flag to enable echo cancellation for audio track.
  * @param {Function} [callback] The callback function fired when request has completed.
  *   <small>Function parameters signature is <code>function (error, success)</code></small>
  *   <small>Function request completion is determined by the <a href="#event_mediaAccessSuccess">
@@ -25085,18 +28175,19 @@ Skylink.prototype.disableVideo = function() {
 Skylink.prototype.shareScreen = function (enableAudio, callback) {
   var self = this;
   var enableAudioSettings = {
-    stereo: true
+    stereo: false,
+    echoCancellation: true
   };
 
   if (typeof enableAudio === 'function') {
     callback = enableAudio;
-    enableAudio = true;
+    enableAudio = false;
 
   } else if (enableAudio && typeof enableAudio === 'object') {
     enableAudioSettings.usedtx = typeof enableAudio.usedtx === 'boolean' ? enableAudio.usedtx : null;
     enableAudioSettings.useinbandfec = typeof enableAudio.useinbandfec === 'boolean' ? enableAudio.useinbandfec : null;
     enableAudioSettings.stereo = enableAudio.stereo === true;
-    enableAudioSettings.echoCancellation = enableAudio.echoCancellation === true;
+    enableAudioSettings.echoCancellation = enableAudio.echoCancellation !== false;
   }
 
   self._throttle(function (runFn) {
@@ -25114,7 +28205,7 @@ Skylink.prototype.shareScreen = function (enableAudio, callback) {
 
     var settings = {
       settings: {
-        audio: enableAudio === true || (enableAudio && typeof enableAudio === 'object') ? enableAudioSettings : false,
+        audio: enableAudio ? enableAudioSettings : false,
         video: {
           screenshare: true,
           exactConstraints: false
@@ -25135,7 +28226,7 @@ Skylink.prototype.shareScreen = function (enableAudio, callback) {
         self._trigger('peerUpdated', self._user.sid, self.getPeerInfo(), true);
 
         if (Object.keys(self._peerConnections).length > 0 || self._hasMCU) {
-          self._refreshPeerConnection(Object.keys(self._peerConnections), false, function (err, success) {
+          self._refreshPeerConnection(Object.keys(self._peerConnections), false, {}, function (err, success) {
             if (err) {
               log.error('Failed refreshing connections for shareScreen() ->', err);
               if (typeof callback === 'function') {
@@ -25173,7 +28264,7 @@ Skylink.prototype.shareScreen = function (enableAudio, callback) {
 
     try {
       if (enableAudio && window.webrtcDetectedBrowser === 'firefox') {
-        settings.getUserMediaSettings.audio = true;
+        settings.getUserMediaSettings.audio = { echoCancellation: enableAudioSettings.echoCancellation };
       }
 
       navigator.getUserMedia(settings.getUserMediaSettings, function (stream) {
@@ -25183,8 +28274,7 @@ Skylink.prototype.shareScreen = function (enableAudio, callback) {
         }
 
         navigator.getUserMedia({
-          audio: true
-
+          audio: { echoCancellation: enableAudioSettings.echoCancellation }
         }, function (audioStream) {
           try {
             audioStream.addTrack(stream.getVideoTracks()[0]);
@@ -25205,7 +28295,6 @@ Skylink.prototype.shareScreen = function (enableAudio, callback) {
           log.error('Failed retrieving audio stream for screensharing stream', error);
           self._onStreamAccessSuccess(stream, settings, true, false);
         });
-
       }, function (error) {
         self._onStreamAccessError(error, settings, true, false);
       });
@@ -25270,7 +28359,7 @@ Skylink.prototype.stopScreen = function () {
           false, this._streams.userMedia.stream.id || this._streams.userMedia.stream.label);
         this._trigger('peerUpdated', this._user.sid, this.getPeerInfo(), true);
       }
-      this._refreshPeerConnection(Object.keys(this._peerConnections), false);
+      this._refreshPeerConnection(Object.keys(this._peerConnections), {}, false);
     }
   }
 };
@@ -25312,6 +28401,17 @@ Skylink.prototype._muteStreams = function () {
 
   if (self._streams.screenshare && self._streams.screenshare.streamClone) {
     muteFn(self._streams.screenshare.streamClone);
+  }
+
+  if (window.webrtcDetectedBrowser === 'edge') {
+    for (var peerId in self._peerConnections) {
+      if (self._peerConnections.hasOwnProperty(peerId) && self._peerConnections[peerId]) {
+        var localStreams = self._peerConnections[peerId].getLocalStreams();
+        for (var s = 0; s < localStreams.length; s++) {
+          muteFn(localStreams[s]);
+        }
+      }
+    }
   }
 
   log.debug('Updated Streams muted status ->', self._streamsMutedSettings);
@@ -25414,10 +28514,10 @@ Skylink.prototype._parseStreamSettings = function(options) {
     settings.settings.audio = {
       stereo: false,
       exactConstraints: !!options.useExactConstraints,
-      echoCancellation: false
+      echoCancellation: true
     };
     settings.getUserMediaSettings.audio = {
-      echoCancellation: false
+      echoCancellation: true
     };
 
     if (typeof options.audio === 'object') {
@@ -25801,6 +28901,12 @@ Skylink.prototype._addLocalMediaStreams = function(peerId) {
     log.log([peerId, null, null, 'Adding local stream']);
 
     var pc = self._peerConnections[peerId];
+    var peerAgent = ((self._peerInformations[peerId] || {}).agent || {}).name || '';
+    var offerToReceiveAudio = !(!self._sdpSettings.connection.audio && peerId !== 'MCU');
+    var offerToReceiveVideo = !(!self._sdpSettings.connection.video && peerId !== 'MCU') &&
+      ((window.webrtcDetectedBrowser === 'edge' && peerAgent !== 'edge') ||
+      (['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1 && peerAgent === 'edge') ?
+      !!self._currentCodecSupport.video.h264 : true);
 
     if (pc) {
       if (pc.signalingState !== self.PEER_CONNECTION_STATE.CLOSED) {
@@ -25820,7 +28926,26 @@ Skylink.prototype._addLocalMediaStreams = function(peerId) {
           }
 
           if (updatedStream !== null && !hasStream) {
-            pc.addStream(updatedStream);
+            if (window.webrtcDetectedBrowser === 'edge' && (!offerToReceiveVideo || !offerToReceiveAudio)) {
+              try {
+                var cloneStream = updatedStream.clone();
+                var tracks = cloneStream.getTracks();
+                for (var t = 0; t < tracks.length; t++) {
+                  if (tracks[t].kind === 'video' ? !offerToReceiveVideo : !offerToReceiveAudio) {
+                    cloneStream.removeTrack(tracks[t]);
+                  } else {
+                    tracks[t].enabled = tracks[t].kind === 'audio' ? !self._streamsMutedSettings.audioMuted :
+                      !self._streamsMutedSettings.videoMuted;
+                  }
+                }
+                pc.addStream(cloneStream);
+              } catch (e) {
+                pc.addStream(updatedStream);
+              }
+            } else {
+              pc.addStream(updatedStream);
+            }
+            pc.addStream(window.webrtcDetectedBrowser === 'edge' ? updatedStream.clone() : updatedStream);
           }
         };
 
@@ -25905,123 +29030,153 @@ Skylink.prototype._handleEndedStreams = function (peerId, checkStreamId) {
     }
   }
 };
-Skylink.prototype._setSDPOpusConfig = function(targetMid, sessionDescription) {
-  var sdpLines = sessionDescription.sdp.split('\r\n');
-  var payload = null;
-  var appendFmtpLineAtIndex = -1;
-  var userAudioSettings = this.getPeerInfo().settings.audio;
-  var opusSettings = {
-    useinbandfec: null,
-    usedtx: null,
-    maxplaybackrate: null,
-    stereo: false
+Skylink.prototype._setSDPCodecParams = function(targetMid, sessionDescription) {
+  var self = this;
+
+  var parseFn = function (type, codecName, samplingRate, settings) {
+    var mLine = sessionDescription.sdp.match(new RegExp('m=' + type + '\ .*\r\n', 'gi'));
+    // Find the m= line
+    if (Array.isArray(mLine) && mLine.length > 0) {
+      var codecsList = sessionDescription.sdp.match(new RegExp('a=rtpmap:.*\ ' + codecName + '\/' +
+        (samplingRate ? samplingRate + (type === 'audio' ? '[\/]*.*' : '.*') : '.*') + '\r\n', 'gi'));
+      // Get the list of codecs related to it
+      if (Array.isArray(codecsList) && codecsList.length > 0) {
+        for (var i = 0; i < codecsList.length; i++) {
+          var payload = (codecsList[i].split('a=rtpmap:')[1] || '').split(' ')[0];
+          if (!payload) {
+            continue;
+          }
+          var fmtpLine = sessionDescription.sdp.match(new RegExp('a=fmtp:' + payload + '\ .*\r\n', 'gi'));
+          var updatedFmtpLine = 'a=fmtp:' + payload + ' ';
+          var addedKeys = [];
+          // Check if a=fmtp: line exists
+          if (Array.isArray(fmtpLine) && fmtpLine.length > 0) {
+            var fmtpParts = (fmtpLine[0].split('a=fmtp:' + payload + ' ')[1] || '').replace(
+              / /g, '').replace(/\r\n/g, '').split(';');
+            for (var j = 0; j < fmtpParts.length; j++) {
+              if (!fmtpParts[j]) {
+                continue;
+              }
+              var keyAndValue = fmtpParts[j].split('=');
+              if (settings.hasOwnProperty(keyAndValue[0])) {
+                // Dont append parameter key+value if boolean and false
+                updatedFmtpLine += typeof settings[keyAndValue[0]] === 'boolean' ? (settings[keyAndValue[0]] ?
+                  keyAndValue[0] + '=1;' : '') : keyAndValue[0] + '=' + settings[keyAndValue[0]] + ';';
+              } else {
+                updatedFmtpLine += fmtpParts[j] + ';';
+              }
+              addedKeys.push(keyAndValue[0]);
+            }
+            sessionDescription.sdp = sessionDescription.sdp.replace(fmtpLine[0], '');
+          }
+          for (var key in settings) {
+            if (settings.hasOwnProperty(key) && addedKeys.indexOf(key) === -1) {
+              // Dont append parameter key+value if boolean and false
+              updatedFmtpLine += typeof settings[key] === 'boolean' ? (settings[key] ? key + '=1;' : '') :
+                key + '=' + settings[key] + ';';
+              addedKeys.push(key);
+            }
+          }
+          if (updatedFmtpLine !== 'a=fmtp:' + payload + ' ') {
+            sessionDescription.sdp = sessionDescription.sdp.replace(codecsList[i], codecsList[i] + updatedFmtpLine + '\r\n');
+          }
+        }
+      }
+    }
   };
 
-  if (userAudioSettings && typeof userAudioSettings === 'object') {
-    opusSettings.stereo = userAudioSettings.stereo === true;
-    opusSettings.useinbandfec = typeof userAudioSettings.useinbandfec === 'boolean' ? userAudioSettings.useinbandfec : null;
-    opusSettings.usedtx = typeof userAudioSettings.usedtx === 'boolean' ? userAudioSettings.usedtx : null;
-    opusSettings.maxplaybackrate = typeof userAudioSettings.maxplaybackrate === 'number' ? userAudioSettings.maxplaybackrate : null;
-  }
-
-
-  // Find OPUS RTPMAP line
-  for (var i = 0; i < sdpLines.length; i++) {
-    if (sdpLines[i].indexOf('a=rtpmap:') === 0 && (sdpLines[i].toLowerCase()).indexOf('opus/48000') > 0) {
-      payload = (sdpLines[i].split(' ')[0] || '').split(':')[1] || null;
-      appendFmtpLineAtIndex = i;
-      break;
+  // Set audio codecs -> OPUS
+  // RFC: https://tools.ietf.org/html/draft-ietf-payload-rtp-opus-11
+  parseFn('audio', self.AUDIO_CODEC.OPUS, 48000, (function () {
+    var opusOptions = {};
+    var audioSettings = self.getPeerInfo().settings.audio;
+    audioSettings = audioSettings && typeof audioSettings === 'object' ? audioSettings : {};
+    if (typeof self._codecParams.audio.opus.stereo === 'boolean') {
+      opusOptions.stereo = self._codecParams.audio.opus.stereo;
+    } else if (typeof audioSettings.stereo === 'boolean') {
+      opusOptions.stereo = audioSettings.stereo;
     }
-  }
-
-  if (!payload) {
-    log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Failed to find OPUS payload. Not configuring options.']);
-    return sessionDescription.sdp;
-  }
-
-  // Set OPUS FMTP line
-  for (var j = 0; j < sdpLines.length; j++) {
-    if (sdpLines[j].indexOf('a=fmtp:' + payload) === 0) {
-      var opusConfigs = (sdpLines[j].split('a=fmtp:' + payload)[1] || '').replace(/\s/g, '').split(';');
-      var updatedOpusParams = '';
-
-      for (var k = 0; k < opusConfigs.length; k++) {
-        if (!(opusConfigs[k] && opusConfigs[k].indexOf('=') > 0)) {
-          continue;
-        }
-
-        var params = opusConfigs[k].split('=');
-
-        if (['useinbandfec', 'usedtx', 'sprop-stereo', 'stereo', 'maxplaybackrate'].indexOf(params[0]) > -1) {
-          // Get default OPUS useinbandfec
-          if (params[0] === 'useinbandfec' && params[1] === '1' && opusSettings.useinbandfec === null) {
-            log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Received OPUS useinbandfec as true by default.']);
-            opusSettings.useinbandfec = true;
-
-          // Get default OPUS usedtx
-          } else if (params[0] === 'usedtx' && params[1] === '1' && opusSettings.usedtx === null) {
-            log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Received OPUS usedtx as true by default.']);
-            opusSettings.usedtx = true;
-
-          // Get default OPUS maxplaybackrate
-          } else if (params[0] === 'maxplaybackrate' && parseInt(params[1] || '0', 10) > 0 && opusSettings.maxplaybackrate === null) {
-            log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Received OPUS maxplaybackrate as ' + params[1] + ' by default.']);
-            opusSettings.maxplaybackrate = params[1];
-          }
-        } else {
-          updatedOpusParams += opusConfigs[k] + ';';
-        }
-      }
-
-      if (opusSettings.stereo === true) {
-        updatedOpusParams += 'stereo=1;';
-      }
-
-      if (opusSettings.useinbandfec === true) {
-        updatedOpusParams += 'useinbandfec=1;';
-      }
-
-      if (opusSettings.usedtx === true) {
-        updatedOpusParams += 'usedtx=1;';
-      }
-
-      if (opusSettings.maxplaybackrate) {
-        updatedOpusParams += 'maxplaybackrate=' + opusSettings.maxplaybackrate + ';';
-      }
-
-      log.info([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Updated OPUS parameters ->'], updatedOpusParams);
-
-      sdpLines[j] = 'a=fmtp:' + payload + ' ' + updatedOpusParams;
-      appendFmtpLineAtIndex = -1;
-      break;
+    if (typeof self._codecParams.audio.opus.usedtx === 'boolean') {
+      opusOptions.usedtx = self._codecParams.audio.opus.usedtx;
+    } else if (typeof audioSettings.usedtx === 'boolean') {
+      opusOptions.usedtx = audioSettings.usedtx;
     }
-  }
-
-  if (appendFmtpLineAtIndex > 0) {
-    var newFmtpLine = 'a=fmtp:' + payload + ' ';
-
-    if (opusSettings.stereo === true) {
-      newFmtpLine += 'stereo=1;';
+    if (typeof self._codecParams.audio.opus.useinbandfec === 'boolean') {
+      opusOptions.useinbandfec = self._codecParams.audio.opus.useinbandfec;
+    } else if (typeof audioSettings.useinbandfec === 'boolean') {
+      opusOptions.useinbandfec = audioSettings.useinbandfec;
     }
-
-    if (opusSettings.useinbandfec === true) {
-      newFmtpLine += 'useinbandfec=1;';
+    if (typeof self._codecParams.audio.opus.maxplaybackrate === 'number') {
+      opusOptions.maxplaybackrate = self._codecParams.audio.opus.maxplaybackrate;
+    } else if (typeof audioSettings.maxplaybackrate === 'number') {
+      opusOptions.maxplaybackrate = audioSettings.maxplaybackrate;
     }
-
-    if (opusSettings.usedtx === true) {
-      newFmtpLine += 'usedtx=1;';
+    if (typeof self._codecParams.audio.opus.minptime === 'number') {
+      opusOptions.minptime = self._codecParams.audio.opus.minptime;
+    } else if (typeof audioSettings.minptime === 'number') {
+      opusOptions.minptime = audioSettings.minptime;
     }
+    // Possible future params: sprop-maxcapturerate, maxaveragebitrate, sprop-stereo, cbr
+    // NOT recommended: maxptime, ptime, rate, minptime
+    return opusOptions;
+  })());
 
-    if (opusSettings.maxplaybackrate) {
-      newFmtpLine += 'maxplaybackrate=' + opusSettings.maxplaybackrate + ';';
+  // RFC: https://tools.ietf.org/html/rfc4733
+  // Future: Set telephone-event: 100 0-15,66,70
+
+  // RFC: https://tools.ietf.org/html/draft-ietf-payload-vp8-17
+  // Set video codecs -> VP8
+  parseFn('video', self.VIDEO_CODEC.VP8, null, (function () {
+    var vp8Options = {};
+    // NOT recommended: max-fr, max-fs (all are codec decoder capabilities)
+    if (typeof self._codecParams.video.vp8.maxFr === 'number') {
+      vp8Options['max-fr'] = self._codecParams.video.vp8.maxFr;
     }
+    if (typeof self._codecParams.video.vp8.maxFs === 'number') {
+      vp8Options['max-fs'] = self._codecParams.video.vp8.maxFs;
+    }
+    return vp8Options;
+  })());
 
-    log.info([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Created OPUS parameters ->'], newFmtpLine);
+  // RFC: https://tools.ietf.org/html/draft-ietf-payload-vp9-02
+  // Set video codecs -> VP9
+  parseFn('video', self.VIDEO_CODEC.VP9, null, (function () {
+    var vp9Options = {};
+    // NOT recommended: max-fr, max-fs (all are codec decoder capabilities)
+    if (typeof self._codecParams.video.vp9.maxFr === 'number') {
+      vp9Options['max-fr'] = self._codecParams.video.vp9.maxFr;
+    }
+    if (typeof self._codecParams.video.vp9.maxFs === 'number') {
+      vp9Options['max-fs'] = self._codecParams.video.vp9.maxFs;
+    }
+    return vp9Options;
+  })());
 
-    sdpLines.splice(appendFmtpLineAtIndex + 1, 0, newFmtpLine);
-  }
+  // RFC: https://tools.ietf.org/html/rfc6184
+  // Set the video codecs -> H264
+  parseFn('video', self.VIDEO_CODEC.H264, null, (function () {
+    var h264Options = {};
+    if (typeof self._codecParams.video.h264.levelAsymmetryAllowed === 'string') {
+      h264Options['profile-level-id'] = self._codecParams.video.h264.profileLevelId;
+    }
+    if (typeof self._codecParams.video.h264.levelAsymmetryAllowed === 'boolean') {
+      h264Options['level-asymmetry-allowed'] = self._codecParams.video.h264.levelAsymmetryAllowed;
+    }
+    if (typeof self._codecParams.video.h264.packetizationMode === 'boolean') {
+      h264Options['packetization-mode'] = self._codecParams.video.h264.packetizationMode;
+    }
+    // Possible future params (remove if they are decoder/encoder capabilities or info):
+    //   max-recv-level, max-mbps, max-smbps, max-fs, max-cpb, max-dpb, max-br,
+    //   max-mbps, max-smbps, max-fs, max-cpb, max-dpb, max-br, redundant-pic-cap, sprop-parameter-sets,
+    //   sprop-level-parameter-sets, use-level-src-parameter-sets, in-band-parameter-sets,
+    //   sprop-interleaving-depth, sprop-deint-buf-req, deint-buf-cap, sprop-init-buf-time,
+    //   sprop-max-don-diff, max-rcmd-nalu-size, sar-understood, sar-supported
+    //   NOT recommended: profile-level-id (WebRTC uses "42e00a" for the moment)
+    //   https://bugs.chromium.org/p/chromium/issues/detail?id=645599
+    return h264Options;
+  })());
 
-  return sdpLines.join('\r\n');
+  return sessionDescription.sdp;
 };
 
 /**
@@ -26077,12 +29232,42 @@ Skylink.prototype._setSDPBitrate = function(targetMid, sessionDescription) {
     sdpLines.splice(cLineIndex + 1, 0, window.webrtcDetectedBrowser === 'firefox' ? 'b=TIAS:' + (bw * 1024) : 'b=AS:' + bw);
   };
 
-  parseFn('audio', this._streamsBandwidthSettings.bAS.audio);
-  parseFn('video', this._streamsBandwidthSettings.bAS.video);
-  parseFn('data', this._streamsBandwidthSettings.bAS.data);
+  var bASAudioBw = this._streamsBandwidthSettings.bAS.audio;
+  var bASVideoBw = this._streamsBandwidthSettings.bAS.video;
+  var bASDataBw = this._streamsBandwidthSettings.bAS.data;
+  var googleXMinBw = this._streamsBandwidthSettings.googleX.min;
+  var googleXMaxBw = this._streamsBandwidthSettings.googleX.max;
+
+  if (this._peerCustomConfigs[targetMid]) {
+    if (this._peerCustomConfigs[targetMid].bandwidth &&
+      typeof this._peerCustomConfigs[targetMid].bandwidth === 'object') {
+      if (typeof this._peerCustomConfigs[targetMid].bandwidth.audio === 'number') {
+        bASAudioBw = this._peerCustomConfigs[targetMid].bandwidth.audio;
+      }
+      if (typeof this._peerCustomConfigs[targetMid].bandwidth.video === 'number') {
+        bASVideoBw = this._peerCustomConfigs[targetMid].bandwidth.video;
+      }
+      if (typeof this._peerCustomConfigs[targetMid].bandwidth.data === 'number') {
+        bASDataBw = this._peerCustomConfigs[targetMid].bandwidth.data;
+      }
+    }
+    if (this._peerCustomConfigs[targetMid].googleXBandwidth &&
+      typeof this._peerCustomConfigs[targetMid].googleXBandwidth === 'object') {
+      if (typeof this._peerCustomConfigs[targetMid].googleXBandwidth.min === 'number') {
+        googleXMinBw = this._peerCustomConfigs[targetMid].googleXBandwidth.min;
+      }
+      if (typeof this._peerCustomConfigs[targetMid].googleXBandwidth.max === 'number') {
+        googleXMaxBw = this._peerCustomConfigs[targetMid].googleXBandwidth.max;
+      }
+    }
+  }
+
+  parseFn('audio', bASAudioBw);
+  parseFn('video', bASVideoBw);
+  parseFn('data', bASDataBw);
 
   // Sets the experimental google bandwidth
-  if ((typeof this._streamsBandwidthSettings.googleX.min === 'number') || (typeof this._streamsBandwidthSettings.googleX.max === 'number')) {
+  if ((typeof googleXMinBw === 'number') || (typeof googleXMaxBw === 'number')) {
     var codec = null;
     var codecRtpMapLineIndex = -1;
     var codecFmtpLineIndex = -1;
@@ -26108,13 +29293,15 @@ Skylink.prototype._setSDPBitrate = function(targetMid, sessionDescription) {
     if (codecRtpMapLineIndex > -1) {
       var xGoogleParams = '';
 
-      if (typeof this._streamsBandwidthSettings.googleX.min === 'number') {
-        xGoogleParams += 'x-google-min-bitrate=' + this._streamsBandwidthSettings.googleX.min + ';';
+      if (typeof googleXMinBw === 'number') {
+        xGoogleParams += 'x-google-min-bitrate=' + googleXMinBw + ';';
       }
 
-      if (typeof this._streamsBandwidthSettings.googleX.max === 'number') {
-        xGoogleParams += 'x-google-max-bitrate=' + this._streamsBandwidthSettings.googleX.max + ';';
+      if (typeof googleXMaxBw === 'number') {
+        xGoogleParams += 'x-google-max-bitrate=' + googleXMaxBw + ';';
       }
+
+      log.info([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Limiting x-google-bitrate ->'], xGoogleParams);
 
       if (codecFmtpLineIndex > -1) {
         sdpLines[codecFmtpLineIndex] += (sdpLines[codecFmtpLineIndex].split(' ')[1] ? ';' : '') + xGoogleParams;
@@ -26134,51 +29321,94 @@ Skylink.prototype._setSDPBitrate = function(targetMid, sessionDescription) {
  * @for Skylink
  * @since 0.6.16
  */
-Skylink.prototype._setSDPCodec = function(targetMid, sessionDescription) {
-  var sdpLines = sessionDescription.sdp.split('\r\n');
-  var parseFn = function (type, codec) {
-    if (codec === 'auto') {
+Skylink.prototype._setSDPCodec = function(targetMid, sessionDescription, overrideSettings) {
+  var self = this;
+  var parseFn = function (type, codecSettings) {
+    var codec = typeof codecSettings === 'object' ? codecSettings.codec : codecSettings;
+    var samplingRate = typeof codecSettings === 'object' ? codecSettings.samplingRate : null;
+    var channels = typeof codecSettings === 'object' ? codecSettings.channels : null;
+
+    if (codec === self[type === 'audio' ? 'AUDIO_CODEC' : 'VIDEO_CODEC'].AUTO) {
       log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type,
         'Not preferring any codec for "' + type + '" streaming. Using browser selection.']);
       return;
     }
 
-    // Find the codec first
-    for (var i = 0; i < sdpLines.length; i++) {
-      if (sdpLines[i].indexOf('a=rtpmap:') === 0 && (sdpLines[i].toLowerCase()).indexOf(codec.toLowerCase()) > 0) {
-        var payload = sdpLines[i].split(':')[1].split(' ')[0] || null;
+    var mLine = sessionDescription.sdp.match(new RegExp('m=' + type + ' .*\r\n', 'gi'));
 
-        if (!payload) {
-          log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Not preferring "' +
-            codec + '" for "' + type + '" streaming as payload is not found.']);
-          return;
+    if (!(Array.isArray(mLine) && mLine.length > 0)) {
+      log.error([targetMid, 'RTCSessionDesription', sessionDescription.type,
+        'Not preferring any codec for "' + type + '" streaming as m= line is not found.']);
+      return;
+    }
+
+    var setLineFn = function (codecsList, isSROk, isChnlsOk) {
+      if (Array.isArray(codecsList) && codecsList.length > 0) {
+        if (!isSROk) {
+          samplingRate = null;
         }
+        if (!isChnlsOk) {
+          channels = null;
+        }
+        log.info([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Preferring "' +
+          codec + '" (samplingRate: ' + (samplingRate || 'n/a') + ', channels: ' +
+          (channels || 'n/a') + ') for "' + type + '" streaming.']);
 
-        for (var j = 0; j < sdpLines.length; j++) {
-          if (sdpLines[j].indexOf('m=' + type) === 0) {
-            log.info([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Preferring "' +
-              codec + '" for "' + type + '" streaming.']);
-
-            var parts = sdpLines[j].split(' ');
-
-            if (parts.indexOf(payload) >= 3) {
-              parts.splice(parts.indexOf(payload), 1);
-            }
-
-            // Example: m=audio 9 UDP/TLS/RTP/SAVPF 111
-            parts.splice(3, 0, payload);
-            sdpLines[j] = parts.join(' ');
-            break;
+        var line = mLine[0];
+        var lineParts = line.replace('\r\n', '').split(' ');
+        // Set the m=x x UDP/xxx
+        line = lineParts[0] + ' ' + lineParts[1] + ' ' + lineParts[2] + ' ';
+        // Remove them to leave the codecs only
+        lineParts.splice(0, 3);
+        // Loop for the codecs list to append first
+        for (var i = 0; i < codecsList.length; i++) {
+          var parts = (codecsList[i].split('a=rtpmap:')[1] || '').split(' ');
+          if (parts.length < 2) {
+            continue;
+          }
+          line += parts[0] + ' ';
+        }
+        // Loop for later fallback codecs to append
+        for (var j = 0; j < lineParts.length; j++) {
+          if (line.indexOf(' ' + lineParts[j]) > 0) {
+            lineParts.splice(j, 1);
+            j--;
+          } else if (sessionDescription.sdp.match(new RegExp('a=rtpmap:' + lineParts[j] +
+            '\ ' + codec + '/.*\r\n', 'gi'))) {
+            line += lineParts[j] + ' ';
+            lineParts.splice(j, 1);
+            j--;
           }
         }
+        // Append the rest of the codecs
+        line += lineParts.join(' ') + '\r\n';
+        sessionDescription.sdp = sessionDescription.sdp.replace(mLine[0], line);
+        return true;
+      }
+    };
+
+    // If samplingRate & channels
+    if (samplingRate) {
+      if (type === 'audio' && channels && setLineFn(sessionDescription.sdp.match(new RegExp('a=rtpmap:.*\ ' +
+        codec + '\/' + samplingRate + (channels === 1 ? '[\/1]*' : '\/' + channels) + '\r\n', 'gi')), true, true)) {
+        return;
+      } else if (setLineFn(sessionDescription.sdp.match(new RegExp('a=rtpmap:.*\ ' + codec + '\/' +
+        samplingRate + '[\/]*.*\r\n', 'gi')), true)) {
+        return;
       }
     }
+    if (type === 'audio' && channels && setLineFn(sessionDescription.sdp.match(new RegExp('a=rtpmap:.*\ ' +
+      codec + '\/.*\/' + channels + '\r\n', 'gi')), false, true)) {
+      return;
+    }
+
+    setLineFn(sessionDescription.sdp.match(new RegExp('a=rtpmap:.*\ ' + codec + '\/.*\r\n', 'gi')));
   };
 
-  parseFn('audio', this._selectedAudioCodec);
-  parseFn('video', this._selectedVideoCodec);
+  parseFn('audio', overrideSettings ? overrideSettings.audio : self._selectedAudioCodec);
+  parseFn('video', overrideSettings ? overrideSettings.video : self._selectedVideoCodec);
 
-  return sdpLines.join('\r\n');
+  return sessionDescription.sdp;
 };
 
 /**
@@ -26207,7 +29437,7 @@ Skylink.prototype._removeSDPFirefoxH264Pref = function(targetMid, sessionDescrip
  */
 Skylink.prototype._addSDPMediaStreamTrackIDs = function (targetMid, sessionDescription) {
   if (!(this._peerConnections[targetMid] && this._peerConnections[targetMid].getLocalStreams().length > 0)) {
-    log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type,
+    log.log([targetMid, 'RTCSessionDesription', sessionDescription.type,
       'Not enforcing MediaStream IDs as no Streams is sent.']);
     return sessionDescription.sdp;
   }
@@ -26225,7 +29455,7 @@ Skylink.prototype._addSDPMediaStreamTrackIDs = function (targetMid, sessionDescr
 
   var parseFn = function (type, tracks) {
     if (tracks.length === 0) {
-      log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type,
+      log.log([targetMid, 'RTCSessionDesription', sessionDescription.type,
         'Not enforcing "' + type + '" MediaStreamTrack IDs as no Stream "' + type + '" tracks is sent.']);
       return;
     }
@@ -26247,25 +29477,23 @@ Skylink.prototype._addSDPMediaStreamTrackIDs = function (targetMid, sessionDescr
       }
 
       if (hasReachedType && sdpLines[i].indexOf('a=ssrc:') === 0) {
-        ssrcId = (sdpLines[i].split(':')[1] || '').split(' ')[0] || null;
-
-        var msidLine = 'a=ssrc:' + ssrcId + ' msid:' + localStreamId + ' ' + trackId;
-        var mslabelLine = 'a=ssrc:' + ssrcId + ' mslabel:' + trackLabel;
-        var labelLine = 'a=ssrc:' + ssrcId + ' label:' + trackLabel;
-
-        if (sdpLines.indexOf(msidLine) === -1) {
-          sdpLines.splice(i + 1, 0, msidLine);
-          i++;
+        if (!ssrcId) {
+          ssrcId = (sdpLines[i].split(':')[1] || '').split(' ')[0] || null;
         }
 
-        if (sdpLines.indexOf(mslabelLine) === -1) {
-          sdpLines.splice(i + 1, 0, mslabelLine);
-          i++;
-        }
-
-        if (sdpLines.indexOf(labelLine) === -1) {
-          sdpLines.splice(i + 1, 0, labelLine);
-          i++;
+        if (ssrcId && sdpLines[i].indexOf('a=ssrc:' + ssrcId + ' ') === 0) {
+          if (sdpLines[i].indexOf(' cname:') > 0) {
+            log.info([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Updating MediaStreamTrack ssrc (' +
+              ssrcId + ') for "' + localStreamId + '" stream and "' + trackId + '" (label:"' + trackLabel + '")']);
+            sdpLines.splice(i + 1, 0,
+              'a=ssrc:' + ssrcId + ' msid:' + localStreamId + ' ' + trackId,
+              'a=ssrc:' + ssrcId + ' mslabel:' + trackId,
+              'a=ssrc:' + ssrcId + ' label:' + trackId);
+            i += 3;
+          } else {
+            sdpLines.splice(i, 1);
+            i--;
+          }
         }
         break;
       }
@@ -26275,8 +29503,10 @@ Skylink.prototype._addSDPMediaStreamTrackIDs = function (targetMid, sessionDescr
   parseFn('audio', localStream.getAudioTracks());
   parseFn('video', localStream.getVideoTracks());
 
-  // Signaling end-of-candidates
+  // Append signaling of end-of-candidates
   if (!this._enableIceTrickle){
+    log.info([targetMid, 'RTCSessionDesription', sessionDescription.type,
+      'Appending end-of-candidates signal for non-trickle ICE connection.']);
     for (var i = 0; i < sdpLines.length; i++) {
       if (sdpLines[i].indexOf('a=candidate:') === 0) {
         if (sdpLines[i + 1] ? !(sdpLines[i + 1].indexOf('a=candidate:') === 0 ||
@@ -26288,38 +29518,114 @@ Skylink.prototype._addSDPMediaStreamTrackIDs = function (targetMid, sessionDescr
     }
   }
 
-  return sdpLines.join('\r\n');
+  if (sessionDescription.type === this.HANDSHAKE_PROGRESS.ANSWER && this._sdpSessions[targetMid]) {
+    var bundleLineIndex = -1;
+    var mLineIndex = -1;
+
+    for (var j = 0; j < sdpLines.length; j++) {
+      if (sdpLines[j].indexOf('a=group:BUNDLE') === 0 && this._sdpSessions[targetMid].remote.bundleLine &&
+        this._peerConnectionConfig.bundlePolicy === this.BUNDLE_POLICY.MAX_BUNDLE) {
+        sdpLines[j] = this._sdpSessions[targetMid].remote.bundleLine;
+      } else if (sdpLines[j].indexOf('m=') === 0) {
+        mLineIndex++;
+        var compareA = sdpLines[j].split(' ');
+        var compareB = (this._sdpSessions[targetMid].remote.mLines[mLineIndex] || '').split(' ');
+
+        if (compareA[0] && compareB[0] && compareA[0] !== compareB[0]) {
+          compareB[1] = 0;
+          log.info([targetMid, 'RTCSessionDesription', sessionDescription.type,
+            'Appending middle rejected m= line ->'], compareB.join(' '));
+          sdpLines.splice(j, 0, compareB.join(' '));
+          j++;
+          mLineIndex++;
+        }
+      }
+    }
+
+    while (this._sdpSessions[targetMid].remote.mLines[mLineIndex + 1]) {
+      mLineIndex++;
+      var appendIndex = sdpLines.length;
+      if (!sdpLines[appendIndex - 1].replace(/\s/gi, '')) {
+        appendIndex -= 1;
+      }
+      var parts = (this._sdpSessions[targetMid].remote.mLines[mLineIndex] || '').split(' ');
+      parts[1] = 0;
+      log.info([targetMid, 'RTCSessionDesription', sessionDescription.type,
+        'Appending later rejected m= line ->'], parts.join(' '));
+      sdpLines.splice(appendIndex, 0, parts.join(' '));
+    }
+  }
+
+  if (window.webrtcDetectedBrowser === 'edge' && sessionDescription.type === this.HANDSHAKE_PROGRESS.OFFER &&
+    !sdpLines[sdpLines.length - 1].replace(/\s/gi, '')) {
+    log.info([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Removing last empty space for Edge browsers']);
+    sdpLines.splice(sdpLines.length - 1, 1);
+  }
+
+  var outputStr = sdpLines.join('\r\n');
+
+  /*if (window.webrtcDetectedBrowser === 'edge' && this._streams.userMedia && this._streams.userMedia.stream) {
+    var correctStreamId = this._streams.userMedia.stream.id || this._streams.userMedia.stream.label;
+    outputStr = outputStr.replace(new RegExp('a=msid:.*\ ', 'gi'), 'a=msid:' + correctStreamId + ' ');
+    outputStr = outputStr.replace(new RegExp('\ msid:.*\ ', 'gi'), ' msid:' + correctStreamId + ' ');
+  }*/
+
+  return outputStr;
 };
 
 /**
- * Function that modifies the session description to remove VP9 and H264 apt/rtx lines to prevent plugin connection breaks.
- * @method _removeSDPH264VP9AptRtxForOlderPlugin
+ * Function that modifies the session description to remove apt/rtx lines that does exists.
+ * @method _removeSDPUnknownAptRtx
  * @private
  * @for Skylink
- * @since 0.6.16
+ * @since 0.6.18
  */
-Skylink.prototype._removeSDPH264VP9AptRtxForOlderPlugin = function (targetMid, sessionDescription) {
-  var removeVP9AptRtxPayload = false;
-  var agent = (this._peerInformations[targetMid] || {}).agent || {};
-
-  if (agent.pluginVersion) {
-    // 0.8.870 supports
-    var parts = agent.pluginVersion.split('.');
-    removeVP9AptRtxPayload = parseInt(parts[0], 10) >= 0 && parseInt(parts[1], 10) >= 8 &&
-      parseInt(parts[2], 10) >= 870;
-  }
+Skylink.prototype._removeSDPUnknownAptRtx = function (targetMid, sessionDescription) {
+  var codecsPayload = []; // Payload numbers as the keys
+  var sdpLines = sessionDescription.sdp.split('\r\n');
+  var hasVideo = false;
+  var rtxs = {};
+  var parts = [];
 
   // Remove rtx or apt= lines that prevent connections for browsers without VP8 or VP9 support
   // See: https://bugs.chromium.org/p/webrtc/issues/detail?id=3962
-  if (['chrome', 'opera'].indexOf(window.webrtcDetectedBrowser) > -1 && removeVP9AptRtxPayload) {
-    log.info([targetMid, 'RTCSessionDesription', sessionDescription.type,
-      'Removing VP9/H264 apt= and rtx payload lines causing connectivity issues']);
-
-    sessionDescription.sdp = sessionDescription.sdp.replace(/a=rtpmap:\d+ rtx\/\d+\r\na=fmtp:\d+ apt=101\r\n/g, '');
-    sessionDescription.sdp = sessionDescription.sdp.replace(/a=rtpmap:\d+ rtx\/\d+\r\na=fmtp:\d+ apt=107\r\n/g, '');
+  for (var i = 0; i < sdpLines.length; i++) {
+    if (sdpLines[i].indexOf('m=') === 0) {
+      if (hasVideo) {
+        for (var r in rtxs) {
+          if (rtxs.hasOwnProperty(r) && rtxs[r] && codecsPayload.indexOf(rtxs[r].codec) === -1) {
+            for (var l = 0; l < rtxs[r].lines.length; l++) {
+              sdpLines.splice(sdpLines.indexOf(rtxs[r].lines[l]), 1);
+              i--;
+            }
+          }
+        }
+      }
+      hasVideo = sdpLines[i].indexOf('m=video ') === 0;
+      codecsPayload = [];
+      rtxs = {};
+    }
+    if (sdpLines[i].toLowerCase().indexOf('a=rtpmap:') === 0) {
+      parts = (sdpLines[i].split('a=rtpmap:')[1] || '').split(' ');
+      if (parts[1].toLowerCase().indexOf('rtx') === 0) {
+        if (!rtxs[parts[0]]) {
+          rtxs[parts[0]] = { lines:[], codec: null };
+        }
+        rtxs[parts[0]].lines.push(sdpLines[i]);
+      } else {
+        codecsPayload.push(parts[0]);
+      }
+    } else if (sdpLines[i].indexOf('a=fmtp:') === 0 && sdpLines[i].indexOf(' apt=') > 0) {
+      parts = (sdpLines[i].split('a=fmtp:')[1] || '').split(' ');
+      if (parts[0] && !rtxs[parts[0]]) {
+        rtxs[parts[0]] = { lines:[], codec: null };
+      }
+      rtxs[parts[0]].codec = parts[1].split('apt=')[1];
+      rtxs[parts[0]].lines.push(sdpLines[i]);
+    }
   }
 
-  return sessionDescription.sdp;
+  return sdpLines.join('\r\n');
 };
 
 /**
@@ -26388,6 +29694,11 @@ Skylink.prototype._removeSDPCodecs = function (targetMid, sessionDescription) {
     parseFn('audio', 'CN');
   }
 
+  if (window.webrtcDetectedBrowser === 'edge' &&
+    (((this._peerInformations[targetMid] || {}).agent || {}).name || 'unknown').name !== 'edge') {
+    sessionDescription.sdp = sessionDescription.sdp.replace(/a=rtcp-fb:.*\ x-message\ .*\r\n/gi, '');
+  }
+
   return sessionDescription.sdp;
 };
 
@@ -26403,7 +29714,7 @@ Skylink.prototype._removeSDPREMBPackets = function (targetMid, sessionDescriptio
     return sessionDescription.sdp;
   }
 
-  log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Removing REMB packets.']);
+  log.info([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Removing REMB packets.']);
   return sessionDescription.sdp.replace(/a=rtcp-fb:\d+ goog-remb\r\n/g, '');
 };
 
@@ -26414,7 +29725,7 @@ Skylink.prototype._removeSDPREMBPackets = function (targetMid, sessionDescriptio
  * @for Skylink
  * @since 0.6.16
  */
-Skylink.prototype._getSDPSelectedCodec = function (targetMid, sessionDescription, type) {
+Skylink.prototype._getSDPSelectedCodec = function (targetMid, sessionDescription, type, beSilentOnLogs) {
   if (!(sessionDescription && sessionDescription.sdp)) {
     return null;
   }
@@ -26456,8 +29767,10 @@ Skylink.prototype._getSDPSelectedCodec = function (targetMid, sessionDescription
     }
   }
 
-  log.debug([targetMid, 'RTCSessionDesription', sessionDescription.type,
-    'Parsing session description "' + type + '" codecs ->'], selectedCodecInfo);
+  if (!beSilentOnLogs) {
+    log.debug([targetMid, 'RTCSessionDesription', sessionDescription.type,
+      'Parsing session description "' + type + '" codecs ->'], selectedCodecInfo);
+  }
 
   return selectedCodecInfo;
 };
@@ -26505,6 +29818,98 @@ Skylink.prototype._removeSDPFilteredCandidates = function (targetMid, sessionDes
 };
 
 /**
+ * Function that retrieves the current list of support codecs.
+ * @method _getCodecsSupport
+ * @private
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype._getCodecsSupport = function (callback) {
+  var self = this;
+
+  if (self._currentCodecSupport) {
+    callback(null);
+  }
+
+  self._currentCodecSupport = { audio: {}, video: {} };
+
+  try {
+    if (window.webrtcDetectedBrowser === 'edge') {
+      var codecs = RTCRtpSender.getCapabilities().codecs;
+
+      for (var i = 0; i < codecs.length; i++) {
+        if (['audio','video'].indexOf(codecs[i].kind) > -1 && codecs[i].name) {
+          var codec = codecs[i].name.toLowerCase();
+          self._currentCodecSupport[codecs[i].kind][codec] = codecs[i].clockRate +
+            (codecs[i].numChannels > 1 ? '/' + codecs[i].numChannels : '');
+        }
+      }
+      // Ignore .fecMechanisms for now
+      callback(null);
+
+    } else {
+      var pc = new RTCPeerConnection(null);
+      var offerConstraints = {
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      };
+
+      if (['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1) {
+        offerConstraints = {
+          mandatory: {
+            OfferToReceiveVideo: true,
+            OfferToReceiveAudio: true
+          }
+        };
+      }
+
+      // Prevent errors and proceed with create offer still...
+      try {
+        var channel = pc.createDataChannel('test');
+        self._binaryChunkType = channel.binaryType || self._binaryChunkType;
+        self._binaryChunkType = self._binaryChunkType.toLowerCase().indexOf('array') > -1 ?
+          self.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER : self._binaryChunkType;
+        // Set the value according to the property
+        for (var prop in self.DATA_TRANSFER_DATA_TYPE) {
+          if (self.DATA_TRANSFER_DATA_TYPE.hasOwnProperty(prop) &&
+            self._binaryChunkType.toLowerCase() === self.DATA_TRANSFER_DATA_TYPE[prop].toLowerCase()) {
+            self._binaryChunkType = self.DATA_TRANSFER_DATA_TYPE[prop];
+            break;
+          }
+        }
+      } catch (e) {}
+
+      pc.createOffer(function (offer) {
+        var sdpLines = offer.sdp.split('\r\n');
+        var mediaType = '';
+
+        for (var i = 0; i < sdpLines.length; i++) {
+          if (sdpLines[i].indexOf('m=') === 0) {
+            mediaType = (sdpLines[i].split('m=')[1] || '').split(' ')[0];
+          } else if (sdpLines[i].indexOf('a=rtpmap:') === 0) {
+            if (['audio', 'video'].indexOf(mediaType) === -1) {
+              continue;
+            }
+            var parts = (sdpLines[i].split(' ')[1] || '').split('/');
+            var codec = (parts[0] || '').toLowerCase();
+            var info = parts[1] + (parts[2] ? '/' + parts[2] : '');
+
+            self._currentCodecSupport[mediaType][codec] = info;
+          }
+        }
+
+        callback(null);
+
+      }, function (error) {
+        callback(error);
+      }, offerConstraints);
+    }
+  } catch (error) {
+    callback(error);
+  }
+};
+
+/**
  * Function that modifies the session description to handle the connection settings.
  * This is experimental and never recommended to end-users.
  * @method _handleSDPConnectionSettings
@@ -26512,66 +29917,227 @@ Skylink.prototype._removeSDPFilteredCandidates = function (targetMid, sessionDes
  * @for Skylink
  * @since 0.6.16
  */
-Skylink.prototype._handleSDPConnectionSettings = function (targetMid, sessionDescription) {
+Skylink.prototype._handleSDPConnectionSettings = function (targetMid, sessionDescription, direction) {
   var self = this;
-  var sdpLines = sessionDescription.sdp.split('\r\n');
+
+  if (!self._sdpSessions[targetMid]) {
+    return sessionDescription.sdp;
+  }
+
+  var sessionDescriptionStr = sessionDescription.sdp;
+
+  if (direction === 'remote' && !self.getPeerInfo(targetMid).config.enableIceTrickle) {
+    sessionDescriptionStr = sessionDescriptionStr.replace(/a=end-of-candidates\r\n/g, '');
+  }
+
+  var sdpLines = sessionDescriptionStr.split('\r\n');
+  var peerAgent = ((self._peerInformations[targetMid] || {}).agent || {}).name || '';
   var mediaType = '';
+  var bundleLineIndex = -1;
+  var bundleLineMids = [];
+  var mLineIndex = -1;
+  var settings = clone(self._sdpSettings);
+
+  if (targetMid === 'MCU') {
+    settings.connection.audio = true;
+    settings.connection.video = true;
+    settings.connection.data = true;
+  }
+
+  if (settings.connection.video) {
+    settings.connection.video = (window.webrtcDetectedBrowser === 'edge' && peerAgent !== 'edge') ||
+      (['IE', 'safari'].indexOf(window.webrtcDetectedBrowser) > -1 && peerAgent === 'edge') ?
+      !!self._currentCodecSupport.video.h264 : true;
+  }
+
+  if (self._hasMCU) {
+    settings.direction.audio.receive = targetMid === 'MCU' ? false : true;
+    settings.direction.audio.send = targetMid === 'MCU' ? true : false;
+    settings.direction.video.receive = targetMid === 'MCU' ? false : true;
+    settings.direction.video.send = targetMid === 'MCU' ? true : false;
+  }
+
+  // ANSWERER: Reject only the m= lines. Returned rejected m= lines as well.
+  // OFFERER: Remove m= lines
+
+  self._sdpSessions[targetMid][direction].mLines = [];
+  self._sdpSessions[targetMid][direction].bundleLine = '';
 
   for (var i = 0; i < sdpLines.length; i++) {
-    if (sdpLines[i].indexOf('m=') === 0) {
+    // Cache the a=group:BUNDLE line used for remote answer from Edge later
+    if (sdpLines[i].indexOf('a=group:BUNDLE') === 0) {
+      self._sdpSessions[targetMid][direction].bundleLine = sdpLines[i];
+      bundleLineIndex = i;
+
+    // Check if there's a need to reject m= line
+    } else if (sdpLines[i].indexOf('m=') === 0) {
       mediaType = (sdpLines[i].split('m=')[1] || '').split(' ')[0] || '';
-    }
+      mediaType = mediaType === 'application' ? 'data' : mediaType;
+      mLineIndex++;
 
-    if (mediaType) {
-      if (!self._sdpSettings.connection[mediaType === 'application' ? 'data' : mediaType] && targetMid !== 'MCU') {
-        sdpLines.splice(i, 1);
-        i--;
-      } else if (mediaType && ['audio', 'video'].indexOf(mediaType) > -1 &&
-        ['a=sendrecv', 'a=sendonly', 'a=recvonly'].indexOf(sdpLines[i]) > -1) {
-        if (self._hasMCU) {
-          sdpLines[i] = targetMid === 'MCU' ? 'a=sendonly' : 'a=recvonly';
-        }
+      self._sdpSessions[targetMid][direction].mLines[mLineIndex] = sdpLines[i];
 
-        if (self._sdpSettings.direction[mediaType].send && !self._sdpSettings.direction[mediaType].receive) {
-          sdpLines[i] = sdpLines[i].indexOf('send') > -1 ? 'a=sendonly' : 'a=inactive';
-        } else if (!self._sdpSettings.direction[mediaType].send && self._sdpSettings.direction[mediaType].receive) {
-          sdpLines[i] = sdpLines[i].indexOf('recv') > -1 ? 'a=recvonly' : 'a=inactive';
-        } else if (!self._sdpSettings.direction[mediaType].send && !self._sdpSettings.direction[mediaType].receive) {
-          sdpLines[i] = 'a=inactive';
-        }
+      // Check if there is missing unsupported video codecs support and reject it regardles of MCU Peer or not
+      if (!settings.connection[mediaType]) {
+        log.log([targetMid, 'RTCSessionDesription', sessionDescription.type,
+          'Removing rejected m=' + mediaType + ' line ->'], sdpLines[i]);
 
-        // MCU currently does not support a=inactive flag
-        if (!self._hasMCU) {
-          var agent = ((self._peerInformations[targetMid] || {}).agent || {}).name || '';
-          // Handle Chrome bundle bug. - See: https://bugs.chromium.org/p/webrtc/issues/detail?id=6280
-          if (window.webrtcDetectedBrowser !== 'firefox' && agent === 'firefox' &&
-            sessionDescription.type === self.HANDSHAKE_PROGRESS.OFFER && sdpLines[i] === 'a=recvonly') {
-            log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Overriding any original settings ' +
-              'to receive only to send and receive to resolve chrome BUNDLE errors.']);
-            sdpLines[i] = 'a=sendrecv';
+        // Check if answerer and we do not have the power to remove the m line if index is 0
+        // Set as a=inactive because we do not have that power to reject it somehow..
+        // first m= line cannot be rejected for BUNDLE
+        if (self._peerConnectionConfig.bundlePolicy === self.BUNDLE_POLICY.MAX_BUNDLE &&
+          bundleLineIndex > -1 && mLineIndex === 0 && (direction === 'remote' ?
+          sessionDescription.type === this.HANDSHAKE_PROGRESS.OFFER :
+          sessionDescription.type === this.HANDSHAKE_PROGRESS.ANSWER)) {
+          log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type,
+            'Not removing rejected m=' + mediaType + ' line ->'], sdpLines[i]);
+          settings.connection[mediaType] = true;
+          if (['audio', 'video'].indexOf(mediaType) > -1) {
+            settings.direction[mediaType].send = false;
+            settings.direction[mediaType].receive = false;
           }
+          continue;
+        }
+
+        if (window.webrtcDetectedBrowser === 'edge') {
+          sdpLines.splice(i, 1);
+          i--;
+          continue;
+        } else if (direction === 'remote' || sessionDescription.type === this.HANDSHAKE_PROGRESS.ANSWER) {
+          var parts = sdpLines[i].split(' ');
+          parts[1] = 0;
+          sdpLines[i] = parts.join(' ');
+          continue;
         }
       }
     }
+
+    if (direction === 'remote' && sdpLines[i].indexOf('a=candidate:') === 0 &&
+      !self.getPeerInfo(targetMid).config.enableIceTrickle) {
+      if (sdpLines[i + 1] ? !(sdpLines[i + 1].indexOf('a=candidate:') === 0 ||
+        sdpLines[i + 1].indexOf('a=end-of-candidates') === 0) : true) {
+        log.info([targetMid, 'RTCSessionDesription', sessionDescription.type,
+          'Appending end-of-candidates signal for non-trickle ICE connection.']);
+        sdpLines.splice(i + 1, 0, 'a=end-of-candidates');
+        i++;
+      }
+    }
+
+    if (mediaType) {
+      // Remove lines if we are rejecting the media and ensure unless (rejectVideoMedia is true), MCU has to enable those m= lines
+      if (!settings.connection[mediaType]) {
+        sdpLines.splice(i, 1);
+        i--;
+
+      // Store the mids session description
+      } else if (sdpLines[i].indexOf('a=mid:') === 0) {
+        bundleLineMids.push(sdpLines[i].split('a=mid:')[1] || '');
+
+      // Configure direction a=sendonly etc for local sessiondescription
+      }  else if (direction === 'local' && mediaType && ['audio', 'video'].indexOf(mediaType) > -1 &&
+        ['a=sendrecv', 'a=sendonly', 'a=recvonly'].indexOf(sdpLines[i]) > -1) {
+
+        if (settings.direction[mediaType].send && !settings.direction[mediaType].receive) {
+          sdpLines[i] = sdpLines[i].indexOf('send') > -1 ? 'a=sendonly' : 'a=inactive';
+        } else if (!settings.direction[mediaType].send && settings.direction[mediaType].receive) {
+          sdpLines[i] = sdpLines[i].indexOf('recv') > -1 ? 'a=recvonly' : 'a=inactive';
+        } else if (!settings.direction[mediaType].send && !settings.direction[mediaType].receive) {
+        // MCU currently does not support a=inactive flag.. what do we do here?
+          sdpLines[i] = 'a=inactive';
+        }
+
+        // Handle Chrome bundle bug. - See: https://bugs.chromium.org/p/webrtc/issues/detail?id=6280
+        if (!self._hasMCU && window.webrtcDetectedBrowser !== 'firefox' && peerAgent === 'firefox' &&
+          sessionDescription.type === self.HANDSHAKE_PROGRESS.OFFER && sdpLines[i] === 'a=recvonly') {
+          log.warn([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Overriding any original settings ' +
+            'to receive only to send and receive to resolve chrome BUNDLE errors.']);
+          sdpLines[i] = 'a=sendrecv';
+          settings.direction[mediaType].send = true;
+          settings.direction[mediaType].receive = true;
+        }
+      }
+    }
+
+    // Remove weird empty characters for Edge case.. :(
+    if (!(sdpLines[i] || '').replace(/\n|\r|\s|\ /gi, '')) {
+      sdpLines.splice(i, 1);
+      i--;
+    }
   }
 
+  // Fix chrome "offerToReceiveAudio" local offer not removing audio BUNDLE
+  if (bundleLineIndex > -1) {
+    if (self._peerConnectionConfig.bundlePolicy === self.BUNDLE_POLICY.MAX_BUNDLE) {
+      sdpLines[bundleLineIndex] = 'a=group:BUNDLE ' + bundleLineMids.join(' ');
+    // Remove a=group:BUNDLE line
+    } else if (self._peerConnectionConfig.bundlePolicy === self.BUNDLE_POLICY.NONE) {
+      sdpLines.splice(bundleLineIndex, 1);
+    }
+  }
+
+  // Append empty space below
+  if (window.webrtcDetectedBrowser !== 'edge') {
+    if (!sdpLines[sdpLines.length - 1].replace(/\n|\r|\s/gi, '')) {
+      sdpLines[sdpLines.length - 1] = '';
+    } else {
+      sdpLines.push('');
+    }
+  }
+
+  log.info([targetMid, 'RTCSessionDesription', sessionDescription.type, 'Handling connection lines and direction ->'], settings);
+
   return sdpLines.join('\r\n');
+};
+
+/**
+ * Function that parses and retrieves the session description fingerprint.
+ * @method _getSDPFingerprint
+ * @private
+ * @for Skylink
+ * @since 0.6.18
+ */
+Skylink.prototype._getSDPFingerprint = function (targetMid, sessionDescription, beSilentOnLogs) {
+  var fingerprint = {
+    fingerprint: null,
+    fingerprintAlgorithm: null,
+    derBase64: null
+  };
+
+  if (!(sessionDescription && sessionDescription.sdp)) {
+    return fingerprint;
+  }
+
+  var sdpLines = sessionDescription.sdp.split('\r\n');
+
+  for (var i = 0; i < sdpLines.length; i++) {
+    if (sdpLines[i].indexOf('a=fingerprint') === 0) {
+      var parts = sdpLines[i].replace('a=fingerprint:', '').split(' ');
+      fingerprint.fingerprint = parts[1];
+      fingerprint.fingerprintAlgorithm = parts[0];
+      break;
+    }
+  }
+
+  if (!beSilentOnLogs) {
+    log.debug([targetMid, 'RTCSessionDesription', sessionDescription.type,
+      'Parsing session description fingerprint ->'], fingerprint);
+  }
+
+  return fingerprint;
 };
 
 
   if(typeof exports !== 'undefined') {
     // Prevent breaking code
     module.exports = {
-      Skylink: Skylink
+      Skylink: Skylink,
+      SkylinkLogs: SkylinkLogs
     };
-  }
-
-  if (refThis) {
-    refThis.Skylink = Skylink;
-  }
-
-  if (window) {
+  } else if (globals) {
+    globals.Skylink = Skylink;
+    globals.SkylinkLogs = SkylinkLogs;
+  } else if (window) {
     window.Skylink = Skylink;
+    window.SkylinkLogs = SkylinkLogs;
   }
-
 })(this);
