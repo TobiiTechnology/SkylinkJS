@@ -1,4 +1,4 @@
-/*! skylinkjs - v0.6.19 - Fri Apr 07 2017 21:09:15 GMT+0800 (SGT) */
+/*! skylinkjs - v0.6.19 - Tue Apr 18 2017 11:32:28 GMT+0200 (CEST) */
 
 (function(globals) {
 
@@ -13047,8 +13047,6 @@ Skylink.prototype._throttle = function(func, prop, wait){
     func(false);
   }
 };
-
-
 Skylink.prototype.SOCKET_ERROR = {
   CONNECTION_FAILED: 0,
   RECONNECTION_FAILED: -1,
@@ -16578,7 +16576,7 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var self = this;
   var enableAudioSettings = {
     stereo: false,
@@ -16623,6 +16621,15 @@ Skylink.prototype.shareScreen = function (enableAudio, callback) {
         }
       }
     };
+
+    if (typeof mediaOptions === 'object') {
+      mediaOptions.video = mediaOptions.video || {};
+      mediaOptions.video.mediaSource = 'window';
+      settings.getUserMediaSettings = mediaOptions;
+    }
+    else if(typeof mediaOptions === 'function') {
+      callback = mediaOptions;
+    }
 
     var mediaAccessSuccessFn = function (stream) {
       self.off('mediaAccessError', mediaAccessErrorFn);
@@ -17436,6 +17443,7 @@ Skylink.prototype._handleEndedStreams = function (peerId, checkStreamId) {
     }
   }
 };
+
 Skylink.prototype._setSDPCodecParams = function(targetMid, sessionDescription) {
   var self = this;
 

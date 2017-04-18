@@ -1,4 +1,4 @@
-/*! skylinkjs - v0.6.19 - Fri Apr 07 2017 21:09:15 GMT+0800 (SGT) */
+/*! skylinkjs - v0.6.19 - Tue Apr 18 2017 11:32:28 GMT+0200 (CEST) */
 
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.io = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 
@@ -11333,9 +11333,9 @@ if(typeof exports !== 'undefined') {
 }
 
 AdapterJS.TEXT.EXTENSION = {
-  REQUIRE_INSTALLATION_FF: 'To enable screensharing you need to install the Skylink WebRTC tools Firefox Add-on.',
-  REQUIRE_INSTALLATION_CHROME: 'To enable screensharing you need to install the Skylink WebRTC tools Chrome Extension.',
-  REQUIRE_REFRESH: 'Please refresh this page after the Skylink WebRTC tools extension has been installed.',
+  REQUIRE_INSTALLATION_FF: 'To enable screensharing you need to install the Tobii Pro WebRTC tools Firefox Add-on.',
+  REQUIRE_INSTALLATION_CHROME: 'To enable screensharing you need to install the Tobii Pro WebRTC tools Chrome Extension.',
+  REQUIRE_REFRESH: 'Please refresh this page after the Tobii Pro WebRTC tools extension has been installed.',
   BUTTON_FF: 'Install Now',
   BUTTON_CHROME: 'Go to Chrome Web Store'
 };
@@ -11385,7 +11385,7 @@ AdapterJS.defineMediaSourcePolyfill = function () {
               if (['NotAllowedError', 'PermissionDeniedError', 'SecurityError', 'NotAllowedError'].indexOf(error.name) > -1 && window.parent.location.protocol === 'https:') {
                 AdapterJS.renderNotificationBar(AdapterJS.TEXT.EXTENSION.REQUIRE_INSTALLATION_FF,
                   AdapterJS.TEXT.EXTENSION.BUTTON_FF, function (e) {
-                  window.open('https://addons.mozilla.org/en-US/firefox/addon/skylink-webrtc-tools/', '_blank');
+                  window.open('https://addons.mozilla.org/en-US/firefox/addon/tobii-pro-screensharing/', '_blank');
                   if (e.target && e.target.parentElement && e.target.nextElementSibling &&
                     e.target.nextElementSibling.click) {
                     e.target.nextElementSibling.click();
@@ -11435,8 +11435,8 @@ AdapterJS.defineMediaSourcePolyfill = function () {
           if(!error) {
             updatedConstraints.video.mandatory = updatedConstraints.video.mandatory || {};
             updatedConstraints.video.mandatory.chromeMediaSource = 'desktop';
-            updatedConstraints.video.mandatory.maxWidth = window.screen.width > 1920 ? window.screen.width : 1920;
-            updatedConstraints.video.mandatory.maxHeight = window.screen.height > 1080 ? window.screen.height : 1080;
+            updatedConstraints.video.mandatory.maxWidth = updatedConstraints.video.mandatory.maxWidth || (window.screen.width > 1920 ? window.screen.width : 1920);
+            updatedConstraints.video.mandatory.maxHeight = updatedConstraints.video.mandatory.maxHeight || (window.screen.height > 1080 ? window.screen.height : 1080);	      
 
             if (sourceId) {
               updatedConstraints.video.mandatory.chromeMediaSourceId = sourceId;
@@ -11566,7 +11566,18 @@ AdapterJS.defineMediaSourcePolyfill = function () {
       iframe.isLoaded = true;
     };
 
-    iframe.src = 'https://cdn.temasys.com.sg/skylink/extensions/detectRTC.html';
+     // iframe.src = 'https://cdn.temasys.com.sg/skylink/extensions/detectRTC.html';
+    var scriptSource = (function() {
+      var scripts = document.getElementsByTagName('script'),
+          script = scripts[scripts.length - 1];
+       if (script.getAttribute.length !== undefined) {
+        return script.getAttribute('src')
+      }
+       return script.getAttribute('src', 2)
+    }());
+
+    var lastslash = scriptSource.lastIndexOf('/')+1;
+    iframe.src = scriptSource.substring(0, lastslash) + 'detectRTC.tobii.html';      
     iframe.style.display = 'none';
 
     (document.body || document.documentElement).appendChild(iframe);
@@ -11592,7 +11603,7 @@ if (typeof window.require !== 'function') {
   AdapterJS.defineMediaSourcePolyfill();
 }
 
-/*! skylinkjs - v0.6.19 - Fri Apr 07 2017 21:09:15 GMT+0800 (SGT) */
+/*! skylinkjs - v0.6.19 - Tue Apr 18 2017 11:32:28 GMT+0200 (CEST) */
 
 (function(globals) {
 
@@ -24641,8 +24652,6 @@ Skylink.prototype._throttle = function(func, prop, wait){
     func(false);
   }
 };
-
-
 Skylink.prototype.SOCKET_ERROR = {
   CONNECTION_FAILED: 0,
   RECONNECTION_FAILED: -1,
@@ -28172,7 +28181,7 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaOptions, callback) {
   var self = this;
   var enableAudioSettings = {
     stereo: false,
@@ -28217,6 +28226,15 @@ Skylink.prototype.shareScreen = function (enableAudio, callback) {
         }
       }
     };
+
+    if (typeof mediaOptions === 'object') {
+      mediaOptions.video = mediaOptions.video || {};
+      mediaOptions.video.mediaSource = 'window';
+      settings.getUserMediaSettings = mediaOptions;
+    }
+    else if(typeof mediaOptions === 'function') {
+      callback = mediaOptions;
+    }
 
     var mediaAccessSuccessFn = function (stream) {
       self.off('mediaAccessError', mediaAccessErrorFn);
@@ -29030,6 +29048,7 @@ Skylink.prototype._handleEndedStreams = function (peerId, checkStreamId) {
     }
   }
 };
+
 Skylink.prototype._setSDPCodecParams = function(targetMid, sessionDescription) {
   var self = this;
 
