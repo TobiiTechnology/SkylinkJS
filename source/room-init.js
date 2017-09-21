@@ -86,6 +86,8 @@ Skylink.prototype.READY_STATE_CHANGE = {
  *   <code>roomServer</code> configuration, contact our <a href="http://support.temasys.io">support portal</a>.</small>
  * @param {Number} XML_HTTP_REQUEST_ERROR      <small>Value <code>-1</code></small>
  *   The value of the failure code when requesting to Auth server has timed out.
+ * @param {Number} XML_HTTP_NO_REPONSE_ERROR      <small>Value <code>-2</code></small>
+ *   The value of the failure code when response from Auth server is empty or timed out.   
  * @param {Number} NO_SOCKET_IO                <small>Value <code>1</code></small>
  *   The value of the failure code when dependency <a href="http://socket.io/download/">Socket.IO client</a> is not loaded.
  *   <small>To resolve this, ensure that the Socket.IO client dependency is loaded before the Skylink SDK.
@@ -129,6 +131,7 @@ Skylink.prototype.READY_STATE_CHANGE_ERROR = {
   API_RETRIEVAL_FAILED: 4021,
   API_WRONG_ACCESS_DOMAIN: 5005,
   XML_HTTP_REQUEST_ERROR: -1,
+  XML_HTTP_NO_REPONSE_ERROR: -2,
   NO_SOCKET_IO: 1,
   NO_XMLHTTPREQUEST_SUPPORT: 2,
   NO_WEBRTC_SUPPORT: 3,
@@ -236,7 +239,7 @@ Skylink.prototype.generateUUID = function() {
  *   configuration is not honoured as Peers connected with MCU is similar as a forced TURN connection. The flags
  *   will act as if the value is <code>false</code> and ICE candidates will never be filtered regardless of the
  *   <code>options.filterCandidatesType</code> configuration.</small>
- * @param {Boolean} [options.usePublicSTUN=true] The flag if publicly available STUN ICE servers should
+ * @param {Boolean} [options.usePublicSTUN=false] The flag if publicly available STUN ICE servers should
  *   be used if <code>options.enableSTUNServer</code> is enabled.
  * @param {Boolean} [options.TURNServerTransport] <blockquote class="info">
  *   Note that configuring the protocol may not necessarily result in the desired network transports protocol
@@ -264,7 +267,12 @@ Skylink.prototype.generateUUID = function() {
  *   Note that this is mainly used for debugging purposes and that it is an experimental flag, so
  *   it may cause disruptions in connections or connectivity issues when toggled. </blockquote>
  *   The flag if video REMB feedback packets should be disabled in sending session descriptions.
- * @param {JSON} [options.credentials] The credentials used for authenticating App Key with
+ * @param {JSON} [options.credentials] <blockquote class="info">
+ *   Note that we strongly recommend developers to return the <code>options.credentials.duration</code>,
+ *   <code>options.credentials.startDateTime</code> and <code>options.defaultRoom</code> and generate the
+ *   <code>options.credentials.credentials</code> from a web server as secret shouldn't be exposed on client web app as
+ *   it poses a security risk itself.</blockquote>
+ *   The credentials used for authenticating App Key with
  *   credentials to retrieve the Room session token used for connection in <a href="#method_joinRoom">
  *   <code>joinRoom()</code> method</a>.
  *   <small>Note that switching of Rooms is not allowed when using credentials based authentication, unless
@@ -293,7 +301,7 @@ Skylink.prototype.generateUUID = function() {
  * @param {Boolean} [options.audioFallback=false] The flag if <a href="#method_getUserMedia">
  *   <code>getUserMedia()</code> method</a> should fallback to retrieve only audio Stream when
  *   retrieving audio and video Stream fails.
- * @param {Boolean} [options.forceSSL=false] The flag if HTTPS connections should be enforced
+ * @param {Boolean} [options.forceSSL=true] The flag if HTTPS connections should be enforced
  *   during request to Auth server and socket connections to Signaling server
  *   when accessing <code>window.location.protocol</code> value is <code>"http:"</code>.
  *   <small>By default, <code>"https:"</code> protocol connections uses HTTPS connections.</small>
@@ -320,11 +328,12 @@ Skylink.prototype.generateUUID = function() {
  *   <small>The value must not be <code>AUTO</code>.</small>
  *   [Rel: Skylink.VIDEO_CODEC]
  * @param {Number} [options.videoCodec.samplingRate] The video codec sampling to prefer to encode sending video data when available.
- * @param {Number} [options.socketTimeout=20000] The timeout for each attempts for socket connection
+ * @param {Number} [options.socketTimeout=7000] The timeout for each attempts for socket connection
  *   with the Signaling server to indicate that connection has timed out and has failed to establish.
  *   <small>Note that the mininum timeout value is <code>5000</code>. If less, this value will be <code>5000</code>.</small>
- *   <small>Note that it is recommended to use <code>12000</code> as the lowest timeout value if Peers are connecting
+ *   <small>Note that it is recommended to use <code>7000</code> as the lowest timeout value if Peers are connecting
  *   using Polling transports to prevent connection errors.</small>
+ * @param {Number} [options.apiTimeout=4000] The timeout to wait for response from Auth server.
  * @param {Boolean} [options.forceTURNSSL=false] <blockquote class="info">
  *   Note that currently Firefox does not support the TURNS protocol, and that if TURNS is required,
  *   TURN ICE servers using port <code>443</code> will be used instead.<br>
@@ -428,8 +437,9 @@ Skylink.prototype.generateUUID = function() {
  * @param {JSON} [options.codecParams.audio.opus] <blockquote class="info">
  *   Note that this is only applicable to OPUS audio codecs with a sampling rate of <code>48000</code> Hz (hertz).
  *   </blockquote> The OPUS audio codec parameters to configure.
- * @param {Boolean} [options.codecParams.audio.opus.stereo] The flag if OPUS audio codec stereo band
- *   should be configured for sending encoded audio data.
+ * @param {Boolean} [options.codecParams.audio.opus.stereo] The flag if OPUS audio codec is able to decode or receive stereo packets.
+ *   <small>When not provided, the default browser configuration is used.</small>
+ * @param {Boolean} [options.codecParams.audio.opus.sprop-stereo] The flag if OPUS audio codec is sending stereo packets.
  *   <small>When not provided, the default browser configuration is used.</small>
  * @param {Boolean} [options.codecParams.audio.opus.usedtx] <blockquote class="info">
  *   Note that this feature might not work depending on the browser support and implementation.</blockquote>
@@ -462,6 +472,8 @@ Skylink.prototype.generateUUID = function() {
  *   internals change.</blockquote> The User's priority weight to enforce User as offerer or answerer.
  * - When not provided, its value is <code>AUTO</code>.
  *   [Rel: Skylink.PRIORITY_WEIGHT_SCHEME]
+ * @param {Boolean} [options.useEdgeWebRTC=false] The flag to use Edge 15.x pre-1.0 WebRTC support.
+ * @param {Boolean} [options.enableSimultaneousTransfers=true] The flag to enable simultaneous data transfers.
  * @param {Function} [callback] The callback function fired when request has completed.
  *   <small>Function parameters signature is <code>function (error, success)</code></small>
  *   <small>Function request completion is determined by the <a href="#event_readyStateChange">
@@ -497,6 +509,7 @@ Skylink.prototype.generateUUID = function() {
  * @param {String|JSON} callback.success.audioCodec The configured value of the <code>options.audioCodec</code>.
  * @param {String|JSON} callback.success.videoCodec The configured value of the <code>options.videoCodec</code>.
  * @param {Number} callback.success.socketTimeout The configured value of the <code>options.socketTimeout</code>.
+ * @param {Number} callback.success.apiTimeout The configured value of the <code>options.apiTimeout</code>.
  * @param {Boolean} callback.success.forceTURNSSL The configured value of the <code>options.forceTURNSSL</code>.
  * @param {Boolean} callback.success.forceTURN The configured value of the <code>options.forceTURN</code>.
  * @param {Boolean} callback.success.usePublicSTUN The configured value of the <code>options.usePublicSTUN</code>.
@@ -510,6 +523,8 @@ Skylink.prototype.generateUUID = function() {
  * @param {JSON} callback.success.iceServer The configured value of the <code>options.iceServer</code>.
  *   <small>See the <code>.urls</code> property in this object for configured value if defined.</small>
  * @param {JSON|String} callback.success.socketServer The configured value of the <code>options.socketServer</code>.
+ * @param {Boolean} callback.success.useEdgeWebRTC The configured value of the <code>options.useEdgeWebRTC</code>.
+ * @param {Boolean} callback.success.enableSimultaneousTransfers The configured value of the <code>options.enableSimultaneousTransfers</code>.
  * @example
  *   // Example 1: Using CORS authentication and connection to default Room
  *   skylinkDemo(appKey, function (error, success) {
@@ -527,7 +542,7 @@ Skylink.prototype.generateUUID = function() {
  *       startDateTime = (new Date()).toISOString(),
  *       duration      = 1, // Allows only User session to stay for 1 hour
  *       appKeySecret  = "xxxxxxx",
- *       hash          = CryptoJS.HmacSHA1(defaultRoom + "_" + duration + "_" + startDateTime, appKeySecret);
+ *       hash          = CryptoJS.HmacSHA1(defaultRoom + "\_" + duration + "\_" + startDateTime, appKeySecret);
  *       credentials   = encodeURIComponent(hash.toString(CryptoJS.enc.Base64));
  *
  *   skylinkDemo({
@@ -597,13 +612,14 @@ Skylink.prototype.init = function(options, callback) {
   var enableTURNServer = true;
   var TURNTransport = self.TURN_TRANSPORT.ANY;
   var audioFallback = false;
-  var forceSSL = false;
-  var socketTimeout = 20000;
+  var forceSSL = true;
+  var socketTimeout = 7000;
+  var apiTimeout = 4000;
   var forceTURNSSL = false;
   var audioCodec = self.AUDIO_CODEC.AUTO;
   var videoCodec = self.VIDEO_CODEC.AUTO;
   var forceTURN = false;
-  var usePublicSTUN = true;
+  var usePublicSTUN = false;
   var disableVideoFecCodecs = false;
   var disableComfortNoiseCodec = false;
   var disableREMB = false;
@@ -626,6 +642,8 @@ Skylink.prototype.init = function(options, callback) {
     video: { h264: {}, vp8: {}, vp9: {} }
   };
   var priorityWeightScheme = self.PRIORITY_WEIGHT_SCHEME.AUTO;
+  var useEdgeWebRTC = false;
+  var enableSimultaneousTransfers = true;
 
   log.log('Provided init options:', options);
 
@@ -664,11 +682,12 @@ Skylink.prototype.init = function(options, callback) {
     // set the force ssl always option
     forceSSL = (typeof options.forceSSL === 'boolean') ?
       options.forceSSL : forceSSL;
-    // set the socket timeout option
-    socketTimeout = (typeof options.socketTimeout === 'number') ?
-      options.socketTimeout : socketTimeout;
     // set the socket timeout option to be above 5000
-    socketTimeout = (socketTimeout < 5000) ? 5000 : socketTimeout;
+    socketTimeout = (typeof options.socketTimeout === 'number' && socketTimeout < 5000 && socketTimeout > 0) ?
+      options.socketTimeout : socketTimeout;
+    // set the api timeout option
+    apiTimeout = (typeof options.apiTimeout === 'number' && options.apiTimeout > 0) ?
+      options.apiTimeout : apiTimeout;
     // set the force turn ssl always option
     forceTURNSSL = (typeof options.forceTURNSSL === 'boolean') ?
       options.forceTURNSSL : forceTURNSSL;
@@ -696,6 +715,13 @@ Skylink.prototype.init = function(options, callback) {
     // set the flag if MCU refreshConnection() should use renegotiation
     mcuUseRenegoRestart = (typeof options.mcuUseRenegoRestart === 'boolean') ?
       options.mcuUseRenegoRestart : mcuUseRenegoRestart;
+    // set the flag if edge 15.x uses the pre-1.0 webrtc implementation
+    useEdgeWebRTC = (typeof options.useEdgeWebRTC === 'boolean') ?
+      options.useEdgeWebRTC : useEdgeWebRTC;
+    // set the flag if simultaneous data transfers should be enabled
+    enableSimultaneousTransfers = (typeof options.enableSimultaneousTransfers === 'boolean') ?
+    options.enableSimultaneousTransfers : enableSimultaneousTransfers;
+
     // set the use of filtering ICE candidates
     if (typeof options.filterCandidatesType === 'object' && options.filterCandidatesType) {
       filterCandidatesType.host = (typeof options.filterCandidatesType.host === 'boolean') ?
@@ -822,6 +848,8 @@ Skylink.prototype.init = function(options, callback) {
           codecParams.audio.opus = {
             stereo: typeof options.codecParams.audio.opus.stereo === 'boolean' ?
               options.codecParams.audio.opus.stereo : null,
+            'sprop-stereo': typeof options.codecParams.audio.opus['sprop-stereo'] === 'boolean' ?
+              options.codecParams.audio.opus['sprop-stereo'] : null,
             usedtx: typeof options.codecParams.audio.opus.usedtx === 'boolean' ?
               options.codecParams.audio.opus.usedtx : null,
             useinbandfec: typeof options.codecParams.audio.opus.useinbandfec === 'boolean' ?
@@ -904,7 +932,7 @@ Skylink.prototype.init = function(options, callback) {
     }
   }
 
-  if (window.webrtcDetectedBrowser === 'edge') {
+  if (AdapterJS.webrtcDetectedBrowser === 'edge') {
     forceTURNSSL = false;
     TURNTransport = self.TURN_TRANSPORT.UDP;
     enableDataChannel = false;
@@ -936,6 +964,7 @@ Skylink.prototype.init = function(options, callback) {
   self._audioFallback = audioFallback;
   self._forceSSL = forceSSL;
   self._socketTimeout = socketTimeout;
+  self._apiTimeout = apiTimeout;
   self._forceTURNSSL = forceTURNSSL;
   self._selectedAudioCodec = audioCodec;
   self._selectedVideoCodec = videoCodec;
@@ -952,6 +981,8 @@ Skylink.prototype.init = function(options, callback) {
   self._socketServer = socketServer;
   self._codecParams = codecParams;
   self._priorityWeightScheme = priorityWeightScheme;
+  self._useEdgeWebRTC = useEdgeWebRTC;
+  self._enableSimultaneousTransfers = enableSimultaneousTransfers;
 
   log.log('Init configuration:', {
     serverUrl: self._path,
@@ -968,6 +999,7 @@ Skylink.prototype.init = function(options, callback) {
     audioFallback: self._audioFallback,
     forceSSL: self._forceSSL,
     socketTimeout: self._socketTimeout,
+    apiTimeout: self._apiTimeout,
     forceTURNSSL: self._forceTURNSSL,
     audioCodec: self._selectedAudioCodec,
     videoCodec: self._selectedVideoCodec,
@@ -983,7 +1015,9 @@ Skylink.prototype.init = function(options, callback) {
     iceServer: self._iceServer,
     socketServer: self._socketServer,
     codecParams: self._codecParams,
-    priorityWeightScheme: self._priorityWeightScheme
+    priorityWeightScheme: self._priorityWeightScheme,
+    useEdgeWebRTC: self._useEdgeWebRTC,
+    enableSimultaneousTransfers: self._enableSimultaneousTransfers
   });
   // trigger the readystate
   self._readyState = 0;
@@ -1014,6 +1048,7 @@ Skylink.prototype.init = function(options, callback) {
             audioFallback: self._audioFallback,
             forceSSL: self._forceSSL,
             socketTimeout: self._socketTimeout,
+            apiTimeout: self._apiTimeout,
             forceTURNSSL: self._forceTURNSSL,
             audioCodec: self._selectedAudioCodec,
             videoCodec: self._selectedVideoCodec,
@@ -1029,7 +1064,9 @@ Skylink.prototype.init = function(options, callback) {
             iceServer: self._iceServer,
             socketServer: self._socketServer,
             codecParams: self._codecParams,
-            priorityWeightScheme: self._priorityWeightScheme
+            priorityWeightScheme: self._priorityWeightScheme,
+            useEdgeWebRTC: self._useEdgeWebRTC,
+            enableSimultaneousTransfers: self._enableSimultaneousTransfers
           });
         } else if (readyState === self.READY_STATE_CHANGE.ERROR) {
           log.log([null, 'Socket', null, 'Firing callback. ' +
@@ -1038,7 +1075,7 @@ Skylink.prototype.init = function(options, callback) {
           hasTriggered = true;
           self.off('readyStateChange', readyStateChangeFn);
           callback({
-            error: new Error(error),
+            error: error.content instanceof Error ? error.content : (new Error(JSON.stringify(error.content))),
             errorCode: error.errorCode,
             status: error.status
           },null);
@@ -1061,69 +1098,99 @@ Skylink.prototype.init = function(options, callback) {
  */
 Skylink.prototype._requestServerInfo = function(method, url, callback, params) {
   var self = this;
-  // XDomainRequest is supported in IE8 - 9
-  var useXDomainRequest = typeof window.XDomainRequest === 'function' ||
-    typeof window.XDomainRequest === 'object';
+  var retries = 0;
 
-  self._socketUseXDR = useXDomainRequest;
-  var xhr;
-
-  // set force SSL option
+  // XDomainRequest is supported in IE8 - 9 for CORS connection.
+  self._socketUseXDR = typeof window.XDomainRequest === 'function' || typeof window.XDomainRequest === 'object';
   url = (self._forceSSL) ? 'https:' + url : url;
 
-  if (useXDomainRequest) {
-    log.debug([null, 'XMLHttpRequest', method, 'Using XDomainRequest. ' +
-      'XMLHttpRequest is now XDomainRequest'], {
-      agent: window.webrtcDetectedBrowser,
-      version: window.webrtcDetectedVersion
-    });
-    xhr = new XDomainRequest();
-    xhr.setContentType = function (contentType) {
-      xhr.contentType = contentType;
+  (function requestFn () {
+    var xhr = new XMLHttpRequest();
+    var completed = false;
+
+    if (self._socketUseXDR) {
+      log.debug([null, 'XMLHttpRequest', method, 'Using XDomainRequest for CORS authentication.']);
+      xhr = new XDomainRequest();
+      xhr.setContentType = function (contentType) {
+        xhr.contentType = contentType;
+      };
+    }
+
+    xhr.onload = function () {
+      if (completed) {
+        return;
+      }
+      completed = true;
+      var response = JSON.parse(xhr.responseText || xhr.response || '{}');
+      var status = xhr.status || 200;
+      log.debug([null, 'XMLHttpRequest', method, 'Received sessions parameters ->'], response);
+      callback(status, response);
     };
-  } else {
-    log.debug([null, 'XMLHttpRequest', method, 'Using XMLHttpRequest'], {
-      agent: window.webrtcDetectedBrowser,
-      version: window.webrtcDetectedVersion
-    });
-    xhr = new window.XMLHttpRequest();
-    xhr.setContentType = function (contentType) {
-      xhr.setRequestHeader('Content-type', contentType);
+  
+    xhr.onerror = function (error) {
+      if (completed) {
+        return;
+      }
+      completed = true;
+      log.error([null, 'XMLHttpRequest', method, 'Failed retrieving information with status ->'], xhr.status);
+
+      self._readyState = -1;
+      self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
+        status: xhr.status || null,
+        content: 'Network error occurred. (Status: ' + xhr.status + ')',
+        errorCode: self.READY_STATE_CHANGE_ERROR.XML_HTTP_REQUEST_ERROR
+      }, self._selectedRoom);
     };
-  }
 
-  xhr.onload = function () {
-    var response = xhr.responseText || xhr.response;
-    var status = xhr.status || 200;
-    log.debug([null, 'XMLHttpRequest', method, 'Received sessions parameters'],
-      JSON.parse(response || '{}'));
-    callback(status, JSON.parse(response || '{}'));
-  };
+    xhr.onprogress = function () {
+      log.debug([null, 'XMLHttpRequest', method, 'Retrieving information and config from webserver ->'], {
+        url: url,
+        params: params
+      });
+    };
 
-  xhr.onerror = function (error) {
-    log.error([null, 'XMLHttpRequest', method, 'Failed retrieving information:'],
-      { status: xhr.status });
-    self._readyState = -1;
-    self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
-      status: xhr.status || null,
-      content: 'Network error occurred. (Status: ' + xhr.status + ')',
-      errorCode: self.READY_STATE_CHANGE_ERROR.XML_HTTP_REQUEST_ERROR
-    }, self._selectedRoom);
-  };
+    try {
+      xhr.open(method, url, true);
+      if (params) {
+        xhr.setContentType('application/json;charset=UTF-8');
+        xhr.send(JSON.stringify(params));
+      } else {
+        xhr.send();
+      }
+    } catch (error) {
+      completed = true;
+      self._readyState = -1;
+      self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
+        status: xhr.status || null,
+        content: 'Failed starting XHR process.',
+        errorCode: self.READY_STATE_CHANGE_ERROR.XML_HTTP_REQUEST_ERROR
+      }, self._selectedRoom);
+      return;
+    }
 
-  xhr.onprogress = function () {
-    log.debug([null, 'XMLHttpRequest', method,
-      'Retrieving information and config from webserver. Url:'], url);
-    log.debug([null, 'XMLHttpRequest', method, 'Provided parameters:'], params);
-  };
+    setTimeout(function () {
+      if (completed) {
+        return;
+      }
+      completed = true;
+      xhr.onload = null;
+      xhr.onerror = null;
+      xhr.onprogress = null;
 
-  xhr.open(method, url, true);
-  if (params) {
-    xhr.setContentType('application/json;charset=UTF-8');
-    xhr.send(JSON.stringify(params));
-  } else {
-    xhr.send();
-  }
+      if (retries < 2) {
+        retries++;
+        requestFn();
+
+      } else {
+        self._readyState = -1;
+        self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
+          status: xhr.status || null,
+          content: 'Response timed out from API server',
+          errorCode: self.READY_STATE_CHANGE_ERROR.XML_HTTP_NO_REPONSE_ERROR
+        }, self._selectedRoom);
+      }
+    }, self._apiTimeout);
+  })();
 };
 
 /**
@@ -1182,8 +1249,8 @@ Skylink.prototype._parseInfo = function(info) {
 
   // set the socket ports
   this._socketPorts = {
-    'http:': info.httpPortList,
-    'https:': info.httpsPortList
+    'http:': Array.isArray(info.httpPortList) && info.httpPortList.length > 0 ? info.httpPortList : [80, 3000],
+    'https:': Array.isArray(info.httpsPortList) && info.httpsPortList.length > 0 ? info.httpsPortList : [443, 3443]
   };
 
   // use default bandwidth and media resolution provided by server
@@ -1206,16 +1273,7 @@ Skylink.prototype._parseInfo = function(info) {
 Skylink.prototype._loadInfo = function() {
   var self = this;
 
-  // check if adapterjs has been loaded already first or not
-  var adapter = (function () {
-    try {
-      return window.AdapterJS || AdapterJS;
-    } catch (error) {
-      return false;
-    }
-  })();
-
-  if (!(!!adapter ? typeof adapter.webRTCReady === 'function' : false)) {
+  if (typeof (globals.AdapterJS || window.AdapterJS || {}).webRTCReady !== 'function') {
     var noAdapterErrorMsg = 'AdapterJS dependency is not loaded or incorrect AdapterJS dependency is used';
     self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
       status: null,
@@ -1223,8 +1281,8 @@ Skylink.prototype._loadInfo = function() {
       errorCode: self.READY_STATE_CHANGE_ERROR.ADAPTER_NO_LOADED
     }, self._selectedRoom);
     return;
-  }
-  if (!window.io) {
+
+  } else if (!(globals.io || window.io)) {
     log.error('Socket.io not loaded. Please load socket.io');
     self._readyState = -1;
     self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
@@ -1233,8 +1291,8 @@ Skylink.prototype._loadInfo = function() {
       errorCode: self.READY_STATE_CHANGE_ERROR.NO_SOCKET_IO
     }, self._selectedRoom);
     return;
-  }
-  if (!window.XMLHttpRequest) {
+
+  } else if (!window.XMLHttpRequest) {
     log.error('XMLHttpRequest not supported. Please upgrade your browser');
     self._readyState = -1;
     self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
@@ -1243,8 +1301,8 @@ Skylink.prototype._loadInfo = function() {
       errorCode: self.READY_STATE_CHANGE_ERROR.NO_XMLHTTPREQUEST_SUPPORT
     }, self._selectedRoom);
     return;
-  }
-  if (!self._path) {
+
+  } else if (!self._path) {
     log.error('Skylink is not initialised. Please call init() first');
     self._readyState = -1;
     self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
@@ -1254,10 +1312,14 @@ Skylink.prototype._loadInfo = function() {
     }, self._selectedRoom);
     return;
   }
-  adapter.webRTCReady(function () {
-    self._isUsingPlugin = !!adapter.WebRTCPlugin.plugin && !!adapter.WebRTCPlugin.plugin.VERSION;
 
-    // Prevent empty object returned when constructing the RTCPeerConnection object
+  AdapterJS.webRTCReady(function () {
+    self._enableIceRestart = AdapterJS.webrtcDetectedBrowser === 'firefox' ?
+      AdapterJS.webrtcDetectedVersion >= 48 : true;
+    self._binaryChunkType = AdapterJS.webrtcDetectedBrowser === 'firefox' ?
+      self.DATA_TRANSFER_DATA_TYPE.BLOB : self.DATA_TRANSFER_DATA_TYPE.ARRAY_BUFFER;
+
+      // Prevent empty object returned when constructing the RTCPeerConnection object
     if (!(function () {
       try {
         var p = new window.RTCPeerConnection(null);
@@ -1267,7 +1329,7 @@ Skylink.prototype._loadInfo = function() {
         return false;
       }
     })()) {
-      if (window.RTCPeerConnection && self._isUsingPlugin) {
+      if (window.RTCPeerConnection && AdapterJS.webrtcDetectedType === 'plugin') {
         log.error('Plugin is not available. Please check plugin status.');
       } else {
         log.error('WebRTC not supported. Please upgrade your browser');
@@ -1275,18 +1337,13 @@ Skylink.prototype._loadInfo = function() {
       self._readyState = -1;
       self._trigger('readyStateChange', self.READY_STATE_CHANGE.ERROR, {
         status: null,
-        content: self._isUsingPlugin && window.RTCPeerConnection ? 'Plugin is not available' : 'WebRTC not available',
+        content: AdapterJS.webrtcDetectedType === 'plugin' && window.RTCPeerConnection ? 'Plugin is not available' : 'WebRTC not available',
         errorCode: self.READY_STATE_CHANGE_ERROR.NO_WEBRTC_SUPPORT
       }, self._selectedRoom);
       return;
     }
 
-    var getCodecsSupportCalled = false;
     self._getCodecsSupport(function (error) {
-      if (getCodecsSupportCalled) {
-        return;
-      }
-      getCodecsSupportCalled = true;
       if (error) {
         log.error(error);
         self._readyState = -1;
@@ -1358,6 +1415,7 @@ Skylink.prototype._initSelectedRoom = function(room, callback) {
     audioFallback: self._audioFallback,
     forceSSL: self._forceSSL,
     socketTimeout: self._socketTimeout,
+    apiTimeout: self._apiTimeout,
     forceTURNSSL: self._forceTURNSSL,
     audioCodec: self._selectedAudioCodec,
     videoCodec: self._selectedVideoCodec,
@@ -1373,7 +1431,9 @@ Skylink.prototype._initSelectedRoom = function(room, callback) {
     iceServer: self._iceServer ? self._iceServer.urls : null,
     socketServer: self._socketServer ? self._socketServer : null,
     codecParams: self._codecParams ? self._codecParams : null,
-    priorityWeightScheme: self._priorityWeightScheme ? self._priorityWeightScheme : null
+    priorityWeightScheme: self._priorityWeightScheme ? self._priorityWeightScheme : null,
+    useEdgeWebRTC: self._useEdgeWebRTC,
+    enableSimultaneousTransfers: self._enableSimultaneousTransfers
   };
   if (self._roomCredentials) {
     initOptions.credentials = {

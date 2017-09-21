@@ -1,7 +1,7 @@
 /**
  * <blockquote class="info">
  *   Note that this is used only for SDK developer purposes.<br>
- *   Current version: <code>0.1.1</code>
+ *   Current version: <code>0.1.4</code>
  * </blockquote>
  * The value of the current version of the Signaling socket message protocol.
  * @attribute SM_PROTOCOL_VERSION
@@ -9,7 +9,7 @@
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.SM_PROTOCOL_VERSION = '0.1.2.3';
+Skylink.prototype.SM_PROTOCOL_VERSION = '0.1.2.4';
 
 /**
  * Stores the list of socket messaging protocol types.
@@ -595,8 +595,8 @@ Skylink.prototype._approachEventHandler = function(message){
     type: self._SIG_MESSAGE_TYPE.ENTER,
     mid: self._user.sid,
     rid: self._room.id,
-    agent: window.webrtcDetectedBrowser,
-    version: (window.webrtcDetectedVersion || 0).toString(),
+    agent: AdapterJS.webrtcDetectedBrowser,
+    version: (AdapterJS.webrtcDetectedVersion || 0).toString(),
     os: window.navigator.platform,
     userInfo: self._getUserInfo(),
     receiveOnly: self.getPeerInfo().config.receiveOnly,
@@ -970,7 +970,7 @@ Skylink.prototype._inRoomHandler = function(message) {
   var self = this;
   log.log(['Server', null, message.type, 'User is now in the room and ' +
     'functionalities are now available. Config received:'], message.pc_config);
-  self._room.connection.peerConfig = self._setIceServers(message.pc_config);
+  self._room.connection.peerConfig = self._setIceServers((message.pc_config || {}).iceServers || []);
   self._inRoom = true;
   self._user.sid = message.sid;
   self._peerPriorityWeight = message.tieBreaker + (self._priorityWeightScheme === self.PRIORITY_WEIGHT_SCHEME.AUTO ?
@@ -997,8 +997,8 @@ Skylink.prototype._inRoomHandler = function(message) {
     type: self._SIG_MESSAGE_TYPE.ENTER,
     mid: self._user.sid,
     rid: self._room.id,
-    agent: window.webrtcDetectedBrowser,
-    version: (window.webrtcDetectedVersion || 0).toString(),
+    agent: AdapterJS.webrtcDetectedBrowser,
+    version: (AdapterJS.webrtcDetectedVersion || 0).toString(),
     os: window.navigator.platform,
     userInfo: self._getUserInfo(),
     receiveOnly: self.getPeerInfo().config.receiveOnly,
@@ -1078,8 +1078,14 @@ Skylink.prototype._enterHandler = function(message) {
 
   log.log([targetMid, 'RTCPeerConnection', null, 'Peer "enter" received ->'], message);
 
-  if (targetMid !== 'MCU' && self._parentId && self._parentId === targetMid) {
-    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "enter" for parentId case ->'], message);
+  // Ignore if: User is publishOnly and MCU is enabled
+  //          : User is parent and parentId is defined and matches
+  //          : User is child and parent matches
+  // Don't if : Is MCU
+  if (targetMid !== 'MCU' && ((self._parentId && self._parentId === targetMid) ||
+    (self._hasMCU && self._publishOnly) || (message.parentId && self._user && self._user.sid &&
+    message.parentId === self._user.sid))) {
+    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "enter" for parentId or publishOnly case ->'], message);
     return;
   }
 
@@ -1124,8 +1130,8 @@ Skylink.prototype._enterHandler = function(message) {
       enableIceTrickle: self._enableIceTrickle,
       enableDataChannel: self._enableDataChannel,
       enableIceRestart: self._enableIceRestart,
-      agent: window.webrtcDetectedBrowser,
-      version: (window.webrtcDetectedVersion || 0).toString(),
+      agent: AdapterJS.webrtcDetectedBrowser,
+      version: (AdapterJS.webrtcDetectedVersion || 0).toString(),
       receiveOnly: self.getPeerInfo().config.receiveOnly,
       os: window.navigator.platform,
       userInfo: self._getUserInfo(targetMid),
@@ -1237,8 +1243,14 @@ Skylink.prototype._restartHandler = function(message){
     return;
   }
 
-  if (targetMid !== 'MCU' && self._parentId && self._parentId === targetMid) {
-    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "restart" for parentId case ->'], message);
+  // Ignore if: User is publishOnly and MCU is enabled
+  //          : User is parent and parentId is defined and matches
+  //          : User is child and parent matches
+  // Don't if : Is MCU
+  if (targetMid !== 'MCU' && ((self._parentId && self._parentId === targetMid) ||
+    (self._hasMCU && self._publishOnly) || (message.parentId && self._user && self._user.sid &&
+    message.parentId === self._user.sid))) {
+    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "restart" for parentId or publishOnly case ->'], message);
     return;
   }
 
@@ -1281,8 +1293,8 @@ Skylink.prototype._restartHandler = function(message){
       type: self._SIG_MESSAGE_TYPE.RESTART,
       mid: self._user.sid,
       rid: self._room.id,
-      agent: window.webrtcDetectedBrowser,
-      version: (window.webrtcDetectedVersion || 0).toString(),
+      agent: AdapterJS.webrtcDetectedBrowser,
+      version: (AdapterJS.webrtcDetectedVersion || 0).toString(),
       os: window.navigator.platform,
       userInfo: self._getUserInfo(targetMid),
       target: targetMid,
@@ -1368,8 +1380,14 @@ Skylink.prototype._welcomeHandler = function(message) {
 
   log.log([targetMid, 'RTCPeerConnection', null, 'Peer "welcome" received ->'], message);
 
-  if (targetMid !== 'MCU' && self._parentId && self._parentId === targetMid) {
-    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "welcome" for parentId case ->'], message);
+  // Ignore if: User is publishOnly and MCU is enabled
+  //          : User is parent and parentId is defined and matches
+  //          : User is child and parent matches
+  // Don't if : Is MCU
+  if (targetMid !== 'MCU' && ((self._parentId && self._parentId === targetMid) ||
+    (self._hasMCU && self._publishOnly) || (message.parentId && self._user && self._user.sid &&
+    message.parentId === self._user.sid))) {
+    log.warn([targetMid, 'RTCPeerConnection', null, 'Discarding "welcome" for parentId or publishOnly case ->'], message);
     return;
   }
 
@@ -1435,8 +1453,8 @@ Skylink.prototype._welcomeHandler = function(message) {
         enableDataChannel: self._enableDataChannel,
         enableIceRestart: self._enableIceRestart,
         receiveOnly: self.getPeerInfo().config.receiveOnly,
-        agent: window.webrtcDetectedBrowser,
-        version: (window.webrtcDetectedVersion || 0).toString(),
+        agent: AdapterJS.webrtcDetectedBrowser,
+        version: (AdapterJS.webrtcDetectedVersion || 0).toString(),
         os: window.navigator.platform,
         userInfo: self._getUserInfo(targetMid),
         target: targetMid,
@@ -1524,10 +1542,10 @@ Skylink.prototype._offerHandler = function(message) {
   log.log([targetMid, null, message.type, 'Received offer from peer. ' +
     'Session description:'], clone(message));
 
-  var offer = new RTCSessionDescription({
+  var offer = {
     type: 'offer',
     sdp: self._hasMCU ? message.sdp.replace(/\r\n/g, '\n').split('\n').join('\r\n') : message.sdp
-  });
+  };
   log.log([targetMid, 'RTCSessionDescription', message.type,
     'Session description object created'], offer);
 
@@ -1538,6 +1556,7 @@ Skylink.prototype._offerHandler = function(message) {
   offer.sdp = self._removeSDPCodecs(targetMid, offer);
   offer.sdp = self._removeSDPREMBPackets(targetMid, offer);
   offer.sdp = self._handleSDPConnectionSettings(targetMid, offer, 'remote');
+  offer.sdp = self._removeSDPUnknownAptRtx(targetMid, offer);
 
   log.log([targetMid, 'RTCSessionDescription', message.type, 'Updated remote offer ->'], offer.sdp);
 
@@ -1561,19 +1580,23 @@ Skylink.prototype._offerHandler = function(message) {
 
   pc.processingRemoteSDP = true;
 
-  // Edge FIXME problem: Add stream only at offer/answer end
-  if (window.webrtcDetectedBrowser === 'edge' && (!self._hasMCU || targetMid === 'MCU')) {
-    self._addLocalMediaStreams(targetMid);
+  if (message.userInfo) {
+    self._trigger('peerUpdated', targetMid, self.getPeerInfo(targetMid), false);
   }
 
-  pc.setRemoteDescription(offer, function() {
+  self._parseSDPMediaStreamIDs(targetMid, offer);
+
+  var onSuccessCbFn = function() {
     log.debug([targetMid, 'RTCSessionDescription', message.type, 'Remote description set']);
     pc.setOffer = 'remote';
     pc.processingRemoteSDP = false;
+
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.OFFER, targetMid);
     self._addIceCandidateFromQueue(targetMid);
     self._doAnswer(targetMid);
-  }, function(error) {
+  };
+
+  var onErrorCbFn = function(error) {
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
 
     pc.processingRemoteSDP = false;
@@ -1583,7 +1606,9 @@ Skylink.prototype._offerHandler = function(message) {
       state: pc.signalingState,
       offer: offer
     });
-  });
+  };
+
+  pc.setRemoteDescription(new RTCSessionDescription(offer), onSuccessCbFn, onErrorCbFn);
 };
 
 
@@ -1715,10 +1740,10 @@ Skylink.prototype._answerHandler = function(message) {
     self._peerInformations[targetMid].userData = userInfo.userData;
   }
 
-  var answer = new RTCSessionDescription({
+  var answer = {
     type: 'answer',
     sdp: self._hasMCU ? message.sdp.replace(/\r\n/g, '\n').split('\n').join('\r\n') : message.sdp
-  });
+  };
 
   log.log([targetMid, 'RTCSessionDescription', message.type,
     'Session description object created'], answer);
@@ -1742,6 +1767,7 @@ Skylink.prototype._answerHandler = function(message) {
   answer.sdp = self._removeSDPCodecs(targetMid, answer);
   answer.sdp = self._removeSDPREMBPackets(targetMid, answer);
   answer.sdp = self._handleSDPConnectionSettings(targetMid, answer, 'remote');
+  answer.sdp = self._removeSDPUnknownAptRtx(targetMid, answer);
 
   log.log([targetMid, 'RTCSessionDescription', message.type, 'Updated remote answer ->'], answer.sdp);
 
@@ -1766,10 +1792,17 @@ Skylink.prototype._answerHandler = function(message) {
 
   pc.processingRemoteSDP = true;
 
-  pc.setRemoteDescription(answer, function() {
+  if (message.userInfo) {
+    self._trigger('peerUpdated', targetMid, self.getPeerInfo(targetMid), false);
+  }
+
+  self._parseSDPMediaStreamIDs(targetMid, answer);
+
+  var onSuccessCbFn = function() {
     log.debug([targetMid, null, message.type, 'Remote description set']);
     pc.setAnswer = 'remote';
     pc.processingRemoteSDP = false;
+
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ANSWER, targetMid);
     self._addIceCandidateFromQueue(targetMid);
 
@@ -1782,8 +1815,9 @@ Skylink.prototype._answerHandler = function(message) {
       log.warn([targetMid, 'RTCPeerConnection', null, 'Closing all datachannels as they were rejected.']);
       self._closeDataChannel(targetMid);
     }
+  };
 
-  }, function(error) {
+  var onErrorCbFn = function(error) {
     self._trigger('handshakeProgress', self.HANDSHAKE_PROGRESS.ERROR, targetMid, error);
 
     pc.processingRemoteSDP = false;
@@ -1793,7 +1827,9 @@ Skylink.prototype._answerHandler = function(message) {
       state: pc.signalingState,
       answer: answer
     });
-  });
+  };
+
+  pc.setRemoteDescription(new RTCSessionDescription(answer), onSuccessCbFn, onErrorCbFn);
 };
 
 /**
@@ -1804,8 +1840,8 @@ Skylink.prototype._answerHandler = function(message) {
  * @since 0.6.16
  */
 Skylink.prototype._isLowerThanVersion = function (agentVer, requiredVer) {
-  var partsA = agentVer.split('.');
-  var partsB = requiredVer.split('.');
+  var partsA = (agentVer || '').split('.');
+  var partsB = (requiredVer || '').split('.');
 
   for (var i = 0; i < partsB.length; i++) {
     if (parseInt(partsA[i] || '0', 10) < parseInt(partsB[i] || '0', 10)) {

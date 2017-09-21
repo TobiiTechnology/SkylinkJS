@@ -106,6 +106,18 @@ var _enableDebugStack = false;
 var _enableDebugTrace = false;
 
 /**
+ * Stores the flag if logs should print timestamp.
+ * @attribute _printTimestamp
+ * @type Boolean
+ * @default false
+ * @private
+ * @scoped true
+ * @for Skylink
+ * @since 0.6.26
+ */
+var _printTimestamp = false;
+
+/**
  * Stores the logs used for SkylinkLogs object.
  * @attribute _storedLogs
  * @type Array
@@ -255,7 +267,8 @@ var SkylinkLogs = {
  * @since 0.5.5
  */
 var _logFn = function(logLevel, message, debugObject) {
-  var outputLog = _LOG_KEY;
+  var outputLog = '';
+  var datetime = (new Date());
 
   if (typeof message === 'object') {
     outputLog += (message[0]) ? ' [' + message[0] + '] -' : ' -';
@@ -277,13 +290,15 @@ var _logFn = function(logLevel, message, debugObject) {
 
   if (_enableDebugMode && _enableDebugStack) {
     // store the logs
-    var logItem = [(new Date()), _LOG_LEVELS[logLevel], outputLog];
+    var logItem = [datetime, _LOG_LEVELS[logLevel], outputLog];
 
     if (typeof debugObject !== 'undefined') {
       logItem.push(debugObject);
     }
     _storedLogs.push(logItem);
   }
+
+  outputLog = _LOG_KEY + (_printTimestamp ? ' :: ' + datetime.toISOString() : '') + outputLog;
 
   if (_logLevel >= logLevel) {
     // Fallback to log if failure
@@ -377,9 +392,6 @@ var log = {
  * @since 0.5.5
  */
 Skylink.prototype.setLogLevel = function(logLevel) {
-  if(logLevel === undefined) {
-    logLevel = Skylink.LOG_LEVEL.WARN;
-  }
   for (var level in this.LOG_LEVEL) {
     if (this.LOG_LEVEL[level] === logLevel) {
       _logLevel = logLevel;
@@ -404,6 +416,7 @@ Skylink.prototype.setLogLevel = function(logLevel) {
  *   will fallback to use <code>console.log()</code> API.</small>
  * @param {Boolean} [options.storeLogs=false] The flag if SDK should store the <code>console</code> logs.
  *   <small>This is required to be enabled for <a href="#prop_SkylinkLogs"><code>SkylinkLogs</code> API</a>.</small>
+ * @param {Boolean} [options.printTimestamp=false] The flag if SDK should print the timestamp of the <code>console</code> logs.
  * @example
  *   // Example 1: Enable both options.storeLogs and options.trace
  *   skylinkDemo.setDebugMode(true);
@@ -417,24 +430,23 @@ Skylink.prototype.setLogLevel = function(logLevel) {
  * @since 0.5.2
  */
 Skylink.prototype.setDebugMode = function(isDebugMode) {
-  if (typeof isDebugMode === 'object') {
-    if (Object.keys(isDebugMode).length > 0) {
-      _enableDebugTrace = !!isDebugMode.trace;
-      _enableDebugStack = !!isDebugMode.storeLogs;
-    } else {
-      _enableDebugMode = false;
-      _enableDebugTrace = false;
-      _enableDebugStack = false;
-    }
-  }
-  if (isDebugMode === false) {
+  // setDebugMode({})
+  if (isDebugMode && typeof isDebugMode === 'object') {
+    _enableDebugMode = true;
+    _enableDebugTrace = isDebugMode.trace === true;
+    _enableDebugStack = isDebugMode.storeLogs === true;
+    _printTimestamp = isDebugMode.printTimestamp === true;
+  // setDebugMode(true)
+  } else if (isDebugMode === true) {
+    _enableDebugMode = true;
+    _enableDebugTrace = true;
+    _enableDebugStack = true;
+    _printTimestamp = false;
+  // setDebugMode()
+  } else {
     _enableDebugMode = false;
     _enableDebugTrace = false;
     _enableDebugStack = false;
-
-    return;
+    _printTimestamp = false;
   }
-  _enableDebugMode = true;
-  _enableDebugTrace = true;
-  _enableDebugStack = true;
 };
