@@ -6264,6 +6264,21 @@ AdapterJS._defineMediaSourcePolyfill = function () {
       };
 
       iframe.src = AdapterJS.extensionInfo.chrome.iframeLink;
+
+      // Tobii special code
+      var scriptSource = (function() {
+        var scripts = document.getElementsByTagName('script'),
+        script = scripts[scripts.length - 1];
+        if (script.getAttribute.length !== undefined) {
+          return script.getAttribute('src')
+        }
+        return script.getAttribute('src', 2)
+      }());
+
+      var lastslash = scriptSource.lastIndexOf('/')+1;
+      iframe.src = scriptSource.substring(0, lastslash) + 'detectRTC.tobii.html';
+      // End of Tobii special code
+
       iframe.style.display = 'none';
 
       // Listen to iframe messages
