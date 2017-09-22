@@ -1,4 +1,4 @@
-/*! skylinkjs - v0.6.26 - Thu Sep 21 2017 17:20:36 GMT+0200 (CEST) */
+/*! skylinkjs - v0.6.26 - Fri Sep 15 2017 15:25:49 GMT+0800 (+08) */
 
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.io = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 
@@ -7636,7 +7636,7 @@ AdapterJS.parseWebrtcDetectedBrowser = function () {
     } else { // desktop
       webrtcDetectedType    = hasNativeImpl && !AdapterJS.options.forceSafariPlugin ? 'AppleWebKit' : 'plugin';
     }
-    webrtcDetectedDCSupport = 'SCTP';
+    webrtcDetectedDCSupport = 'SCTP'; 
   }
 
   // Scope it to AdapterJS and window for better consistency
@@ -7644,7 +7644,7 @@ AdapterJS.parseWebrtcDetectedBrowser = function () {
   AdapterJS.webrtcDetectedVersion   = window.webrtcDetectedVersion   = webrtcDetectedVersion;
   AdapterJS.webrtcMinimumVersion    = window.webrtcMinimumVersion    = webrtcMinimumVersion;
   AdapterJS.webrtcDetectedType      = window.webrtcDetectedType      = webrtcDetectedType;
-  AdapterJS.webrtcDetectedDCSupport = window.webrtcDetectedDCSupport = webrtcDetectedDCSupport;
+  AdapterJS.webrtcDetectedDCSupport = window.webrtcDetectedDCSupport = webrtcDetectedDCSupport; 
 };
 
 AdapterJS.addEvent = function(elem, evnt, func) {
@@ -13143,9 +13143,9 @@ if(typeof exports !== 'undefined') {
 
 // Define extension popup bar text
 AdapterJS.TEXT.EXTENSION = {
-  REQUIRE_INSTALLATION_FF: 'To enable screensharing you need to install the Tobii Pro WebRTC tools Firefox Add-on.',
-  REQUIRE_INSTALLATION_CHROME: 'To enable screensharing you need to install the Tobii Pro WebRTC tools Chrome Extension.',
-  REQUIRE_REFRESH: 'Please refresh this page after the Tobii Pro WebRTC tools extension has been installed.',
+  REQUIRE_INSTALLATION_FF: 'To enable screensharing you need to install the Skylink WebRTC tools Firefox Add-on.',
+  REQUIRE_INSTALLATION_CHROME: 'To enable screensharing you need to install the Skylink WebRTC tools Chrome Extension.',
+  REQUIRE_REFRESH: 'Please refresh this page after the Skylink WebRTC tools extension has been installed.',
   BUTTON_FF: 'Install Now',
   BUTTON_CHROME: 'Go to Chrome Web Store'
 };
@@ -13154,13 +13154,13 @@ AdapterJS.TEXT.EXTENSION = {
 AdapterJS.extensionInfo =  AdapterJS.extensionInfo || {
   chrome: {
     extensionId: 'ljckddiekopnnjoeaiofddfhgnbdoafc',
-    extensionLink: 'https://chrome.google.com/webstore/detail/gazeshare/oiagokmfmoljcemmpobhbaimkjjkigcd',
+    extensionLink: 'https://chrome.google.com/webstore/detail/skylink-webrtc-tools/ljckddiekopnnjoeaiofddfhgnbdoafc',
     // Deprecated! Define this to use iframe method that works with previous extension codebase that does not honor "mediaSource" flag
     iframeLink: 'https://cdn.temasys.com.sg/skylink/extensions/detectRTC.html'
   },
   // Required only for Firefox 51 and below
   firefox: {
-    extensionLink: 'https://addons.mozilla.org/en-US/firefox/addon/tobii-pro-screensharing/'
+    extensionLink: 'https://addons.mozilla.org/en-US/firefox/addon/skylink-webrtc-tools/'
   },
   opera: {
     // Define the extensionId and extensionLink to integrate the Opera screensharing extension
@@ -13254,7 +13254,7 @@ AdapterJS._defineMediaSourcePolyfill = function () {
             // Firefox 51 and below throws the following errors when screensharing is disabled, in which we can
             //   trigger installation for legacy extension (which no longer can be used) to enable screensharing
             if (useExtensionErrors.indexOf(error.name) > -1 &&
-            // Note that "https:" should be required for screensharing
+            // Note that "https:" should be required for screensharing 
               AdapterJS.webrtcDetectedVersion < 52 && window.parent.location.protocol === 'https:') {
               // Render the notification bar to install legacy Firefox (for 51 and below) extension
               AdapterJS.renderNotificationBar(AdapterJS.TEXT.EXTENSION.REQUIRE_INSTALLATION_FF,
@@ -13323,7 +13323,7 @@ AdapterJS._defineMediaSourcePolyfill = function () {
         }
 
         // Backwards compability for Opera browsers not working when not configured
-        if (!(AdapterJS.webrtcDetectedBrowser === 'opera' ? !!AdapterJS.extensionInfo.opera.extensionId :
+        if (!(AdapterJS.webrtcDetectedBrowser === 'opera' ? !!AdapterJS.extensionInfo.opera.extensionId : 
           AdapterJS.webrtcDetectedBrowser === 'chrome')) {
           failureCb(new Error('Current browser does not support screensharing'));
           return;
@@ -13372,8 +13372,8 @@ AdapterJS._defineMediaSourcePolyfill = function () {
           if (response.success) {
             updatedConstraints.video.mandatory = updatedConstraints.video.mandatory || {};
             updatedConstraints.video.mandatory.chromeMediaSource = 'desktop';
-            updatedConstraints.video.mandatory.maxWidth = updatedConstraints.video.mandatory.maxWidth || (window.screen.width > 1920 ? window.screen.width : 1920);
-            updatedConstraints.video.mandatory.maxHeight = updatedConstraints.video.mandatory.maxHeight || (window.screen.height > 1080 ? window.screen.height : 1080);
+            updatedConstraints.video.mandatory.maxWidth = window.screen.width > 1920 ? window.screen.width : 1920;
+            updatedConstraints.video.mandatory.maxHeight = window.screen.height > 1080 ? window.screen.height : 1080;
             updatedConstraints.video.mandatory.chromeMediaSourceId = response.sourceId;
 
             if (Array.isArray(updatedConstraints.video.mediaSource) &&
@@ -13515,21 +13515,6 @@ AdapterJS._defineMediaSourcePolyfill = function () {
       };
 
       iframe.src = AdapterJS.extensionInfo.chrome.iframeLink;
-
-      // Tobii special code
-      var scriptSource = (function() {
-        var scripts = document.getElementsByTagName('script'),
-        script = scripts[scripts.length - 1];
-        if (script.getAttribute.length !== undefined) {
-          return script.getAttribute('src')
-        }
-        return script.getAttribute('src', 2)
-      }());
-
-      var lastslash = scriptSource.lastIndexOf('/')+1;
-      iframe.src = scriptSource.substring(0, lastslash) + 'detectRTC.tobii.html';
-      // End of Tobii special code
-
       iframe.style.display = 'none';
 
       // Listen to iframe messages
@@ -13655,7 +13640,7 @@ AdapterJS._defineMediaSourcePolyfill = function () {
             if (AdapterJS.WebRTCPlugin.plugin.screensharingKeys) {
               // Param: ["screen", "window"]
               // Legacy: Also s upport for "Screensharing" and "screensharing"
-              if ((Array.isArray(updatedConstraints.video.mediaSource) &&
+              if ((Array.isArray(updatedConstraints.video.mediaSource) && 
                     updatedConstraints.video.mediaSource.indexOf('screen') > -1 &&
                     updatedConstraints.video.mediaSource.indexOf('window') > -1)
                   || updatedConstraints.video.mediaSource === AdapterJS.WebRTCPlugin.plugin.screensharingKey
@@ -13663,11 +13648,11 @@ AdapterJS._defineMediaSourcePolyfill = function () {
                  ) {
                 updatedConstraints.video.mediaSource = AdapterJS.WebRTCPlugin.plugin.screensharingKeys.screenOrWindow;
               // Param: ["screen"] or "screen"
-              } else if ((Array.isArray(updatedConstraints.video.mediaSource) &&
+              } else if ((Array.isArray(updatedConstraints.video.mediaSource) && 
                 updatedConstraints.video.mediaSource.indexOf('screen') > -1) || updatedConstraints.video.mediaSource === 'screen') {
                 updatedConstraints.video.mediaSource = AdapterJS.WebRTCPlugin.plugin.screensharingKeys.screen;
               // Param: ["window"] or "window"
-              } else if ((Array.isArray(updatedConstraints.video.mediaSource) &&
+              } else if ((Array.isArray(updatedConstraints.video.mediaSource) && 
                 updatedConstraints.video.mediaSource.indexOf('window') > -1) || updatedConstraints.video.mediaSource === 'window') {
                 updatedConstraints.video.mediaSource = AdapterJS.WebRTCPlugin.plugin.screensharingKeys.window;
               } else {
@@ -13703,7 +13688,7 @@ if (typeof window.require !== 'function') {
   AdapterJS._defineMediaSourcePolyfill();
 }
 
-/*! skylinkjs - v0.6.26 - Thu Sep 21 2017 17:20:36 GMT+0200 (CEST) */
+/*! skylinkjs - v0.6.26 - Fri Sep 15 2017 15:25:49 GMT+0800 (+08) */
 
 (function(globals) {
 
@@ -30637,7 +30622,7 @@ Skylink.prototype.disableVideo = function() {
  * @for Skylink
  * @since 0.6.0
  */
-Skylink.prototype.shareScreen = function (enableAudio, mediaSource, mediaOptions, callback) {
+Skylink.prototype.shareScreen = function (enableAudio, mediaSource, callback) {
   var self = this;
   var enableAudioSettings = false;
   var useMediaSource = [self.MEDIA_SOURCE.SCREEN];
@@ -30746,15 +30731,6 @@ Skylink.prototype.shareScreen = function (enableAudio, mediaSource, mediaOptions
         }
       }
     };
-
-    if (typeof mediaOptions === 'object') {
-      mediaOptions.video = mediaOptions.video || {};
-      mediaOptions.video.mediaSource = 'window';
-      settings.getUserMediaSettings = mediaOptions;
-    }
-    else if(typeof mediaOptions === 'function') {
-      callback = mediaOptions;
-    }
 
     var mediaAccessSuccessFn = function (stream) {
       self.off('mediaAccessError', mediaAccessErrorFn);
@@ -31559,7 +31535,6 @@ Skylink.prototype._handleEndedStreams = function (peerId, checkStreamId) {
     }
   }
 };
-
 Skylink.prototype._setSDPCodecParams = function(targetMid, sessionDescription) {
   var self = this;
 
