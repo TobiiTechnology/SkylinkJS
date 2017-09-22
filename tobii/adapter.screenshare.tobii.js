@@ -5902,7 +5902,7 @@ AdapterJS.TEXT.EXTENSION = {
 // Define extension settings
 AdapterJS.extensionInfo =  AdapterJS.extensionInfo || {
   chrome: {
-    extensionId: 'ljckddiekopnnjoeaiofddfhgnbdoafc',
+    extensionId: 'oiagokmfmoljcemmpobhbaimkjjkigcd',
     extensionLink: 'https://chrome.google.com/webstore/detail/gazeshare/oiagokmfmoljcemmpobhbaimkjjkigcd',
     // Deprecated! Define this to use iframe method that works with previous extension codebase that does not honor "mediaSource" flag
     iframeLink: 'https://cdn.temasys.com.sg/skylink/extensions/detectRTC.html'
@@ -6263,7 +6263,8 @@ AdapterJS._defineMediaSourcePolyfill = function () {
         states.error = true;
       };
 
-      iframe.src = AdapterJS.extensionInfo.chrome.iframeLink;
+      // Commented out in favour of Tobii special code
+      // iframe.src = AdapterJS.extensionInfo.chrome.iframeLink;
 
       // Tobii special code
       var scriptSource = (function() {
