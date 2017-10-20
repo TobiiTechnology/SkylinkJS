@@ -22,26 +22,6 @@
     "socket.io-client": "1.4.8",
     "adapterjs": "0.15.0"
   },
-  "devDependencies": {
-    "connect": "2.x.x",
-    "grunt": "^0.4.5",
-    "grunt-cli": "^0.1.13",
-    "grunt-contrib-clean": "^0.6.0",
-    "grunt-contrib-compress": "^0.13.0",
-    "grunt-contrib-concat": "^0.5.0",
-    "grunt-contrib-copy": "^0.7.0",
-    "grunt-contrib-jshint": "^0.10.0",
-    "grunt-contrib-uglify": "^0.6.0",
-    "grunt-contrib-yuidoc": "^0.5.2",
-    "grunt-replace": "^0.7.9",
-    "grunt-tape": "^0.0.2",
-    "load-grunt-tasks": "^3.1.0",
-    "tape": "^4.2.2",
-    "yuidocjs": "^0.3.50",
-    "crypto-js": "*",
-    "seq-queue": "*",
-    "npm-publish-git": "git://github.com/andreineculau/npm-publish-git.git#v0.0.4"
-  },
   "engines": {
     "node": ">=0.10.26",
     "npm": ">=1.4.6"
