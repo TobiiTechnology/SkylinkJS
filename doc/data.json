@@ -9907,7 +9907,7 @@
         },
         {
             "file": "source/stream-media.js",
-            "line": 1561,
+            "line": 1552,
             "description": "<blockquote class=\"info\">\n  Note that broadcasted events from <a href=\"#method_muteStream\"><code>muteStream()</code> method</a>,\n  <a href=\"#method_stopStream\"><code>stopStream()</code> method</a>,\n  <a href=\"#method_stopScreen\"><code>stopScreen()</code> method</a>,\n  <a href=\"#method_sendMessage\"><code>sendMessage()</code> method</a>,\n  <a href=\"#method_unlockRoom\"><code>unlockRoom()</code> method</a> and\n  <a href=\"#method_lockRoom\"><code>lockRoom()</code> method</a> may be queued when\n  sent within less than an interval.\n</blockquote>\nFunction that stops <a href=\"#method_shareScreen\"><code>shareScreen()</code> Stream</a>.",
             "itemtype": "method",
             "name": "stopScreen",
@@ -9920,7 +9920,7 @@
         },
         {
             "file": "source/stream-media.js",
-            "line": 1620,
+            "line": 1611,
             "description": "Function that handles the muting of Stream audio and video tracks.",
             "itemtype": "method",
             "name": "_muteStreams",
@@ -9931,7 +9931,7 @@
         },
         {
             "file": "source/stream-media.js",
-            "line": 1678,
+            "line": 1669,
             "description": "Function that handles stopping the Stream streaming.",
             "itemtype": "method",
             "name": "_stopStreams",
@@ -9942,7 +9942,7 @@
         },
         {
             "file": "source/stream-media.js",
-            "line": 1751,
+            "line": 1742,
             "description": "Function that parses the <code>getUserMedia()</code> settings provided.",
             "itemtype": "method",
             "name": "_parseStreamSettings",
@@ -9953,7 +9953,7 @@
         },
         {
             "file": "source/stream-media.js",
-            "line": 1904,
+            "line": 1895,
             "description": "Function that handles the native <code>navigator.getUserMedia()</code> API success callback result.",
             "itemtype": "method",
             "name": "_onStreamAccessSuccess",
@@ -9964,7 +9964,7 @@
         },
         {
             "file": "source/stream-media.js",
-            "line": 2050,
+            "line": 2041,
             "description": "Function that handles the native <code>navigator.getUserMedia()</code> API failure callback result.",
             "itemtype": "method",
             "name": "_onStreamAccessError",
@@ -9975,7 +9975,7 @@
         },
         {
             "file": "source/stream-media.js",
-            "line": 2091,
+            "line": 2082,
             "description": "Function that handles the <code>RTCPeerConnection.onaddstream</code> remote MediaStream received.",
             "itemtype": "method",
             "name": "_onRemoteStreamAdded",
@@ -9986,7 +9986,7 @@
         },
         {
             "file": "source/stream-media.js",
-            "line": 2125,
+            "line": 2116,
             "description": "Function that sets User's Stream to send to Peer connection.\nPriority for <code>shareScreen()</code> Stream over <code>getUserMedia()</code> Stream.",
             "itemtype": "method",
             "name": "_addLocalMediaStreams",
@@ -9997,7 +9997,7 @@
         },
         {
             "file": "source/stream-media.js",
-            "line": 2220,
+            "line": 2211,
             "description": "Function that handles ended streams.",
             "itemtype": "method",
             "name": "_handleEndedStreams",
@@ -10400,7 +10400,7 @@
         },
         {
             "message": "unknown tag: trigger",
-            "line": " source/stream-media.js:1561"
+            "line": " source/stream-media.js:1552"
         },
         {
             "message": "Missing item type\nGlobal function that clones an object.",
