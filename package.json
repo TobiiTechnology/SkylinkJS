@@ -39,8 +39,7 @@
     "tape": "^4.2.2",
     "yuidocjs": "^0.3.50",
     "crypto-js": "*",
-    "seq-queue": "*",
-    "npm-publish-git": "git://github.com/andreineculau/npm-publish-git.git#v0.0.6"
+    "seq-queue": "*"
   },
   "engines": {
     "node": ">=0.10.26",

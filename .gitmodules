@@ -1,0 +1,8 @@
+[submodule "upstream"]
+	path = upstream
+	url = git://github.com/Temasys/SkylinkJS.git
+	branch = master
+[submodule "support-firecloud"]
+	path = support-firecloud
+	url = git://github.com/tobiipro/support-firecloud.git
+	branch = master
